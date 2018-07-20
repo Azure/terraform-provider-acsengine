@@ -1456,6 +1456,7 @@ func TestAccACSEngineK8sCluster_updateScaleUpgradeInOne(t *testing.T) {
 
 }
 
+// can I somehow check that az group show -g *rg* --query tags actually works
 func TestAccACSEngineK8sCluster_updateTags(t *testing.T) {
 	ri := acctest.RandInt()
 	clientID := os.Getenv("ARM_CLIENT_ID")
