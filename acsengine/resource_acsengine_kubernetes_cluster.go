@@ -21,7 +21,7 @@ import (
 	"github.com/Azure/acs-engine/pkg/api/common"
 	acseutils "github.com/Azure/acs-engine/pkg/armhelpers/utils"
 	"github.com/Azure/acs-engine/pkg/client"
-	// "github.com/Azure/terraform-provider-acsengine/acsengine/helpers/client"
+	// "github.com/Azure/terraform-provider-acsengine/acsengine/helpers/client" // this is what I want to work
 	"github.com/Azure/acs-engine/pkg/i18n"
 	"github.com/Azure/acs-engine/pkg/operations"
 	"github.com/Azure/acs-engine/pkg/operations/kubernetesupgrade"
@@ -239,7 +239,7 @@ func resourceArmAcsEngineKubernetesCluster() *schema.Resource {
 }
 
 const (
-	acsEngineVersion = "0.19.1"
+	acsEngineVersion = "0.19.1" // is this completely separate from the package that calls this?
 	apiVersion       = "vlabs"
 )
 
@@ -422,11 +422,11 @@ func resourceAcsEngineK8sClusterUpdate(d *schema.ResourceData, m interface{}) er
 		// validate to make sure it's valid and > current version
 		old, new := d.GetChange("kubernetes_version")
 		if err = validateKubernetesVersionUpgrade(new.(string), old.(string)); err != nil {
-			return fmt.Errorf("Error updating Kubernetes version: %+v", err)
+			return fmt.Errorf("Error upgrading Kubernetes version: %+v", err)
 		}
 		err = upgradeCluster(d, m, new.(string))
 		if err != nil {
-			return err
+			return fmt.Errorf("Error upgrading Kubernetes version: %+v", err)
 		}
 
 		d.SetPartial("kubernetes_version")
@@ -447,7 +447,10 @@ func resourceAcsEngineK8sClusterUpdate(d *schema.ResourceData, m interface{}) er
 		d.SetPartial(profileCount)
 	}
 
+	// I should make this come first so the tags can be updated at the same time
+	// as another re-deployment (if one happens)
 	if d.HasChange("tags") {
+		// do I need to pass in "new" tags from d.GetChange? I'm pretty sure I don't
 		err = updateTags(d, m)
 		if err != nil {
 			return fmt.Errorf("Error updating tags: %+v", err)
@@ -548,7 +551,7 @@ func generateACSEngineTemplate(d *schema.ResourceData, m interface{}, write bool
 
 	template, parameters, certsGenerated, err := templateGenerator.GenerateTemplate(&cluster, acsengine.DefaultGeneratorCode, false, acsEngineVersion)
 	if err != nil {
-		return "", "", fmt.Errorf("error generating template: %s", err.Error()) // is there a way I can say which terraform file change caused this?
+		return "", "", fmt.Errorf("error generating template: %s", err.Error())
 	}
 
 	if template, err = transform.PrettyPrintArmTemplate(template); err != nil {
@@ -1139,10 +1142,11 @@ func saveUpgradedApimodel(uc *client.UpgradeClient, d *schema.ResourceData, m in
 
 // not working yet
 func updateTags(d *schema.ResourceData, m interface{}) error {
-	// am I somehow deleting other tags, including acsengineVersion?
+	// get new tags
 	var tags map[string]interface{}
 	if v, ok := d.GetOk("tags"); ok {
 		tags = v.(map[string]interface{})
+		fmt.Println(tags)
 	} else {
 		tags = map[string]interface{}{}
 	}
