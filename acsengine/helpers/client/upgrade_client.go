@@ -7,7 +7,6 @@ import (
 	"github.com/Azure/acs-engine/pkg/api"
 	"github.com/Azure/acs-engine/pkg/armhelpers"
 	"github.com/Azure/acs-engine/pkg/helpers"
-	"github.com/Azure/acs-engine/pkg/i18n"
 	"github.com/leonelquinteros/gotext"
 	log "github.com/sirupsen/logrus"
 )
@@ -36,12 +35,12 @@ type UpgradeClient struct {
 // Validate checks that required client fields are set
 func (uc *UpgradeClient) Validate() error {
 	uc.Logger = log.New().WithField("source", "upgrade update")
-	var err error
+	// var err error
 
-	uc.Locale, err = i18n.LoadTranslations()
-	if err != nil {
-		return fmt.Errorf("error loading translation files: %s", err.Error())
-	}
+	// uc.Locale, err = i18n.LoadTranslations()
+	// if err != nil {
+	// 	return fmt.Errorf("error loading translation files: %s", err.Error())
+	// }
 
 	if uc.ResourceGroupName == "" {
 		return fmt.Errorf("Resource group must be specified")
