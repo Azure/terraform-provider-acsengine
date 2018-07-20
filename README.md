@@ -7,7 +7,7 @@ Don't trust everything in this doc yet.
 
 ## Overview
 
-The ACSEngine Kubernetes Terraform provider lets you build clusters from Terraform configurations.
+The ACS Engine Kubernetes Terraform provider lets you build clusters from Terraform configurations.
 
 ## General Requirements
 
