@@ -21,6 +21,7 @@ import (
 	"github.com/Azure/acs-engine/pkg/api/common"
 	acseutils "github.com/Azure/acs-engine/pkg/armhelpers/utils"
 	"github.com/Azure/acs-engine/pkg/client"
+	// "github.com/Azure/terraform-provider-acsengine/acsengine/helpers/client"
 	"github.com/Azure/acs-engine/pkg/i18n"
 	"github.com/Azure/acs-engine/pkg/operations"
 	"github.com/Azure/acs-engine/pkg/operations/kubernetesupgrade"
