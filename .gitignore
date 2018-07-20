@@ -328,3 +328,15 @@ ASALocalRun/
 
 # MFractors (Xamarin productivity tool) working folder 
 .mfractor/
+
+# Project specific
+.terraform/
+_output/
+translations/
+/main.tf
+terraform.tfstate
+terraform.tfplan
+./*.tfstate
+*.backup
+.terraform.tfstate.lock.info
+*.test
