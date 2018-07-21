@@ -9,6 +9,10 @@ Don't trust everything in this doc yet.
 
 The ACS Engine Kubernetes Terraform provider lets you build clusters from Terraform configurations.
 
+## User Guides (coming soon)
+- Resources
+- Updating clusters
+
 ## General Requirements
 
 -	[Terraform](https://www.terraform.io/downloads.html) 0.10.x
