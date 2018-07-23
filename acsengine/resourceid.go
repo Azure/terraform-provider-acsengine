@@ -3,7 +3,6 @@ package acsengine
 import (
 	"fmt"
 	"net/url"
-	"sort"
 	"strings"
 )
 
@@ -100,55 +99,4 @@ func parseAzureResourceID(id string) (*ResourceID, error) {
 	}
 
 	return idObj, nil
-}
-
-func composeAzureResourceID(idObj *ResourceID) (id string, err error) {
-	if idObj.SubscriptionID == "" || idObj.ResourceGroup == "" {
-		return "", fmt.Errorf("SubscriptionID and ResourceGroup cannot be empty")
-	}
-
-	id = fmt.Sprintf("/subscriptions/%s/resourceGroups/%s", idObj.SubscriptionID, idObj.ResourceGroup)
-
-	if idObj.Provider != "" {
-		if len(idObj.Path) < 1 {
-			return "", fmt.Errorf("ResourceID.Path should have at least one item when ResourceID.Provider is specified")
-		}
-
-		id += fmt.Sprintf("/providers/%s", idObj.Provider)
-
-		// sort the path keys so our output is deterministic
-		var pathKeys []string
-		for k := range idObj.Path {
-			pathKeys = append(pathKeys, k)
-		}
-		sort.Strings(pathKeys)
-
-		for _, k := range pathKeys {
-			v := idObj.Path[k]
-			if k == "" || v == "" {
-				return "", fmt.Errorf("ResourceID.Path cannot contain empty strings")
-			}
-			id += fmt.Sprintf("/%s/%s", k, v)
-		}
-	}
-
-	return
-}
-
-func parseNetworkSecurityGroupName(networkSecurityGroupId string) (string, error) {
-	id, err := parseAzureResourceID(networkSecurityGroupId)
-	if err != nil {
-		return "", fmt.Errorf("[ERROR] Unable to Parse Network Security Group ID '%s': %+v", networkSecurityGroupId, err)
-	}
-
-	return id.Path["networkSecurityGroups"], nil
-}
-
-func parseRouteTableName(routeTableId string) (string, error) {
-	id, err := parseAzureResourceID(routeTableId)
-	if err != nil {
-		return "", fmt.Errorf("[ERROR] Unable to parse Route Table ID '%s': %+v", routeTableId, err)
-	}
-
-	return id.Path["routeTables"], nil
 }

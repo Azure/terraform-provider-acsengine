@@ -29,9 +29,9 @@ import (
 // ArmClient contains the handles to all the specific Azure Resource Manager
 // resource classes' respective clients.
 type ArmClient struct {
-	clientId                 string
-	tenantId                 string
-	subscriptionId           string
+	clientID                 string
+	tenantID                 string
+	subscriptionID           string
 	usingServicePrincipal    bool
 	environment              azure.Environment
 	skipProviderRegistration bool
@@ -165,9 +165,9 @@ func getArmClient(c *authentication.Config) (*ArmClient, error) {
 
 	// client declarations:
 	client := ArmClient{
-		clientId:                 c.ClientID,
-		tenantId:                 c.TenantID,
-		subscriptionId:           c.SubscriptionID,
+		clientID:                 c.ClientID,
+		tenantID:                 c.TenantID,
+		subscriptionID:           c.SubscriptionID,
 		environment:              env,
 		usingServicePrincipal:    c.ClientSecret != "",
 		skipProviderRegistration: c.SkipProviderRegistration,
@@ -210,20 +210,20 @@ func getArmClient(c *authentication.Config) (*ArmClient, error) {
 	return &client, nil
 }
 
-func (c *ArmClient) registerContainerServicesClients(endpoint, subscriptionId string, auth autorest.Authorizer) {
+func (c *ArmClient) registerContainerServicesClients(endpoint, subscriptionID string, auth autorest.Authorizer) {
 	// ACS
-	containerServicesClient := containerservice.NewContainerServicesClientWithBaseURI(endpoint, subscriptionId)
+	containerServicesClient := containerservice.NewContainerServicesClientWithBaseURI(endpoint, subscriptionID)
 	c.configureClient(&containerServicesClient.Client, auth)
 	c.containerServicesClient = containerServicesClient
 
 	// AKS
-	kubernetesClustersClient := containerservice.NewManagedClustersClientWithBaseURI(endpoint, subscriptionId)
+	kubernetesClustersClient := containerservice.NewManagedClustersClientWithBaseURI(endpoint, subscriptionID)
 	c.configureClient(&kubernetesClustersClient.Client, auth)
 	c.kubernetesClustersClient = kubernetesClustersClient
 }
 
-func (c *ArmClient) registerKeyVaultClients(endpoint, subscriptionId string, auth autorest.Authorizer, keyVaultAuth autorest.Authorizer, sender autorest.Sender) {
-	keyVaultClient := keyvault.NewVaultsClientWithBaseURI(endpoint, subscriptionId)
+func (c *ArmClient) registerKeyVaultClients(endpoint, subscriptionID string, auth autorest.Authorizer, keyVaultAuth autorest.Authorizer, sender autorest.Sender) {
+	keyVaultClient := keyvault.NewVaultsClientWithBaseURI(endpoint, subscriptionID)
 	setUserAgent(&keyVaultClient.Client)
 	keyVaultClient.Authorizer = auth
 	keyVaultClient.Sender = sender
@@ -238,24 +238,24 @@ func (c *ArmClient) registerKeyVaultClients(endpoint, subscriptionId string, aut
 	c.keyVaultManagementClient = keyVaultManagementClient
 }
 
-func (c *ArmClient) registerResourcesClients(endpoint, subscriptionId string, auth autorest.Authorizer) {
-	locksClient := locks.NewManagementLocksClientWithBaseURI(endpoint, subscriptionId)
+func (c *ArmClient) registerResourcesClients(endpoint, subscriptionID string, auth autorest.Authorizer) {
+	locksClient := locks.NewManagementLocksClientWithBaseURI(endpoint, subscriptionID)
 	c.configureClient(&locksClient.Client, auth)
 	c.managementLocksClient = locksClient
 
-	deploymentsClient := resources.NewDeploymentsClientWithBaseURI(endpoint, subscriptionId)
+	deploymentsClient := resources.NewDeploymentsClientWithBaseURI(endpoint, subscriptionID)
 	c.configureClient(&deploymentsClient.Client, auth)
 	c.deploymentsClient = deploymentsClient
 
-	resourcesClient := resources.NewClientWithBaseURI(endpoint, subscriptionId)
+	resourcesClient := resources.NewClientWithBaseURI(endpoint, subscriptionID)
 	c.configureClient(&resourcesClient.Client, auth)
 	c.resourcesClient = resourcesClient
 
-	resourceGroupsClient := resources.NewGroupsClientWithBaseURI(endpoint, subscriptionId)
+	resourceGroupsClient := resources.NewGroupsClientWithBaseURI(endpoint, subscriptionID)
 	c.configureClient(&resourceGroupsClient.Client, auth)
 	c.resourceGroupsClient = resourceGroupsClient
 
-	providersClient := resources.NewProvidersClientWithBaseURI(endpoint, subscriptionId)
+	providersClient := resources.NewProvidersClientWithBaseURI(endpoint, subscriptionID)
 	c.configureClient(&providersClient.Client, auth)
 	c.providersClient = providersClient
 
@@ -264,8 +264,8 @@ func (c *ArmClient) registerResourcesClients(endpoint, subscriptionId string, au
 	c.subscriptionsClient = subscriptionsClient
 }
 
-func (c *ArmClient) registerStorageServiceClients(endpoint, subscriptionId string, auth autorest.Authorizer) {
-	accountsClient := storage.NewAccountsClientWithBaseURI(endpoint, subscriptionId)
+func (c *ArmClient) registerStorageServiceClients(endpoint, subscriptionID string, auth autorest.Authorizer) {
+	accountsClient := storage.NewAccountsClientWithBaseURI(endpoint, subscriptionID)
 	c.configureClient(&accountsClient.Client, auth)
 	c.storageServiceClient = accountsClient
 }
@@ -275,7 +275,7 @@ var (
 	storageKeyCache   = make(map[string]string)
 )
 
-func (armClient *ArmClient) getKeyForStorageAccount(ctx context.Context, resourceGroupName, storageAccountName string) (string, bool, error) {
+func (c *ArmClient) getKeyForStorageAccount(ctx context.Context, resourceGroupName, storageAccountName string) (string, bool, error) {
 	cacheIndex := resourceGroupName + "/" + storageAccountName
 	storageKeyCacheMu.RLock()
 	key, ok := storageKeyCache[cacheIndex]
@@ -289,7 +289,7 @@ func (armClient *ArmClient) getKeyForStorageAccount(ctx context.Context, resourc
 	defer storageKeyCacheMu.Unlock()
 	key, ok = storageKeyCache[cacheIndex]
 	if !ok {
-		accountKeys, err := armClient.storageServiceClient.ListKeys(ctx, resourceGroupName, storageAccountName)
+		accountKeys, err := c.storageServiceClient.ListKeys(ctx, resourceGroupName, storageAccountName)
 		if utils.ResponseWasNotFound(accountKeys.Response) {
 			return "", false, nil
 		}
@@ -320,16 +320,16 @@ func (armClient *ArmClient) getKeyForStorageAccount(ctx context.Context, resourc
 	return key, true, nil
 }
 
-func (armClient *ArmClient) getBlobStorageClientForStorageAccount(ctx context.Context, resourceGroupName, storageAccountName string) (*mainStorage.BlobStorageClient, bool, error) {
-	key, accountExists, err := armClient.getKeyForStorageAccount(ctx, resourceGroupName, storageAccountName)
+func (c *ArmClient) getBlobStorageClientForStorageAccount(ctx context.Context, resourceGroupName, storageAccountName string) (*mainStorage.BlobStorageClient, bool, error) {
+	key, accountExists, err := c.getKeyForStorageAccount(ctx, resourceGroupName, storageAccountName)
 	if err != nil {
 		return nil, accountExists, err
 	}
-	if accountExists == false {
+	if !accountExists {
 		return nil, false, nil
 	}
 
-	storageClient, err := mainStorage.NewClient(storageAccountName, key, armClient.environment.StorageEndpointSuffix,
+	storageClient, err := mainStorage.NewClient(storageAccountName, key, c.environment.StorageEndpointSuffix,
 		mainStorage.DefaultAPIVersion, true)
 	if err != nil {
 		return nil, true, fmt.Errorf("Error creating storage client for storage account %q: %s", storageAccountName, err)
@@ -337,61 +337,4 @@ func (armClient *ArmClient) getBlobStorageClientForStorageAccount(ctx context.Co
 
 	blobClient := storageClient.GetBlobService()
 	return &blobClient, true, nil
-}
-
-func (armClient *ArmClient) getFileServiceClientForStorageAccount(ctx context.Context, resourceGroupName, storageAccountName string) (*mainStorage.FileServiceClient, bool, error) {
-	key, accountExists, err := armClient.getKeyForStorageAccount(ctx, resourceGroupName, storageAccountName)
-	if err != nil {
-		return nil, accountExists, err
-	}
-	if accountExists == false {
-		return nil, false, nil
-	}
-
-	storageClient, err := mainStorage.NewClient(storageAccountName, key, armClient.environment.StorageEndpointSuffix,
-		mainStorage.DefaultAPIVersion, true)
-	if err != nil {
-		return nil, true, fmt.Errorf("Error creating storage client for storage account %q: %s", storageAccountName, err)
-	}
-
-	fileClient := storageClient.GetFileService()
-	return &fileClient, true, nil
-}
-
-func (armClient *ArmClient) getTableServiceClientForStorageAccount(ctx context.Context, resourceGroupName, storageAccountName string) (*mainStorage.TableServiceClient, bool, error) {
-	key, accountExists, err := armClient.getKeyForStorageAccount(ctx, resourceGroupName, storageAccountName)
-	if err != nil {
-		return nil, accountExists, err
-	}
-	if accountExists == false {
-		return nil, false, nil
-	}
-
-	storageClient, err := mainStorage.NewClient(storageAccountName, key, armClient.environment.StorageEndpointSuffix,
-		mainStorage.DefaultAPIVersion, true)
-	if err != nil {
-		return nil, true, fmt.Errorf("Error creating storage client for storage account %q: %s", storageAccountName, err)
-	}
-
-	tableClient := storageClient.GetTableService()
-	return &tableClient, true, nil
-}
-
-func (armClient *ArmClient) getQueueServiceClientForStorageAccount(ctx context.Context, resourceGroupName, storageAccountName string) (*mainStorage.QueueServiceClient, bool, error) {
-	key, accountExists, err := armClient.getKeyForStorageAccount(ctx, resourceGroupName, storageAccountName)
-	if err != nil {
-		return nil, accountExists, err
-	}
-	if accountExists == false {
-		return nil, false, nil
-	}
-
-	storageClient, err := mainStorage.NewClient(storageAccountName, key, armClient.environment.StorageEndpointSuffix,
-		mainStorage.DefaultAPIVersion, true)
-	if err != nil {
-		return nil, true, fmt.Errorf("Error creating storage client for storage account %q: %s", storageAccountName, err)
-	}
-
-	queueClient := storageClient.GetQueueService()
-	return &queueClient, true, nil
 }

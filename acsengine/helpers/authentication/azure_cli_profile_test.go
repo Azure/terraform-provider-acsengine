@@ -10,7 +10,7 @@ func TestAzureCLIProfileFindDefaultSubscription(t *testing.T) {
 	cases := []struct {
 		Description            string
 		Subscriptions          []cli.Subscription
-		ExpectedSubscriptionId string
+		ExpectedSubscriptionID string
 		ExpectError            bool
 	}{
 		{
@@ -27,7 +27,7 @@ func TestAzureCLIProfileFindDefaultSubscription(t *testing.T) {
 				},
 			},
 			ExpectError:            false,
-			ExpectedSubscriptionId: "7f68fe06-9404-4db8-a5c7-29639dc4b299",
+			ExpectedSubscriptionID: "7f68fe06-9404-4db8-a5c7-29639dc4b299",
 		},
 		{
 			Description: "Multiple Subscriptions with First as the Default",
@@ -42,7 +42,7 @@ func TestAzureCLIProfileFindDefaultSubscription(t *testing.T) {
 				},
 			},
 			ExpectError:            false,
-			ExpectedSubscriptionId: "7f68fe06-9404-4db8-a5c7-29639dc4b299",
+			ExpectedSubscriptionID: "7f68fe06-9404-4db8-a5c7-29639dc4b299",
 		},
 		{
 			Description: "Multiple Subscriptions with Second as the Default",
@@ -57,7 +57,7 @@ func TestAzureCLIProfileFindDefaultSubscription(t *testing.T) {
 				},
 			},
 			ExpectError:            false,
-			ExpectedSubscriptionId: "f36508bb-53b9-4aad-a2ac-2df86acf0c31",
+			ExpectedSubscriptionID: "f36508bb-53b9-4aad-a2ac-2df86acf0c31",
 		},
 		{
 			Description: "Multiple Subscriptions with None as the Default",
@@ -81,7 +81,7 @@ func TestAzureCLIProfileFindDefaultSubscription(t *testing.T) {
 				Subscriptions: v.Subscriptions,
 			},
 		}
-		actualSubscriptionId, err := profile.FindDefaultSubscriptionId()
+		actualSubscriptionId, err := profile.FindDefaultSubscriptionID()
 
 		if v.ExpectError && err == nil {
 			t.Fatalf("Expected an error for %q: didn't get one", v.Description)
@@ -91,8 +91,8 @@ func TestAzureCLIProfileFindDefaultSubscription(t *testing.T) {
 			t.Fatalf("Expected there to be no error for %q - but got: %v", v.Description, err)
 		}
 
-		if actualSubscriptionId != v.ExpectedSubscriptionId {
-			t.Fatalf("Expected Subscription ID to be %q - got %q", v.ExpectedSubscriptionId, actualSubscriptionId)
+		if actualSubscriptionId != v.ExpectedSubscriptionID {
+			t.Fatalf("Expected Subscription ID to be %q - got %q", v.ExpectedSubscriptionID, actualSubscriptionId)
 		}
 	}
 }

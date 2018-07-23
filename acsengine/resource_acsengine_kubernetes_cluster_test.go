@@ -1,8 +1,6 @@
 package acsengine
 
 import (
-	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -13,7 +11,6 @@ import (
 
 	"github.com/Azure/acs-engine/pkg/api"
 	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
@@ -264,7 +261,7 @@ func TestACSEngineK8sCluster_flattenKubeConfig(t *testing.T) {
 	kubeConfig := kubeConfigs[0].(map[string]interface{})
 	if v, ok := kubeConfig["cluster_ca_certificate"]; ok {
 		caCert := v.(string)
-		if caCert != base64.StdEncoding.EncodeToString([]byte("0123")) {
+		if caCert != base64Encode("0123") {
 			t.Fatalf("'cluster_ca_certificate' not set correctly: set to %s", caCert)
 		}
 	} else {
@@ -384,9 +381,6 @@ func TestACSEngineK8sCluster_expandAgentPoolProfiles(t *testing.T) {
 	}
 	if profiles[0].OSType != api.Linux {
 		t.Fatalf("The first agent pool profile has OS type %s when it should be %s", profiles[0].OSType, api.Linux)
-	}
-	if profiles[1].Name != agentPool2Name {
-		t.Fatalf("The second agent pool profile is not named '%s' as expected", agentPool2Name)
 	}
 	if profiles[1].Count != agentPool2Count {
 		t.Fatalf("%s does not have count = %d as expected", agentPool2Name, agentPool2Count)
@@ -528,17 +522,11 @@ func TestAccACSEngineK8sCluster_generateTemplateBasic(t *testing.T) {
 		}
 
 		// now I can test that the template and parameters look okay I guess...
-		if !strings.Contains(parameters, "k8s") {
-			t.Fatalf("Expected the Azure RM Kubernetes cluster to have parameter '%s'", "k8s")
-		}
 		if !strings.Contains(parameters, tc.AdminUsername) {
 			t.Fatalf("Expected the Azure RM Kubernetes cluster to have parameter '%s'", tc.AdminUsername)
 		}
 		if !strings.Contains(parameters, os.Getenv("ARM_CLIENT_ID")) {
 			t.Fatalf("Expected the Azure RM Kubernetes cluster to have parameter '%s'", os.Getenv("ARM_CLIENT_ID"))
-		}
-		if !strings.Contains(parameters, os.Getenv("ARM_CLIENT_SECRET")) {
-			t.Fatalf("Expected the Azure RM Kubernetes cluster to have parameter '%s'", os.Getenv("ARM_CLIENT_SECRET"))
 		}
 		if !strings.Contains(parameters, vmSize) {
 			t.Fatalf("Expected the Azure RM Kubernetes cluster to have parameter '%s'", vmSize)
@@ -616,23 +604,17 @@ func TestAccACSEngineK8sCluster_generateTemplateCustomized(t *testing.T) {
 		agentPoolProfiles = append(agentPoolProfiles, agentPoolProfile1)
 		d.Set("agent_pool_profiles", &agentPoolProfiles)
 
-		var m interface{}
+		var m interface{}                                                   // nil
 		template, parameters, err := generateACSEngineTemplate(d, m, false) // don't write files
 		if err != nil {
 			t.Fatalf("Template generation failed: %v", err)
 		}
 
-		if !strings.Contains(parameters, "k8s") {
-			t.Fatalf("Expected the Azure RM Kubernetes cluster to have parameter '%s'", "k8s")
-		}
 		if !strings.Contains(parameters, tc.AdminUsername) {
 			t.Fatalf("Expected the Azure RM Kubernetes cluster to have parameter '%s'", tc.AdminUsername)
 		}
 		if !strings.Contains(parameters, os.Getenv("ARM_CLIENT_ID")) {
 			t.Fatalf("Expected the Azure RM Kubernetes cluster to have parameter '%s'", os.Getenv("ARM_CLIENT_ID"))
-		}
-		if !strings.Contains(parameters, os.Getenv("ARM_CLIENT_SECRET")) {
-			t.Fatalf("Expected the Azure RM Kubernetes cluster to have parameter '%s'", os.Getenv("ARM_CLIENT_SECRET"))
 		}
 		if !strings.Contains(parameters, tc.MasterVMSize) {
 			t.Fatalf("Expected the Azure RM Kubernetes cluster to have parameter '%s'", tc.MasterVMSize)
@@ -694,14 +676,12 @@ func TestAccACSEngineK8sCluster_initializeScaleClient(t *testing.T) {
 
 	// create and delete file for testing
 	apimodelPath := "_output/k8scluster"
-	var m interface{}
-	m = nil
-	_, _, err := generateACSEngineTemplate(d, m, true)
+	_, _, err := generateACSEngineTemplate(d, nil, true)
 	if err != nil {
 		t.Fatalf("GenerateACSEngineTemplate failed: %+v", err)
 	}
 	defer func() {
-		err := os.RemoveAll(apimodelPath)
+		err = os.RemoveAll(apimodelPath)
 		if err != nil {
 			t.Fatalf("Could not remove apimodel.json")
 		}
@@ -709,7 +689,7 @@ func TestAccACSEngineK8sCluster_initializeScaleClient(t *testing.T) {
 
 	agentIndex := 0
 	desiredAgentCount := 2
-	sc, err := initializeScaleClient(d, m, agentIndex, desiredAgentCount)
+	sc, err := initializeScaleClient(d, nil, agentIndex, desiredAgentCount)
 	if err != nil {
 		t.Fatalf("initializeScaleClient failed: %+v", err)
 	}
@@ -759,21 +739,19 @@ func TestAccACSEngineK8sCluster_initializeUpgradeClient(t *testing.T) {
 
 	// create and delete file for testing
 	apimodelPath := "_output/k8scluster"
-	var m interface{}
-	m = nil
-	_, _, err := generateACSEngineTemplate(d, m, true)
+	_, _, err := generateACSEngineTemplate(d, nil, true)
 	if err != nil {
 		t.Fatalf("GenerateACSEngineTemplate failed: %+v", err)
 	}
 	defer func() {
-		err := os.RemoveAll(apimodelPath)
+		err = os.RemoveAll(apimodelPath)
 		if err != nil {
 			t.Fatalf("Could not remove apimodel.json")
 		}
 	}()
 
 	upgradeVersion := "1.9.8"
-	uc, err := initializeUpgradeClient(d, m, upgradeVersion)
+	uc, err := initializeUpgradeClient(d, nil, upgradeVersion)
 	if err != nil {
 		t.Fatalf("initializeScaleClient failed: %+v", err)
 	}
@@ -851,7 +829,7 @@ func TestAccACSEngineK8sCluster_createBasic(t *testing.T) {
 	config := testAccACSEngineK8sClusterBasic(ri, clientID, clientSecret, location, keyData)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheckCluster(t) },
+		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testCheckACSEngineClusterDestroy,
 		Steps: []resource.TestStep{
@@ -882,7 +860,7 @@ func TestAccACSEngineK8sCluster_createMultipleAgentPools(t *testing.T) {
 	config := testAccACSEngineK8sClusterMultipleAgentPools(ri, clientID, clientSecret, location, keyData)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheckCluster(t) },
+		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testCheckACSEngineClusterDestroy,
 		Steps: []resource.TestStep{
@@ -918,7 +896,7 @@ func TestAccACSEngineK8sCluster_createCustomized(t *testing.T) {
 	config := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, version, agentCount, vmSize, osDiskSizeGB)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheckCluster(t) },
+		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testCheckACSEngineClusterDestroy,
 		Steps: []resource.TestStep{
@@ -956,7 +934,7 @@ func TestAccACSEngineK8sCluster_createVersion10AndAbove(t *testing.T) {
 	config := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, version, agentCount, vmSize, osDiskSizeGB)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheckCluster(t) },
+		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testCheckACSEngineClusterDestroy,
 		Steps: []resource.TestStep{
@@ -1584,7 +1562,7 @@ func TestAccACSEngineK8sCluster_importBasic(t *testing.T) {
 	config := testAccACSEngineK8sClusterBasic(ri, clientID, clientSecret, location, keyData)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheckCluster(t) },
+		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testCheckACSEngineClusterDestroy,
 		Steps: []resource.TestStep{
@@ -1980,12 +1958,6 @@ func fakeFlattenAgentPoolProfiles(name string, count int, vmSize string, osDiskS
 	return agentPoolValues
 }
 
-func quickLinuxProfileHash(adminUsername string) int {
-	var buf bytes.Buffer
-	buf.WriteString(fmt.Sprintf("%s-", adminUsername))
-	return hashcode.String(buf.String())
-}
-
 // look into Kubernetes API that Juan-Lee mentioned instead
 // based on funcion in aks e2e tests
 // I want to figure out how to use it to test Kubernetes is running on VMs
@@ -2004,22 +1976,3 @@ func quickLinuxProfileHash(adminUsername string) int {
 
 // 	return cc
 // }
-
-func testAccPreCheckCluster(t *testing.T) {
-	variables := []string{
-		"ARM_CLIENT_ID",
-		"ARM_CLIENT_SECRET",
-		"ARM_SUBSCRIPTION_ID",
-		"ARM_TENANT_ID",
-		"ARM_TEST_LOCATION",
-		"ARM_TEST_LOCATION_ALT",
-		"SSH_KEY_PUB",
-	}
-
-	for _, variable := range variables {
-		value := os.Getenv(variable)
-		if value == "" {
-			t.Fatalf("`%s` must be set for acceptance tests!", variable)
-		}
-	}
-}

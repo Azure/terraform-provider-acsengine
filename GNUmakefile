@@ -21,7 +21,7 @@ debugacc: fmtcheck
 	TF_ACC=1 dlv test $(TEST) --headless --listen=:2345 --api-version=2 -- -test.v $(TESTARGS)
 
 lint:
-	@gometalinter .
+	gometalinter ./... --deadline 100s # why does this always "fail"?
 
 vet:
 	@echo "go vet ."

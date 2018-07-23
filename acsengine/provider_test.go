@@ -41,6 +41,7 @@ func testAccPreCheck(t *testing.T) {
 		"ARM_TENANT_ID",
 		"ARM_TEST_LOCATION",
 		"ARM_TEST_LOCATION_ALT",
+		"SSH_KEY_PUB",
 	}
 
 	for _, variable := range variables {

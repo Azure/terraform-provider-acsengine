@@ -21,8 +21,7 @@ import (
 
 // Provider returns a terraform.ResourceProvider.
 func Provider() terraform.ResourceProvider {
-	var p *schema.Provider
-	p = &schema.Provider{
+	p := &schema.Provider{
 		Schema: map[string]*schema.Schema{
 			"subscription_id": {
 				Type:        schema.TypeString,
@@ -256,17 +255,6 @@ var armMutexKV = mutexkv.NewMutexKV()
 // Deprecated - use `azschema.IgnoreCaseDiffSuppressFunc` instead
 func ignoreCaseDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	return azSchema.IgnoreCaseDiffSuppressFunc(k, old, new, d)
-}
-
-// ignoreCaseStateFunc is a StateFunc from helper/schema that converts the
-// supplied value to lower before saving to state for consistency.
-func ignoreCaseStateFunc(val interface{}) string {
-	return strings.ToLower(val.(string))
-}
-
-func userDataDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	oldValue := userDataStateFunc(old)
-	return oldValue == new
 }
 
 func userDataStateFunc(v interface{}) string {
