@@ -2,10 +2,10 @@ package acsengine
 
 import (
 	"bytes"
+	"crypto/rand"
 	"encoding/base64"
 	"fmt"
 	"io"
-	"math/rand"
 	"os"
 	"path"
 	"runtime"
@@ -111,7 +111,10 @@ func getBlob(d *schema.ResourceData, m interface{}, filename string) (string, er
 		return "", err
 	}
 	buf := new(bytes.Buffer)
-	buf.ReadFrom(reader)
+	_, err = buf.ReadFrom(reader)
+	if err != nil {
+		return "", err
+	}
 	output := buf.String()
 
 	return output, nil
@@ -214,7 +217,9 @@ func resourceArmStorageBlobBlockUploadFromSource(container, name, source, conten
 	if err != nil {
 		return fmt.Errorf("Error opening source file for upload %q: %s", source, err)
 	}
-	defer file.Close()
+	defer func() error {
+		return file.Close()
+	}()
 
 	blockList, parts, err := resourceArmStorageBlobBlockSplit(file)
 	if err != nil {

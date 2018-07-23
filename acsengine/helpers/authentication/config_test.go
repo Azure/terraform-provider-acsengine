@@ -41,14 +41,14 @@ func TestAzurePopulateSubscriptionFromCLIProfile_NoDefault(t *testing.T) {
 }
 
 func TestAzurePopulateSubscriptionFromCLIProfile_Default(t *testing.T) {
-	subscriptionId := "abc123"
+	subscriptionID := "abc123"
 	config := Config{}
 	profiles := AzureCLIProfile{
 		Profile: cli.Profile{
 			Subscriptions: []cli.Subscription{
 				{
 					IsDefault: true,
-					ID:        subscriptionId,
+					ID:        subscriptionID,
 				},
 			},
 		},
@@ -59,8 +59,8 @@ func TestAzurePopulateSubscriptionFromCLIProfile_Default(t *testing.T) {
 		t.Fatalf("Expected no error to be returned - but got: %+v", err)
 	}
 
-	if config.SubscriptionID != subscriptionId {
-		t.Fatalf("Expected the Subscription ID to be %q but got %q", subscriptionId, config.SubscriptionID)
+	if config.SubscriptionID != subscriptionID {
+		t.Fatalf("Expected the Subscription ID to be %q but got %q", subscriptionID, config.SubscriptionID)
 	}
 }
 

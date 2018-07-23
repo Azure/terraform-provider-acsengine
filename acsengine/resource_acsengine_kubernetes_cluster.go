@@ -2,7 +2,6 @@ package acsengine
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -85,6 +84,7 @@ func resourceArmAcsEngineKubernetesCluster() *schema.Resource {
 									},
 								},
 							},
+							// looks like I accidentally deleted the hash, do I care?
 						},
 					},
 				},
@@ -234,6 +234,11 @@ func resourceArmAcsEngineKubernetesCluster() *schema.Resource {
 
 			// from tags.go: map, optional, computed, validated to make sure not too many, too long
 			"tags": tagsSchema(),
+
+			// might need
+			// "apimodel"
+			// "template"
+			// "parameters"
 		},
 	}
 }
@@ -287,11 +292,14 @@ func resourceAcsEngineK8sClusterRead(d *schema.ResourceData, m interface{}) erro
 	// make sure cluster exists first?
 	id, err := parseAzureResourceID(d.Id()) // from resourceid.go
 	if err != nil {
+		d.SetId("")
 		return err
 	}
 	resourceGroup := id.ResourceGroup
 
-	d.Set("resource_group", resourceGroup)
+	if err = d.Set("resource_group", resourceGroup); err != nil {
+		return err
+	}
 
 	apimodel, err := getBlob(d, m, "apimodel.json")
 	if err != nil {
@@ -313,15 +321,21 @@ func resourceAcsEngineK8sClusterRead(d *schema.ResourceData, m interface{}) erro
 		return fmt.Errorf("error parsing API model")
 	}
 
-	d.Set("name", cluster.Name)
-	d.Set("location", cluster.Location)
-	d.Set("kubernetes_version", cluster.Properties.OrchestratorProfile.OrchestratorVersion)
+	if err = d.Set("name", cluster.Name); err != nil {
+		return err
+	}
+	if err = d.Set("location", azureRMNormalizeLocation(cluster.Location)); err != nil {
+		return err
+	}
+	if err = d.Set("kubernetes_version", cluster.Properties.OrchestratorProfile.OrchestratorVersion); err != nil {
+		return err
+	}
 
 	linuxProfile, err := flattenLinuxProfile(*cluster.Properties.LinuxProfile)
 	if err != nil {
 		return err
 	}
-	if err := d.Set("linux_profile", linuxProfile); err != nil {
+	if err = d.Set("linux_profile", linuxProfile); err != nil {
 		return fmt.Errorf("Error setting 'linux_profile': %+v", err)
 	}
 
@@ -329,7 +343,7 @@ func resourceAcsEngineK8sClusterRead(d *schema.ResourceData, m interface{}) erro
 	if err != nil {
 		return err
 	}
-	if err := d.Set("service_principal", servicePrincipal); err != nil {
+	if err = d.Set("service_principal", servicePrincipal); err != nil {
 		return fmt.Errorf("Error setting 'service_principal': %+v", err)
 	}
 
@@ -337,7 +351,7 @@ func resourceAcsEngineK8sClusterRead(d *schema.ResourceData, m interface{}) erro
 	if err != nil {
 		return err
 	}
-	if err := d.Set("master_profile", masterProfile); err != nil {
+	if err = d.Set("master_profile", masterProfile); err != nil {
 		return fmt.Errorf("Error setting 'master_profile': %+v", err)
 	}
 
@@ -345,7 +359,7 @@ func resourceAcsEngineK8sClusterRead(d *schema.ResourceData, m interface{}) erro
 	if err != nil {
 		return err
 	}
-	if err := d.Set("agent_pool_profiles", agentPoolProfiles); err != nil {
+	if err = d.Set("agent_pool_profiles", agentPoolProfiles); err != nil {
 		return fmt.Errorf("Error setting 'agent_pool_profiles': %+v", err)
 	}
 
@@ -353,7 +367,9 @@ func resourceAcsEngineK8sClusterRead(d *schema.ResourceData, m interface{}) erro
 	if err != nil {
 		return err
 	}
-	d.Set("tags", tags)
+	if err = d.Set("tags", tags); err != nil {
+		return fmt.Errorf("Error setting `tags`: %+v", err)
+	}
 
 	kubeConfigFile, err := getKubeConfig(cluster)
 	if err != nil {
@@ -363,7 +379,9 @@ func resourceAcsEngineK8sClusterRead(d *schema.ResourceData, m interface{}) erro
 	if err != nil {
 		return err
 	}
-	d.Set("kube_config_raw", kubeConfigRaw)
+	if err = d.Set("kube_config_raw", kubeConfigRaw); err != nil {
+		return fmt.Errorf("Error setting `kube_config_raw`: %+v", err)
+	}
 	if err := d.Set("kube_config", kubeConfig); err != nil {
 		return fmt.Errorf("Error setting `kube_config`: %+v", err)
 	}
@@ -567,7 +585,8 @@ func generateACSEngineTemplate(d *schema.ResourceData, m interface{}, write bool
 				Locale: locale,
 			},
 		}
-		deploymentDirectory := "_output/k8scluster"
+		// deploymentDirectory := "_output/k8scluster"
+		deploymentDirectory := path.Join("_output", cluster.Properties.MasterProfile.DNSPrefix)
 		if err = writer.WriteTLSArtifacts(&cluster, apiVersion, template, parameters, deploymentDirectory, certsGenerated, false); err != nil {
 			return "", "", fmt.Errorf("error writing artifacts: %s", err.Error())
 		}
@@ -745,7 +764,10 @@ func initializeScaleClient(d *schema.ResourceData, m interface{}, agentIndex int
 	if v, ok := d.GetOk("resource_group"); ok {
 		sc.ResourceGroupName = v.(string)
 	}
-	sc.DeploymentDirectory = "_output/k8scluster"
+	// sc.DeploymentDirectory = "_output/k8scluster"
+	if v, ok := d.GetOk("master_profile.0.dns_name_prefix"); ok {
+		sc.DeploymentDirectory = path.Join("_output", v.(string))
+	}
 	sc.DesiredAgentCount = agentCount
 	if v, ok := d.GetOk("location"); ok {
 		sc.Location = azureRMNormalizeLocation(v.(string))
@@ -801,27 +823,34 @@ func initializeScaleClient(d *schema.ResourceData, m interface{}, agentIndex int
 		},
 	}
 	if m != nil { // for testing purposes
-		apimodel, err := getBlob(d, m, "apimodel.json")
+		var apimodel string
+		apimodel, err = getBlob(d, m, "apimodel.json")
 		if err != nil {
 			return sc, err
 		}
 		sc.K8sCluster, err = apiloader.LoadContainerService([]byte(apimodel), apiVersion, true, true, nil)
+		if err != nil {
+			return sc, fmt.Errorf("error parsing the api model: %s", err.Error())
+		}
 	} else {
 		sc.APIModelPath = path.Join(sc.DeploymentDirectory, "apimodel.json")
-		if _, err := os.Stat(sc.APIModelPath); os.IsNotExist(err) {
+		if _, err = os.Stat(sc.APIModelPath); os.IsNotExist(err) {
 			return sc, fmt.Errorf("specified api model does not exist (%s)", sc.APIModelPath)
 		}
 		sc.K8sCluster, _, err = apiloader.LoadContainerServiceFromFile(sc.APIModelPath, true, true, nil)
-	}
-	if err != nil {
-		return sc, fmt.Errorf("error parsing the api model: %s", err.Error())
+		if err != nil {
+			return sc, fmt.Errorf("error parsing the api model: %s", err.Error())
+		}
 	}
 	if sc.K8sCluster.Location != sc.Location {
 		return sc, fmt.Errorf("location does not match api model location") // this should probably never happen?
 	}
 	sc.AgentPool = sc.K8sCluster.Properties.AgentPoolProfiles[sc.AgentPoolIndex]
 
-	templateParameters := generateParametersMap(sc.DeploymentDirectory)
+	templateParameters, err := generateParametersMap(sc.DeploymentDirectory)
+	if err != nil {
+		return sc, err
+	}
 
 	nameSuffixParam := templateParameters["nameSuffix"].(map[string]interface{}) // do I actually need this?
 	sc.NameSuffix = nameSuffixParam["defaultValue"].(string)
@@ -965,7 +994,7 @@ func removeDataDiskCreateOption(templateJSON map[string]interface{}) error {
 			}
 		}
 	}
-	if found == false {
+	if !found {
 		return fmt.Errorf("Removing data disk create option failed: dataDisk not found")
 	}
 	return nil
@@ -1063,7 +1092,10 @@ func initializeUpgradeClient(d *schema.ResourceData, m interface{}, upgradeVersi
 	if v, ok := d.GetOk("resource_group"); ok {
 		uc.ResourceGroupName = v.(string)
 	}
-	uc.DeploymentDirectory = "_output/k8scluster"
+	// uc.DeploymentDirectory = "_output/k8scluster"
+	if v, ok := d.GetOk("master_profile.0.dns_name_prefix"); ok {
+		uc.DeploymentDirectory = path.Join("_output", v.(string))
+	}
 	uc.UpgradeVersion = upgradeVersion
 	if v, ok := d.GetOk("location"); ok {
 		uc.Location = v.(string)
@@ -1107,20 +1139,24 @@ func initializeUpgradeClient(d *schema.ResourceData, m interface{}, upgradeVersi
 		},
 	}
 	if m != nil { // for testing purposes
-		apimodel, err := getBlob(d, m, "apimodel.json")
+		var apimodel string
+		apimodel, err = getBlob(d, m, "apimodel.json")
 		if err != nil {
 			return uc, err
 		}
 		uc.K8sCluster, err = apiloader.LoadContainerService([]byte(apimodel), apiVersion, true, true, nil)
+		if err != nil {
+			return uc, fmt.Errorf("error parsing the api model: %s", err.Error())
+		}
 	} else {
 		uc.APIModelPath = path.Join(uc.DeploymentDirectory, "apimodel.json")
-		if _, err := os.Stat(uc.APIModelPath); os.IsNotExist(err) {
+		if _, err = os.Stat(uc.APIModelPath); os.IsNotExist(err) {
 			return uc, fmt.Errorf("specified api model does not exist (%s)", uc.APIModelPath)
 		}
 		uc.K8sCluster, uc.APIVersion, err = apiloader.LoadContainerServiceFromFile(uc.APIModelPath, true, true, nil) // look into these parameters
-	}
-	if err != nil {
-		return uc, fmt.Errorf("error parsing the api model: %s", err.Error())
+		if err != nil {
+			return uc, fmt.Errorf("error parsing the api model: %s", err.Error())
+		}
 	}
 	if uc.K8sCluster.Location == "" { // not sure if this block is necessary, might only matter if people are messing w/ the apimodel
 		uc.K8sCluster.Location = uc.Location
@@ -1128,7 +1164,10 @@ func initializeUpgradeClient(d *schema.ResourceData, m interface{}, upgradeVersi
 		return uc, fmt.Errorf("location does not match api model location") // this should probably never happen?
 	}
 
-	templateParameters := generateParametersMap(uc.DeploymentDirectory)
+	templateParameters, err := generateParametersMap(uc.DeploymentDirectory)
+	if err != nil {
+		return uc, err
+	}
 
 	nameSuffixParam := templateParameters["nameSuffix"].(map[string]interface{})
 	uc.NameSuffix = nameSuffixParam["defaultValue"].(string)
@@ -1233,7 +1272,7 @@ func saveTemplates(cluster *api.ContainerService, deploymentDirectory string, d 
 		return fmt.Errorf("error pretty printing template: %s", err.Error())
 	}
 	if parameters, err = transform.BuildAzureParametersFile(parameters); err != nil {
-		log.Fatalf("error pretty printing template parameters: %s \n", err.Error())
+		return fmt.Errorf("error pretty printing template parameters: %s \n", err.Error())
 	}
 	writer := &acsengine.ArtifactWriter{
 		Translator: &i18n.Translator{
@@ -1256,17 +1295,19 @@ func saveTemplates(cluster *api.ContainerService, deploymentDirectory string, d 
 }
 
 // if I can get rid of this then I only need to store apimodel.json
-func generateParametersMap(deploymentDirectory string) map[string]interface{} {
+func generateParametersMap(deploymentDirectory string) (map[string]interface{}, error) {
 	templatePath := path.Join(deploymentDirectory, "azuredeploy.json")
 	contents, _ := ioutil.ReadFile(templatePath)
 
 	var templateInter interface{}
-	json.Unmarshal(contents, &templateInter)
+	if err := json.Unmarshal(contents, &templateInter); err != nil {
+		return nil, err
+	}
 
 	templateMap := templateInter.(map[string]interface{})
 	templateParameters := templateMap["parameters"].(map[string]interface{})
 
-	return templateParameters
+	return templateParameters, nil
 }
 
 /* Misc. Helper Functions */
@@ -1391,7 +1432,7 @@ func getKubeConfig(cluster *api.ContainerService) (string, error) {
 
 func flattenKubeConfig(kubeConfigFile string) (string, []interface{}, error) {
 	// Do I actually want all of this to be base64 encoded? I'm confused
-	rawKubeConfig := base64.StdEncoding.EncodeToString([]byte(kubeConfigFile))
+	rawKubeConfig := base64Encode(kubeConfigFile)
 
 	config, err := kubernetes.ParseKubeConfig(kubeConfigFile)
 	if err != nil {
@@ -1407,9 +1448,9 @@ func flattenKubeConfig(kubeConfigFile string) (string, []interface{}, error) {
 	values["host"] = cluster2.Server
 	values["username"] = name
 	values["password"] = user.Token
-	values["client_certificate"] = base64.StdEncoding.EncodeToString([]byte(user.ClientCertificteData))
-	values["client_key"] = base64.StdEncoding.EncodeToString([]byte(user.ClientKeyData))
-	values["cluster_ca_certificate"] = base64.StdEncoding.EncodeToString([]byte(cluster2.ClusterAuthorityData))
+	values["client_certificate"] = base64Encode(user.ClientCertificteData)
+	values["client_key"] = base64Encode(user.ClientKeyData)
+	values["cluster_ca_certificate"] = base64Encode(cluster2.ClusterAuthorityData)
 
 	kubeConfig = append(kubeConfig, values)
 

@@ -8,17 +8,17 @@ import (
 )
 
 func TestAzureFindValidAccessTokenForTenant_InvalidDate(t *testing.T) {
-	tenantId := "c056adac-c6a6-4ddf-ab20-0f26d47f7eea"
+	tenantID := "c056adac-c6a6-4ddf-ab20-0f26d47f7eea"
 	expectedToken := cli.Token{
 		ExpiresOn:    "invalid date",
 		AccessToken:  "7cabcf30-8dca-43f9-91e6-fd56dfb8632f",
 		TokenType:    "9b10b986-7a61-4542-8d5a-9fcd96112585",
 		RefreshToken: "4ec3874d-ee2e-4980-ba47-b5bac11ddb94",
 		Resource:     "https://management.core.windows.net/",
-		Authority:    tenantId,
+		Authority:    tenantID,
 	}
 	tokens := []cli.Token{expectedToken}
-	token, err := findValidAccessTokenForTenant(tokens, tenantId)
+	token, err := findValidAccessTokenForTenant(tokens, tenantID)
 
 	if err == nil {
 		t.Fatalf("Expected an error to be returned but got nil")
@@ -31,17 +31,17 @@ func TestAzureFindValidAccessTokenForTenant_InvalidDate(t *testing.T) {
 
 func TestAzureFindValidAccessTokenForTenant_Expired(t *testing.T) {
 	expirationDate := time.Now().Add(time.Minute * -1)
-	tenantId := "c056adac-c6a6-4ddf-ab20-0f26d47f7eea"
+	tenantID := "c056adac-c6a6-4ddf-ab20-0f26d47f7eea"
 	expectedToken := cli.Token{
 		ExpiresOn:    expirationDate.Format("2006-01-02 15:04:05.999999"),
 		AccessToken:  "7cabcf30-8dca-43f9-91e6-fd56dfb8632f",
 		TokenType:    "9b10b986-7a61-4542-8d5a-9fcd96112585",
 		RefreshToken: "4ec3874d-ee2e-4980-ba47-b5bac11ddb94",
 		Resource:     "https://management.core.windows.net/",
-		Authority:    tenantId,
+		Authority:    tenantID,
 	}
 	tokens := []cli.Token{expectedToken}
-	token, err := findValidAccessTokenForTenant(tokens, tenantId)
+	token, err := findValidAccessTokenForTenant(tokens, tenantID)
 
 	if err == nil {
 		t.Fatalf("Expected an error to be returned but got nil")
@@ -57,17 +57,17 @@ func TestAzureFindValidAccessTokenForTenant_ExpiringIn(t *testing.T) {
 
 	for _, minute := range minutesToVerify {
 		expirationDate := time.Now().Add(time.Minute * time.Duration(minute))
-		tenantId := "c056adac-c6a6-4ddf-ab20-0f26d47f7eea"
+		tenantID := "c056adac-c6a6-4ddf-ab20-0f26d47f7eea"
 		expectedToken := cli.Token{
 			ExpiresOn:    expirationDate.Format("2006-01-02 15:04:05.999999"),
 			AccessToken:  "7cabcf30-8dca-43f9-91e6-fd56dfb8632f",
 			TokenType:    "9b10b986-7a61-4542-8d5a-9fcd96112585",
 			RefreshToken: "4ec3874d-ee2e-4980-ba47-b5bac11ddb94",
 			Resource:     "https://management.core.windows.net/",
-			Authority:    tenantId,
+			Authority:    tenantID,
 		}
 		tokens := []cli.Token{expectedToken}
-		token, err := findValidAccessTokenForTenant(tokens, tenantId)
+		token, err := findValidAccessTokenForTenant(tokens, tenantID)
 
 		if err != nil {
 			t.Fatalf("Expected no error to be returned for minute %d but got %+v", minute, err)
@@ -93,16 +93,16 @@ func TestAzureFindValidAccessTokenForTenant_ExpiringIn(t *testing.T) {
 
 func TestAzureFindValidAccessTokenForTenant_InvalidManagementDomain(t *testing.T) {
 	expirationDate := time.Now().Add(1 * time.Hour)
-	tenantId := "c056adac-c6a6-4ddf-ab20-0f26d47f7eea"
+	tenantID := "c056adac-c6a6-4ddf-ab20-0f26d47f7eea"
 	expectedToken := cli.Token{
 		ExpiresOn:   expirationDate.Format("2006-01-02 15:04:05.999999"),
 		AccessToken: "7cabcf30-8dca-43f9-91e6-fd56dfb8632f",
 		TokenType:   "9b10b986-7a61-4542-8d5a-9fcd96112585",
 		Resource:    "https://portal.azure.com/",
-		Authority:   tenantId,
+		Authority:   tenantID,
 	}
 	tokens := []cli.Token{expectedToken}
-	token, err := findValidAccessTokenForTenant(tokens, tenantId)
+	token, err := findValidAccessTokenForTenant(tokens, tenantID)
 
 	if err == nil {
 		t.Fatalf("Expected an error but didn't get one")
@@ -136,16 +136,16 @@ func TestAzureFindValidAccessTokenForTenant_DifferentTenant(t *testing.T) {
 
 func TestAzureFindValidAccessTokenForTenant_ValidFromCloudShell(t *testing.T) {
 	expirationDate := time.Now().Add(1 * time.Hour)
-	tenantId := "c056adac-c6a6-4ddf-ab20-0f26d47f7eea"
+	tenantID := "c056adac-c6a6-4ddf-ab20-0f26d47f7eea"
 	expectedToken := cli.Token{
 		ExpiresOn:   expirationDate.Format(time.RFC3339),
 		AccessToken: "7cabcf30-8dca-43f9-91e6-fd56dfb8632f",
 		TokenType:   "9b10b986-7a61-4542-8d5a-9fcd96112585",
 		Resource:    "https://management.core.windows.net/",
-		Authority:   tenantId,
+		Authority:   tenantID,
 	}
 	tokens := []cli.Token{expectedToken}
-	token, err := findValidAccessTokenForTenant(tokens, tenantId)
+	token, err := findValidAccessTokenForTenant(tokens, tenantID)
 
 	if err != nil {
 		t.Fatalf("Expected no error to be returned but got %+v", err)
@@ -170,17 +170,17 @@ func TestAzureFindValidAccessTokenForTenant_ValidFromCloudShell(t *testing.T) {
 
 func TestAzureFindValidAccessTokenForTenant_ValidFromAzureCLI(t *testing.T) {
 	expirationDate := time.Now().Add(1 * time.Hour)
-	tenantId := "c056adac-c6a6-4ddf-ab20-0f26d47f7eea"
+	tenantID := "c056adac-c6a6-4ddf-ab20-0f26d47f7eea"
 	expectedToken := cli.Token{
 		ExpiresOn:    expirationDate.Format("2006-01-02 15:04:05.999999"),
 		AccessToken:  "7cabcf30-8dca-43f9-91e6-fd56dfb8632f",
 		TokenType:    "9b10b986-7a61-4542-8d5a-9fcd96112585",
 		RefreshToken: "4ec3874d-ee2e-4980-ba47-b5bac11ddb94",
 		Resource:     "https://management.core.windows.net/",
-		Authority:    tenantId,
+		Authority:    tenantID,
 	}
 	tokens := []cli.Token{expectedToken}
-	token, err := findValidAccessTokenForTenant(tokens, tenantId)
+	token, err := findValidAccessTokenForTenant(tokens, tenantID)
 
 	if err != nil {
 		t.Fatalf("Expected no error to be returned but got %+v", err)

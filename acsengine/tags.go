@@ -17,16 +17,6 @@ func tagsSchema() *schema.Schema {
 	}
 }
 
-func tagsForceNewSchema() *schema.Schema {
-	return &schema.Schema{
-		Type:         schema.TypeMap,
-		Optional:     true,
-		Computed:     true,
-		ForceNew:     true,
-		ValidateFunc: validateAzureRMTags,
-	}
-}
-
 func tagsForDataSourceSchema() *schema.Schema {
 	return &schema.Schema{
 		Type:     schema.TypeMap,
@@ -102,16 +92,4 @@ func filterTags(tagsMap map[string]*string, tagNames ...string) map[string]*stri
 	}
 
 	return tagsRet
-}
-
-func flattenAndSetTags(d *schema.ResourceData, tagMap map[string]*string) {
-
-	// If tagsMap is nil, len(tagsMap) will be 0.
-	output := make(map[string]interface{}, len(tagMap))
-
-	for i, v := range tagMap {
-		output[i] = *v
-	}
-
-	d.Set("tags", output)
 }

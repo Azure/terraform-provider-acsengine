@@ -12,7 +12,7 @@ type AzureCLIProfile struct {
 	cli.Profile
 }
 
-func (a AzureCLIProfile) FindDefaultSubscriptionId() (string, error) {
+func (a AzureCLIProfile) FindDefaultSubscriptionID() (string, error) {
 	for _, subscription := range a.Subscriptions {
 		if subscription.IsDefault {
 			return subscription.ID, nil
@@ -22,12 +22,12 @@ func (a AzureCLIProfile) FindDefaultSubscriptionId() (string, error) {
 	return "", fmt.Errorf("No Subscription was Marked as Default in the Azure Profile.")
 }
 
-func (a AzureCLIProfile) FindSubscription(subscriptionId string) (*cli.Subscription, error) {
+func (a AzureCLIProfile) FindSubscription(subscriptionID string) (*cli.Subscription, error) {
 	for _, subscription := range a.Subscriptions {
-		if strings.EqualFold(subscription.ID, subscriptionId) {
+		if strings.EqualFold(subscription.ID, subscriptionID) {
 			return &subscription, nil
 		}
 	}
 
-	return nil, fmt.Errorf("Subscription %q was not found in your Azure CLI credentials. Please verify it exists in `az account list`.", subscriptionId)
+	return nil, fmt.Errorf("Subscription %q was not found in your Azure CLI credentials. Please verify it exists in `az account list`.", subscriptionID)
 }

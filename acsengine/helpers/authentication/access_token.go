@@ -16,7 +16,7 @@ type AccessToken struct {
 	IsCloudShell bool
 }
 
-func findValidAccessTokenForTenant(tokens []cli.Token, tenantId string) (*AccessToken, error) {
+func findValidAccessTokenForTenant(tokens []cli.Token, tenantID string) (*AccessToken, error) {
 	for _, accessToken := range tokens {
 		token, err := accessToken.ToADALToken()
 		if err != nil {
@@ -38,7 +38,7 @@ func findValidAccessTokenForTenant(tokens []cli.Token, tenantId string) (*Access
 			continue
 		}
 
-		if !strings.HasSuffix(accessToken.Authority, tenantId) {
+		if !strings.HasSuffix(accessToken.Authority, tenantID) {
 			log.Printf("[DEBUG] Resource %q isn't for the correct Tenant", accessToken.Resource)
 			continue
 		}
@@ -51,5 +51,5 @@ func findValidAccessTokenForTenant(tokens []cli.Token, tenantId string) (*Access
 		return &validAccessToken, nil
 	}
 
-	return nil, fmt.Errorf("No Access Token was found for the Tenant ID %q", tenantId)
+	return nil, fmt.Errorf("No Access Token was found for the Tenant ID %q", tenantID)
 }

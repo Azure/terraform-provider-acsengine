@@ -65,16 +65,6 @@ func resourceGroupNameSchema() *schema.Schema {
 	}
 }
 
-func resourceGroupNameDiffSuppressSchema() *schema.Schema {
-	return &schema.Schema{
-		Type:             schema.TypeString,
-		Required:         true,
-		ForceNew:         true,
-		DiffSuppressFunc: resourceAzurermResourceGroupNameDiffSuppress,
-		ValidateFunc:     validateArmResourceGroupName,
-	}
-}
-
 func resourceGroupNameForDataSourceSchema() *schema.Schema {
 	return &schema.Schema{
 		Type:     schema.TypeString,
