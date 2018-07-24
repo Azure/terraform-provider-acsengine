@@ -131,7 +131,7 @@ func dataSourceAcsEngineKubernetesCluster() *schema.Resource {
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"server": { // I think this is what was meant by 'host'
+						"host": { // I think this is what was meant by 'host'
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -144,7 +144,7 @@ func dataSourceAcsEngineKubernetesCluster() *schema.Resource {
 							Computed:  true,
 							Sensitive: true,
 						},
-						"client_cert": {
+						"client_certificate": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -153,7 +153,7 @@ func dataSourceAcsEngineKubernetesCluster() *schema.Resource {
 							Computed:  true,
 							Sensitive: true,
 						},
-						"cluster_ca_cert": {
+						"cluster_ca_certificate": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -234,7 +234,7 @@ func dataSourceACSEngineK8sClusterRead(d *schema.ResourceData, m interface{}) er
 		return fmt.Errorf("Error setting 'linux_profile': %+v", err)
 	}
 
-	servicePrincipal, err := flattenServicePrincipal(*cluster.Properties.ServicePrincipalProfile)
+	servicePrincipal, err := flattenDataSourceServicePrincipal(*cluster.Properties.ServicePrincipalProfile)
 	if err != nil {
 		return err
 	}

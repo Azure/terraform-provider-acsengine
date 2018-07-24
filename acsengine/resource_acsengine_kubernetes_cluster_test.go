@@ -466,6 +466,52 @@ func TestACSEngineK8sCluster_storageAccountName(t *testing.T) {
 	}
 }
 
+func TestACSEngineK8sCluster_initializeContainerService(t *testing.T) {
+	d := mockClusterResourceData()
+
+	cluster, err := initializeContainerService(d)
+	if err != nil {
+		t.Fatalf("initializeContainerService failed: %+v", err)
+	}
+
+	if cluster.Name != "testcluster" {
+		t.Fatalf("cluster name was not set correctly: was %s but should be testcluster", cluster.Name)
+	}
+	version := cluster.Properties.OrchestratorProfile.OrchestratorVersion
+	if version != "1.10.0" {
+		t.Fatalf("cluster Kubernetes version was not set correctly: was '%s' but it should be '1.10.0'", version)
+	}
+	dnsPrefix := cluster.Properties.MasterProfile.DNSPrefix
+	if dnsPrefix != "masterDNSPrefix" {
+		t.Fatalf("master DNS prefix was not set correctly: was %s but it should be 'masterDNSPrefix'", dnsPrefix)
+	}
+	if cluster.Properties.AgentPoolProfiles[0].Count != 1 {
+		t.Fatalf("agent pool profile is not set correctly")
+	}
+}
+
+func TestACSEngineK8sCluster_loadContainerService(t *testing.T) {
+	// d := mockClusterResourceData()
+
+	// cluster, err := loadContainerService(d, true, false)
+	// if err != nil {
+	// 	t.Fatalf("loadContainerService failed: %+v", err)
+	// }
+
+	// if cluster == nil {
+	// 	t.Fatalf("cluster is not set")
+	// }
+	// if cluster.Name != "testcluster" {
+	// 	t.Fatalf("cluster name was not set correctly: was %s but should be testcluster", cluster.Name)
+	// }
+	// if cluster.Properties.AgentPoolProfiles[0].OSType != api.Linux {
+	// 	t.Fatalf("cluster OS type was not set correctly")
+	// }
+	// if cluster.Properties.CertificateProfile == nil {
+	// 	t.Fatalf("cluster certificate profile was not set correctly")
+	// }
+}
+
 /* ACCEPTANCE TESTS */
 
 // made it an acceptance test more because of the time it takes
@@ -1956,6 +2002,45 @@ func fakeFlattenAgentPoolProfiles(name string, count int, vmSize string, osDiskS
 	}
 
 	return agentPoolValues
+}
+
+func mockClusterResourceData() *schema.ResourceData {
+	r := resourceArmAcsEngineKubernetesCluster()
+	d := r.TestResourceData()
+
+	d.Set("name", "testcluster")
+	d.Set("location", "southcentralus")
+	d.Set("resource_group", "testrg")
+	d.Set("kubernetes_version", "1.10.0")
+
+	adminUsername := "azureuser"
+	linuxProfiles := fakeFlattenLinuxProfile(adminUsername)
+	d.Set("linux_profile", &linuxProfiles)
+
+	servicePrincipals := fakeFlattenServicePrincipal()
+	d.Set("service_principal", servicePrincipals)
+
+	dnsPrefix := "masterDNSPrefix"
+	vmSize := "Standard_D2_v2"
+	masterProfiles := fakeFlattenMasterProfile(1, dnsPrefix, vmSize)
+	d.Set("master_profile", &masterProfiles)
+
+	agentPool1Name := "agentpool1"
+	agentPool1Count := 1
+	agentPool2Name := "agentpool2"
+	agentPool2Count := 2
+	agentPool2osDiskSize := 30
+
+	agentPoolProfiles := []interface{}{}
+	agentPoolProfile0 := fakeFlattenAgentPoolProfiles(agentPool1Name, agentPool1Count, "Standard_D2_v2", 0, false)
+	agentPoolProfiles = append(agentPoolProfiles, agentPoolProfile0)
+	agentPoolProfile1 := fakeFlattenAgentPoolProfiles(agentPool2Name, agentPool2Count, "Standard_D2_v2", agentPool2osDiskSize, true)
+	agentPoolProfiles = append(agentPoolProfiles, agentPoolProfile1)
+	d.Set("agent_pool_profiles", &agentPoolProfiles)
+
+	d.Set("tags", map[string]interface{}{})
+
+	return d
 }
 
 // look into Kubernetes API that Juan-Lee mentioned instead

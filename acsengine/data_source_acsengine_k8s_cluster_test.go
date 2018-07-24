@@ -10,7 +10,7 @@ import (
 )
 
 func TestAccDataSourceACSEngineK8sCluster_basic(t *testing.T) {
-	dataSourceName := "data.azurerm_kubernetes_cluster.test"
+	dataSourceName := "data.acsengine_kubernetes_cluster.test"
 	ri := acctest.RandInt()
 	clientID := os.Getenv("ARM_CLIENT_ID")
 	clientSecret := os.Getenv("ARM_CLIENT_SECRET")
@@ -32,7 +32,7 @@ func TestAccDataSourceACSEngineK8sCluster_basic(t *testing.T) {
 					resource.TestCheckResourceAttrSet(dataSourceName, "kube_config.0.cluster_ca_certificate"),
 					resource.TestCheckResourceAttrSet(dataSourceName, "kube_config.0.host"),
 					resource.TestCheckResourceAttrSet(dataSourceName, "kube_config.0.username"),
-					resource.TestCheckResourceAttrSet(dataSourceName, "kube_config.0.password"),
+					// resource.TestCheckResourceAttrSet(dataSourceName, "kube_config.0.password"),
 				),
 			},
 		},
