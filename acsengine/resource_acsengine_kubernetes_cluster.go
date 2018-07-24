@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"log"
 	"math/rand"
-	"os"
 	"path"
 	"sort"
 	"strconv"
@@ -236,7 +235,11 @@ func resourceArmAcsEngineKubernetesCluster() *schema.Resource {
 			"tags": tagsSchema(),
 
 			// might need
-			// "apimodel"
+			// "apimodel": {
+			// 	Type:      schema.TypeString,
+			// 	Computed:  true,
+			// 	Sensitive: true,
+			// },
 			// "template"
 			// "parameters"
 		},
@@ -317,6 +320,7 @@ func resourceAcsEngineK8sClusterRead(d *schema.ResourceData, m interface{}) erro
 	}
 
 	cluster, err := apiloader.LoadContainerService([]byte(apimodel), apiVersion, true, false, nil)
+	// cluster, err := loadContainerService(d, true, false) // this doesn't load the full apimodel
 	if err != nil {
 		return fmt.Errorf("error parsing API model")
 	}
@@ -488,17 +492,83 @@ func resourceAcsEngineK8sClusterUpdate(d *schema.ResourceData, m interface{}) er
 
 // Generates apimodel.json and other templates, saves these files along with certificates
 func generateACSEngineTemplate(d *schema.ResourceData, m interface{}, write bool) (template string, parameters string, err error) {
+	// create container service struct
+	cluster, err := initializeContainerService(d)
+	if err != nil {
+		return "", "", err
+	}
+
+	// initialize values
+	locale, err := i18n.LoadTranslations()
+	if err != nil {
+		return "", "", fmt.Errorf(fmt.Sprintf("error loading translation files: %s", err.Error()))
+	}
+	ctx := acsengine.Context{
+		Translator: &i18n.Translator{
+			Locale: locale,
+		},
+	}
+
+	// generate template
+	templateGenerator, err := acsengine.InitializeTemplateGenerator(ctx, false)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to initialize template generator: %s", err.Error())
+	}
+	template, parameters, certsGenerated, err := templateGenerator.GenerateTemplate(cluster, acsengine.DefaultGeneratorCode, false, acsEngineVersion)
+	if err != nil {
+		return "", "", fmt.Errorf("error generating template: %s", err.Error())
+	}
+
+	// format templates
+	if template, err = transform.PrettyPrintArmTemplate(template); err != nil {
+		return "", "", fmt.Errorf("error pretty printing template: %s", err.Error())
+	}
+	if parameters, err = transform.BuildAzureParametersFile(parameters); err != nil {
+		return "", "", fmt.Errorf("error pretty printing template parameters: %s", err.Error())
+	}
+
+	// save templates
+	if write { // this should be default but allow for more testing
+		writer := &acsengine.ArtifactWriter{
+			Translator: &i18n.Translator{
+				Locale: locale,
+			},
+		}
+		deploymentDirectory := path.Join("_output", cluster.Properties.MasterProfile.DNSPrefix)
+		if err = writer.WriteTLSArtifacts(cluster, apiVersion, template, parameters, deploymentDirectory, certsGenerated, false); err != nil {
+			return "", "", fmt.Errorf("error writing artifacts: %s", err.Error())
+		}
+		// new: set "apimodel" to string of file
+		// if err = d.Set("apimodel"); err != nil {}
+		// save to blob: might need to delete this :(
+		if m != nil { // for testing purposes again
+			err = createBlob(d, m, deploymentDirectory, "apimodel.json") // seeing if new implementation works
+			if err != nil {
+				return "", "", fmt.Errorf("Uploading 'apimodel.json' blob failed: %+v", err)
+			}
+			err = createBlob(d, m, deploymentDirectory, "azuredeploy.json")
+			if err != nil {
+				return "", "", fmt.Errorf("Uploading 'azuredeploy.json' blob failed: %+v", err)
+			}
+		}
+	}
+
+	return template, parameters, nil
+}
+
+// Initializes the acs-engine container service struct using Terraform input
+func initializeContainerService(d *schema.ResourceData) (*api.ContainerService, error) {
 	var name string
 	if v, ok := d.GetOk("name"); ok {
 		name = v.(string)
 	} else {
-		return "", "", fmt.Errorf("cluster 'name' not found")
+		return &api.ContainerService{}, fmt.Errorf("cluster 'name' not found")
 	}
-	var location string // from location.go
+	var location string
 	if v, ok := d.GetOk("location"); ok {
-		location = azureRMNormalizeLocation(v.(string))
+		location = azureRMNormalizeLocation(v.(string)) // from location.go
 	} else {
-		return "", "", fmt.Errorf("cluster 'location' not found")
+		return &api.ContainerService{}, fmt.Errorf("cluster 'location' not found")
 	}
 	var kubernetesVersion string
 	if v, ok := d.GetOk("kubernetes_version"); ok {
@@ -509,19 +579,19 @@ func generateACSEngineTemplate(d *schema.ResourceData, m interface{}, write bool
 
 	linuxProfile, err := expandLinuxProfile(d)
 	if err != nil {
-		return "", "", err
+		return &api.ContainerService{}, err
 	}
 	servicePrincipal, err := expandServicePrincipal(d)
 	if err != nil {
-		return "", "", err
+		return &api.ContainerService{}, err
 	}
 	masterProfile, err := expandMasterProfile(d)
 	if err != nil {
-		return "", "", err
+		return &api.ContainerService{}, err
 	}
 	agentProfiles, err := expandAgentPoolProfiles(d)
 	if err != nil {
-		return "", "", err
+		return &api.ContainerService{}, err
 	}
 
 	// do I need to add a Windows profile is osType = Windows?
@@ -535,7 +605,7 @@ func generateACSEngineTemplate(d *schema.ResourceData, m interface{}, write bool
 		tags = map[string]interface{}{}
 	}
 
-	cluster := api.ContainerService{
+	cluster := &api.ContainerService{
 		Name:     name,
 		Location: location,
 		Properties: &api.Properties{
@@ -551,58 +621,56 @@ func generateACSEngineTemplate(d *schema.ResourceData, m interface{}, write bool
 		Tags: expandClusterTags(tags),
 	}
 
-	locale, err := i18n.LoadTranslations()
+	// serialize than deserialize to get full cluster?
+
+	return cluster, nil
+}
+
+func loadContainerService(d *schema.ResourceData, validate bool, isUpdate bool) (*api.ContainerService, error) {
+	// apiloader := &api.Apiloader{
+	// 	Translator: &i18n.Translator{
+	// 		Locale: locale,
+	// 	},
+	// }
+
+	// create container service struct
+	cluster, err := initializeContainerService(d)
 	if err != nil {
-		return "", "", fmt.Errorf(fmt.Sprintf("error loading translation files: %s", err.Error()))
+		return nil, err
 	}
 
+	// initialize values
+	locale, err := i18n.LoadTranslations()
+	if err != nil {
+		return nil, fmt.Errorf(fmt.Sprintf("error loading translation files: %s", err.Error()))
+	}
 	ctx := acsengine.Context{
 		Translator: &i18n.Translator{
 			Locale: locale,
 		},
 	}
 
+	// generate template
 	templateGenerator, err := acsengine.InitializeTemplateGenerator(ctx, false)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to initialize template generator: %s", err.Error())
+		return nil, fmt.Errorf("failed to initialize template generator: %s", err.Error())
 	}
-
-	template, parameters, certsGenerated, err := templateGenerator.GenerateTemplate(&cluster, acsengine.DefaultGeneratorCode, false, acsEngineVersion)
+	_, _, _, err = templateGenerator.GenerateTemplate(cluster, acsengine.DefaultGeneratorCode, isUpdate, acsEngineVersion)
 	if err != nil {
-		return "", "", fmt.Errorf("error generating template: %s", err.Error())
+		return nil, fmt.Errorf("error generating template: %s", err.Error())
 	}
 
-	if template, err = transform.PrettyPrintArmTemplate(template); err != nil {
-		return "", "", fmt.Errorf("error pretty printing template: %s", err.Error())
-	}
-	if parameters, err = transform.BuildAzureParametersFile(parameters); err != nil {
-		return "", "", fmt.Errorf("error pretty printing template parameters: %s", err.Error())
-	}
+	// apimodel, err := apiloader.SerializeContainerService(cluster, apiVersion)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// fmt.Println(string(apimodel))
 
-	if write { // this should be default but allow for more testing
-		writer := &acsengine.ArtifactWriter{
-			Translator: &i18n.Translator{
-				Locale: locale,
-			},
-		}
-		// deploymentDirectory := "_output/k8scluster"
-		deploymentDirectory := path.Join("_output", cluster.Properties.MasterProfile.DNSPrefix)
-		if err = writer.WriteTLSArtifacts(&cluster, apiVersion, template, parameters, deploymentDirectory, certsGenerated, false); err != nil {
-			return "", "", fmt.Errorf("error writing artifacts: %s", err.Error())
-		}
-		if m != nil { // for testing purposes again
-			err = createBlob(d, m, deploymentDirectory, "apimodel.json") // seeing if new implementation works
-			if err != nil {
-				return "", "", fmt.Errorf("Uploading 'apimodel.json' blob failed: %+v", err)
-			}
-			err = createBlob(d, m, deploymentDirectory, "azuredeploy.json")
-			if err != nil {
-				return "", "", fmt.Errorf("Uploading 'azuredeploy.json' blob failed: %+v", err)
-			}
-		}
-	}
+	// // deserialize
+	// cluster, err = apiloader.LoadContainerService(apimodel, acsEngineVersion, validate, isUpdate, nil)
+	fmt.Printf("%+v\n", cluster)
 
-	return template, parameters, nil
+	return cluster, nil
 }
 
 // Deploys the templates generated by ACS Engine for creating a cluster
@@ -764,7 +832,6 @@ func initializeScaleClient(d *schema.ResourceData, m interface{}, agentIndex int
 	if v, ok := d.GetOk("resource_group"); ok {
 		sc.ResourceGroupName = v.(string)
 	}
-	// sc.DeploymentDirectory = "_output/k8scluster"
 	if v, ok := d.GetOk("master_profile.0.dns_name_prefix"); ok {
 		sc.DeploymentDirectory = path.Join("_output", v.(string))
 	}
@@ -829,15 +896,17 @@ func initializeScaleClient(d *schema.ResourceData, m interface{}, agentIndex int
 			return sc, err
 		}
 		sc.K8sCluster, err = apiloader.LoadContainerService([]byte(apimodel), apiVersion, true, true, nil)
+		// sc.K8sCluster, err = initializeContainerService(d)
 		if err != nil {
 			return sc, fmt.Errorf("error parsing the api model: %s", err.Error())
 		}
 	} else {
-		sc.APIModelPath = path.Join(sc.DeploymentDirectory, "apimodel.json")
-		if _, err = os.Stat(sc.APIModelPath); os.IsNotExist(err) {
-			return sc, fmt.Errorf("specified api model does not exist (%s)", sc.APIModelPath)
-		}
-		sc.K8sCluster, _, err = apiloader.LoadContainerServiceFromFile(sc.APIModelPath, true, true, nil)
+		// sc.APIModelPath = path.Join(sc.DeploymentDirectory, "apimodel.json")
+		// if _, err = os.Stat(sc.APIModelPath); os.IsNotExist(err) {
+		// 	return sc, fmt.Errorf("specified api model does not exist (%s)", sc.APIModelPath)
+		// }
+		// sc.K8sCluster, _, err = apiloader.LoadContainerServiceFromFile(sc.APIModelPath, true, true, nil)
+		sc.K8sCluster, err = initializeContainerService(d)
 		if err != nil {
 			return sc, fmt.Errorf("error parsing the api model: %s", err.Error())
 		}
@@ -1011,6 +1080,7 @@ func saveScaledApimodel(sc *client.ScaleClient, d *schema.ResourceData, m interf
 		},
 	}
 	k8sCluster, err := apiloader.LoadContainerService([]byte(apimodel), apiVersion, false, true, nil)
+	// sc.K8sCluster, err = initializeContainerService(d)
 	if err != nil {
 		return err
 	}
@@ -1092,7 +1162,6 @@ func initializeUpgradeClient(d *schema.ResourceData, m interface{}, upgradeVersi
 	if v, ok := d.GetOk("resource_group"); ok {
 		uc.ResourceGroupName = v.(string)
 	}
-	// uc.DeploymentDirectory = "_output/k8scluster"
 	if v, ok := d.GetOk("master_profile.0.dns_name_prefix"); ok {
 		uc.DeploymentDirectory = path.Join("_output", v.(string))
 	}
@@ -1145,15 +1214,17 @@ func initializeUpgradeClient(d *schema.ResourceData, m interface{}, upgradeVersi
 			return uc, err
 		}
 		uc.K8sCluster, err = apiloader.LoadContainerService([]byte(apimodel), apiVersion, true, true, nil)
+		// uc.K8sCluster, err = initializeContainerService(d)
 		if err != nil {
 			return uc, fmt.Errorf("error parsing the api model: %s", err.Error())
 		}
 	} else {
-		uc.APIModelPath = path.Join(uc.DeploymentDirectory, "apimodel.json")
-		if _, err = os.Stat(uc.APIModelPath); os.IsNotExist(err) {
-			return uc, fmt.Errorf("specified api model does not exist (%s)", uc.APIModelPath)
-		}
-		uc.K8sCluster, uc.APIVersion, err = apiloader.LoadContainerServiceFromFile(uc.APIModelPath, true, true, nil) // look into these parameters
+		// uc.APIModelPath = path.Join(uc.DeploymentDirectory, "apimodel.json")
+		// if _, err = os.Stat(uc.APIModelPath); os.IsNotExist(err) {
+		// 	return uc, fmt.Errorf("specified api model does not exist (%s)", uc.APIModelPath)
+		// }
+		// uc.K8sCluster, uc.APIVersion, err = apiloader.LoadContainerServiceFromFile(uc.APIModelPath, true, true, nil) // look into these parameters
+		uc.K8sCluster, err = initializeContainerService(d)
 		if err != nil {
 			return uc, fmt.Errorf("error parsing the api model: %s", err.Error())
 		}
@@ -1204,6 +1275,7 @@ func updateTags(d *schema.ResourceData, m interface{}) error {
 			Locale: locale,
 		},
 	}
+	// cluster, err := initializeContainerService(d)
 	cluster, err := apiloader.LoadContainerService([]byte(apimodel), apiVersion, true, false, nil)
 	if err != nil {
 		return fmt.Errorf("error parsing API model")
@@ -1218,7 +1290,7 @@ func updateTags(d *schema.ResourceData, m interface{}) error {
 			Locale: locale,
 		},
 	}
-	deploymentDirectory := "_output/k8scluster"
+	deploymentDirectory := path.Join("_output", cluster.Properties.MasterProfile.DNSPrefix)
 	templateGenerator, err := acsengine.InitializeTemplateGenerator(ctx, false)
 	if err != nil {
 		return fmt.Errorf("failed to initialize template generator: %s", err.Error())
