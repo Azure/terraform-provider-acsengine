@@ -490,7 +490,7 @@ func TestACSEngineK8sCluster_initializeContainerService(t *testing.T) {
 	}
 }
 
-func TestACSEngineK8sCluster_loadContainerService(t *testing.T) {
+func TestACSEngineK8sCluster_loadContainerServiceFromApimodel(t *testing.T) {
 	// d := mockClusterResourceData()
 
 	// cluster, err := loadContainerService(d, true, false)
@@ -510,6 +510,10 @@ func TestACSEngineK8sCluster_loadContainerService(t *testing.T) {
 	// if cluster.Properties.CertificateProfile == nil {
 	// 	t.Fatalf("cluster certificate profile was not set correctly")
 	// }
+}
+
+func TestACSEngineK8sCluster_loadApimodelFromContainerService(t *testing.T) {
+	// d := mockClusterResourceData()
 }
 
 /* ACCEPTANCE TESTS */
@@ -561,8 +565,7 @@ func TestAccACSEngineK8sCluster_generateTemplateBasic(t *testing.T) {
 		agentPoolProfiles = append(agentPoolProfiles, agentPoolProfile1)
 		d.Set("agent_pool_profiles", &agentPoolProfiles)
 
-		var m interface{}
-		template, parameters, err := generateACSEngineTemplate(d, m, false) // don't write files
+		template, parameters, err := generateACSEngineTemplate(d, false) // don't write files
 		if err != nil {
 			t.Fatalf("Template generation failed: %v", err)
 		}
@@ -650,8 +653,7 @@ func TestAccACSEngineK8sCluster_generateTemplateCustomized(t *testing.T) {
 		agentPoolProfiles = append(agentPoolProfiles, agentPoolProfile1)
 		d.Set("agent_pool_profiles", &agentPoolProfiles)
 
-		var m interface{}                                                   // nil
-		template, parameters, err := generateACSEngineTemplate(d, m, false) // don't write files
+		template, parameters, err := generateACSEngineTemplate(d, false) // don't write files
 		if err != nil {
 			t.Fatalf("Template generation failed: %v", err)
 		}
@@ -676,11 +678,11 @@ func TestAccACSEngineK8sCluster_generateTemplateCustomized(t *testing.T) {
 			t.Fatalf("Expected the Azure RM Kubernetes cluster to have field '%s'", agentPoolName+"Count")
 		}
 
-		templateJSON := make(map[string]interface{})
-		err = json.Unmarshal([]byte(template), &templateJSON)
-		if err != nil {
-			t.Fatalf("Unmarshaling template failed: %v", err)
-		}
+		// templateJSON := make(map[string]interface{})
+		// err = json.Unmarshal([]byte(template), &templateJSON)
+		// if err != nil {
+		// 	t.Fatalf("Unmarshaling template failed: %v", err)
+		// }
 		// err = removeDataDiskCreateOption(templateJSON)
 		// if err != nil {
 		// 	t.Fatalf("removeDataDiskCreateOption failed: %v", err)
@@ -721,8 +723,8 @@ func TestAccACSEngineK8sCluster_initializeScaleClient(t *testing.T) {
 	d.Set("agent_pool_profiles", &agentPoolProfiles)
 
 	// create and delete file for testing
-	apimodelPath := "_output/k8scluster"
-	_, _, err := generateACSEngineTemplate(d, nil, true)
+	apimodelPath := "_output/k8scluster" // where is this actually being used other than deletion?
+	_, _, err := generateACSEngineTemplate(d, true)
 	if err != nil {
 		t.Fatalf("GenerateACSEngineTemplate failed: %+v", err)
 	}
@@ -785,7 +787,7 @@ func TestAccACSEngineK8sCluster_initializeUpgradeClient(t *testing.T) {
 
 	// create and delete file for testing
 	apimodelPath := "_output/k8scluster"
-	_, _, err := generateACSEngineTemplate(d, nil, true)
+	_, _, err := generateACSEngineTemplate(d, true)
 	if err != nil {
 		t.Fatalf("GenerateACSEngineTemplate failed: %+v", err)
 	}

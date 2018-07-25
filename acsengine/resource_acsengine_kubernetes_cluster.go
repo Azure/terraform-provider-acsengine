@@ -2,11 +2,13 @@ package acsengine
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"math/rand"
+	"os"
 	"path"
 	"sort"
 	"strconv"
@@ -160,7 +162,7 @@ func resourceArmAcsEngineKubernetesCluster() *schema.Resource {
 							Type:         schema.TypeInt,
 							Optional:     true,
 							Default:      1,
-							ValidateFunc: validation.IntBetween(1, 100),
+							ValidateFunc: validateAgentPoolProfileCount,
 						},
 						"vm_size": {
 							Type:             schema.TypeString,
@@ -234,14 +236,11 @@ func resourceArmAcsEngineKubernetesCluster() *schema.Resource {
 			// from tags.go: map, optional, computed, validated to make sure not too many, too long
 			"tags": tagsSchema(),
 
-			// might need
-			// "apimodel": {
-			// 	Type:      schema.TypeString,
-			// 	Computed:  true,
-			// 	Sensitive: true,
-			// },
-			// "template"
-			// "parameters"
+			"api_model": {
+				Type:      schema.TypeString,
+				Computed:  true,
+				Sensitive: true,
+			},
 		},
 	}
 }
@@ -253,8 +252,6 @@ const (
 
 /* CRUD operations for resource */
 
-// how can I make sure that when VM is created, deleted, and created again the disk is reused
-// I need to make sure this still works even when optional values are not given
 func resourceAcsEngineK8sClusterCreate(d *schema.ResourceData, m interface{}) error {
 	/* 1. Create resource group */
 	err := createClusterResourceGroup(d, m)
@@ -275,7 +272,7 @@ func resourceAcsEngineK8sClusterCreate(d *schema.ResourceData, m interface{}) er
 	}
 
 	/* 4. Generate template w/ acs-engine */
-	template, parameters, err := generateACSEngineTemplate(d, m, true)
+	template, parameters, err := generateACSEngineTemplate(d, true)
 	if err != nil {
 		return err
 	}
@@ -292,7 +289,6 @@ func resourceAcsEngineK8sClusterCreate(d *schema.ResourceData, m interface{}) er
 }
 
 func resourceAcsEngineK8sClusterRead(d *schema.ResourceData, m interface{}) error {
-	// make sure cluster exists first?
 	id, err := parseAzureResourceID(d.Id()) // from resourceid.go
 	if err != nil {
 		d.SetId("")
@@ -304,23 +300,8 @@ func resourceAcsEngineK8sClusterRead(d *schema.ResourceData, m interface{}) erro
 		return err
 	}
 
-	apimodel, err := getBlob(d, m, "apimodel.json")
-	if err != nil {
-		return err
-	}
-
-	locale, err := i18n.LoadTranslations()
-	if err != nil {
-		return err
-	}
-	apiloader := &api.Apiloader{
-		Translator: &i18n.Translator{
-			Locale: locale,
-		},
-	}
-
-	cluster, err := apiloader.LoadContainerService([]byte(apimodel), apiVersion, true, false, nil)
-	// cluster, err := loadContainerService(d, true, false) // this doesn't load the full apimodel
+	// load from apimodel or configuration? apimodel is a better depiction of state of cluster
+	cluster, err := loadContainerServiceFromApimodel(d, true, false)
 	if err != nil {
 		return fmt.Errorf("error parsing API model")
 	}
@@ -386,9 +367,11 @@ func resourceAcsEngineK8sClusterRead(d *schema.ResourceData, m interface{}) erro
 	if err = d.Set("kube_config_raw", kubeConfigRaw); err != nil {
 		return fmt.Errorf("Error setting `kube_config_raw`: %+v", err)
 	}
-	if err := d.Set("kube_config", kubeConfig); err != nil {
+	if err = d.Set("kube_config", kubeConfig); err != nil {
 		return fmt.Errorf("Error setting `kube_config`: %+v", err)
 	}
+
+	// set apimodel here? doesn't really make sense if I'm using that to set everything
 
 	fmt.Println("finished reading")
 
@@ -431,9 +414,9 @@ func resourceAcsEngineK8sClusterDelete(d *schema.ResourceData, m interface{}) er
 func resourceAcsEngineK8sClusterUpdate(d *schema.ResourceData, m interface{}) error {
 	// check that cluster exists? Not so sure I need this, if read is called before
 	// if the deployment exists, that says something, but how do I check more for kubernetes cluster?
-	// generate template again? do I want to make sure all templates are updated, not just apimodel.json?
 	_, err := parseAzureResourceID(d.Id()) // from resourceid.go
 	if err != nil {
+		d.SetId("")
 		return err
 	}
 
@@ -491,7 +474,7 @@ func resourceAcsEngineK8sClusterUpdate(d *schema.ResourceData, m interface{}) er
 /* 'Create' Helper Functions */
 
 // Generates apimodel.json and other templates, saves these files along with certificates
-func generateACSEngineTemplate(d *schema.ResourceData, m interface{}, write bool) (template string, parameters string, err error) {
+func generateACSEngineTemplate(d *schema.ResourceData, write bool) (template string, parameters string, err error) {
 	// create container service struct
 	cluster, err := initializeContainerService(d)
 	if err != nil {
@@ -529,27 +512,10 @@ func generateACSEngineTemplate(d *schema.ResourceData, m interface{}, write bool
 
 	// save templates
 	if write { // this should be default but allow for more testing
-		writer := &acsengine.ArtifactWriter{
-			Translator: &i18n.Translator{
-				Locale: locale,
-			},
-		}
 		deploymentDirectory := path.Join("_output", cluster.Properties.MasterProfile.DNSPrefix)
-		if err = writer.WriteTLSArtifacts(cluster, apiVersion, template, parameters, deploymentDirectory, certsGenerated, false); err != nil {
-			return "", "", fmt.Errorf("error writing artifacts: %s", err.Error())
-		}
-		// new: set "apimodel" to string of file
-		// if err = d.Set("apimodel"); err != nil {}
-		// save to blob: might need to delete this :(
-		if m != nil { // for testing purposes again
-			err = createBlob(d, m, deploymentDirectory, "apimodel.json") // seeing if new implementation works
-			if err != nil {
-				return "", "", fmt.Errorf("Uploading 'apimodel.json' blob failed: %+v", err)
-			}
-			err = createBlob(d, m, deploymentDirectory, "azuredeploy.json")
-			if err != nil {
-				return "", "", fmt.Errorf("Uploading 'azuredeploy.json' blob failed: %+v", err)
-			}
+		err = writeTemplatesAndCerts(d, cluster, template, parameters, deploymentDirectory, certsGenerated)
+		if err != nil {
+			return "", "", err
 		}
 	}
 
@@ -557,6 +523,7 @@ func generateACSEngineTemplate(d *schema.ResourceData, m interface{}, write bool
 }
 
 // Initializes the acs-engine container service struct using Terraform input
+// if update, this could set ca certificate and key
 func initializeContainerService(d *schema.ResourceData) (*api.ContainerService, error) {
 	var name string
 	if v, ok := d.GetOk("name"); ok {
@@ -621,18 +588,40 @@ func initializeContainerService(d *schema.ResourceData) (*api.ContainerService, 
 		Tags: expandClusterTags(tags),
 	}
 
-	// serialize than deserialize to get full cluster?
+	return cluster, nil
+}
+
+// Loads container service from apimodel JSON
+func loadContainerServiceFromApimodel(d *schema.ResourceData, validate bool, isUpdate bool) (*api.ContainerService, error) {
+	locale, err := i18n.LoadTranslations()
+	if err != nil {
+		return nil, err
+	}
+	apiloader := &api.Apiloader{
+		Translator: &i18n.Translator{
+			Locale: locale,
+		},
+	}
+	var apimodel []byte
+	if v, ok := d.GetOk("api_model"); ok {
+		apimodel, err = base64.StdEncoding.DecodeString(v.(string))
+		if err != nil {
+			return nil, err
+		}
+	}
+	fmt.Printf("string from apimodel bytes: %s\n", string(apimodel))
+
+	cluster, err := apiloader.LoadContainerService(apimodel, apiVersion, validate, isUpdate, nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return cluster, nil
 }
 
+// Loads container service from current configuration. I think this creates new certificates.
+// I'm not using this right now, but if I move away from storing api_model then I will need it
 func loadContainerService(d *schema.ResourceData, validate bool, isUpdate bool) (*api.ContainerService, error) {
-	// apiloader := &api.Apiloader{
-	// 	Translator: &i18n.Translator{
-	// 		Locale: locale,
-	// 	},
-	// }
-
 	// create container service struct
 	cluster, err := initializeContainerService(d)
 	if err != nil {
@@ -655,20 +644,11 @@ func loadContainerService(d *schema.ResourceData, validate bool, isUpdate bool) 
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize template generator: %s", err.Error())
 	}
-	_, _, _, err = templateGenerator.GenerateTemplate(cluster, acsengine.DefaultGeneratorCode, isUpdate, acsEngineVersion)
+	// Beware, this function sets certs and other default values if they don't already exist
+	_, _, _, err = templateGenerator.GenerateTemplate(cluster, acsengine.DefaultGeneratorCode, false, acsEngineVersion)
 	if err != nil {
 		return nil, fmt.Errorf("error generating template: %s", err.Error())
 	}
-
-	// apimodel, err := apiloader.SerializeContainerService(cluster, apiVersion)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// fmt.Println(string(apimodel))
-
-	// // deserialize
-	// cluster, err = apiloader.LoadContainerService(apimodel, acsEngineVersion, validate, isUpdate, nil)
-	fmt.Printf("%+v\n", cluster)
 
 	return cluster, nil
 }
@@ -741,11 +721,13 @@ func deployTemplate(d *schema.ResourceData, m interface{}, template string, para
 
 // Creates ScaleClient, loads ACS Engine templates, finds relevant node VM info, calls appropriate function for scaling up or down
 func scaleCluster(d *schema.ResourceData, m interface{}, agentIndex int, agentCount int) error {
+	// initialize scale client based on most recent values
 	sc, err := initializeScaleClient(d, m, agentIndex, agentCount)
 	if err != nil {
 		return err
 	}
 
+	// find all VMs in agent pool
 	var currentNodeCount, highestUsedIndex, vmNum int
 	windowsIndex := -1
 	indexes := make([]int, 0)
@@ -796,7 +778,7 @@ func scaleCluster(d *schema.ResourceData, m interface{}, agentIndex int, agentCo
 		}
 
 		if currentNodeCount > sc.DesiredAgentCount {
-			return scaleDownCluster(&sc, currentNodeCount, indexToVM, d, m)
+			return scaleDownCluster(&sc, currentNodeCount, indexToVM, d)
 		}
 	} else {
 		vmssList, err := sc.Client.ListVirtualMachineScaleSets(sc.ResourceGroupName)
@@ -823,7 +805,7 @@ func scaleCluster(d *schema.ResourceData, m interface{}, agentIndex int, agentCo
 		}
 	}
 
-	return scaleUpCluster(&sc, highestUsedIndex, currentNodeCount, windowsIndex, d, m)
+	return scaleUpCluster(&sc, highestUsedIndex, currentNodeCount, windowsIndex, d)
 }
 
 // Creates and initializes most fields in client.ScaleClient and returns it
@@ -890,23 +872,16 @@ func initializeScaleClient(d *schema.ResourceData, m interface{}, agentIndex int
 		},
 	}
 	if m != nil { // for testing purposes
-		var apimodel string
-		apimodel, err = getBlob(d, m, "apimodel.json")
-		if err != nil {
-			return sc, err
-		}
-		sc.K8sCluster, err = apiloader.LoadContainerService([]byte(apimodel), apiVersion, true, true, nil)
-		// sc.K8sCluster, err = initializeContainerService(d)
+		sc.K8sCluster, err = loadContainerServiceFromApimodel(d, true, true)
 		if err != nil {
 			return sc, fmt.Errorf("error parsing the api model: %s", err.Error())
 		}
 	} else {
-		// sc.APIModelPath = path.Join(sc.DeploymentDirectory, "apimodel.json")
-		// if _, err = os.Stat(sc.APIModelPath); os.IsNotExist(err) {
-		// 	return sc, fmt.Errorf("specified api model does not exist (%s)", sc.APIModelPath)
-		// }
-		// sc.K8sCluster, _, err = apiloader.LoadContainerServiceFromFile(sc.APIModelPath, true, true, nil)
-		sc.K8sCluster, err = initializeContainerService(d)
+		sc.APIModelPath = path.Join(sc.DeploymentDirectory, "apimodel.json")
+		if _, err = os.Stat(sc.APIModelPath); os.IsNotExist(err) {
+			return sc, fmt.Errorf("specified api model does not exist (%s)", sc.APIModelPath)
+		}
+		sc.K8sCluster, _, err = apiloader.LoadContainerServiceFromFile(sc.APIModelPath, true, true, nil)
 		if err != nil {
 			return sc, fmt.Errorf("error parsing the api model: %s", err.Error())
 		}
@@ -928,7 +903,7 @@ func initializeScaleClient(d *schema.ResourceData, m interface{}, agentIndex int
 }
 
 // Scales down a cluster by draining and deleting the nodes given as input
-func scaleDownCluster(sc *client.ScaleClient, currentNodeCount int, indexToVM map[int]string, d *schema.ResourceData, m interface{}) error {
+func scaleDownCluster(sc *client.ScaleClient, currentNodeCount int, indexToVM map[int]string, d *schema.ResourceData) error {
 	if sc.MasterFQDN == "" {
 		return fmt.Errorf("Master FQDN is required to scale down a Kubernetes cluster's agent pool")
 	}
@@ -965,11 +940,11 @@ func scaleDownCluster(sc *client.ScaleClient, currentNodeCount int, indexToVM ma
 		return fmt.Errorf(errorMessage)
 	}
 
-	return saveScaledApimodel(sc, d, m)
+	return saveScaledApimodel(sc, d)
 }
 
 // Scales up clusters by creating new nodes within an agent pool
-func scaleUpCluster(sc *client.ScaleClient, highestUsedIndex int, currentNodeCount int, windowsIndex int, d *schema.ResourceData, m interface{}) error {
+func scaleUpCluster(sc *client.ScaleClient, highestUsedIndex int, currentNodeCount int, windowsIndex int, d *schema.ResourceData) error {
 	ctx := acsengine.Context{
 		Translator: &i18n.Translator{
 			Locale: sc.Locale,
@@ -987,13 +962,15 @@ func scaleUpCluster(sc *client.ScaleClient, highestUsedIndex int, currentNodeCou
 		return fmt.Errorf("error generating template %s: %s", sc.APIModelPath, err.Error())
 	}
 
+	// format templates
 	if template, err = transform.PrettyPrintArmTemplate(template); err != nil {
 		return fmt.Errorf("error pretty printing template: %s", err.Error())
 	}
+	// don't format parameters! It messes things up
 
+	// convert JSON to maps
 	templateJSON := make(map[string]interface{})
 	parametersJSON := make(map[string]interface{})
-
 	err = json.Unmarshal([]byte(template), &templateJSON)
 	if err != nil {
 		return err
@@ -1035,10 +1012,10 @@ func scaleUpCluster(sc *client.ScaleClient, highestUsedIndex int, currentNodeCou
 		return err
 	}
 
-	return saveScaledApimodel(sc, d, m)
+	return saveScaledApimodel(sc, d)
 }
 
-// this needs to be a change in ACS Engine repo instead. Also I know this is ugly.
+// I can delete this when I move over to updated ACS Engine. Also I know this is ugly.
 // Meant to get around error about master node data disk create option being changed
 func removeDataDiskCreateOption(templateJSON map[string]interface{}) error {
 	// ["resources"][some index]["properties"]["storageProfile"]["dataDisks"]
@@ -1069,25 +1046,15 @@ func removeDataDiskCreateOption(templateJSON map[string]interface{}) error {
 	return nil
 }
 
-func saveScaledApimodel(sc *client.ScaleClient, d *schema.ResourceData, m interface{}) error {
-	apimodel, err := getBlob(d, m, "apimodel.json")
+func saveScaledApimodel(sc *client.ScaleClient, d *schema.ResourceData) error {
+	var err error
+	sc.K8sCluster, err = loadContainerServiceFromApimodel(d, false, true)
 	if err != nil {
 		return err
 	}
-	apiloader := &api.Apiloader{
-		Translator: &i18n.Translator{
-			Locale: sc.Locale,
-		},
-	}
-	k8sCluster, err := apiloader.LoadContainerService([]byte(apimodel), apiVersion, false, true, nil)
-	// sc.K8sCluster, err = initializeContainerService(d)
-	if err != nil {
-		return err
-	}
-	sc.K8sCluster = k8sCluster
 	sc.K8sCluster.Properties.AgentPoolProfiles[sc.AgentPoolIndex].Count = sc.DesiredAgentCount
 
-	return saveTemplates(sc.K8sCluster, sc.DeploymentDirectory, d, m)
+	return saveTemplates(sc.K8sCluster, sc.DeploymentDirectory, d)
 }
 
 func addValue(params map[string]interface{}, k string, v interface{}) {
@@ -1122,13 +1089,10 @@ func upgradeCluster(d *schema.ResourceData, m interface{}, upgradeVersion string
 
 	uc.AgentPoolsToUpgrade = []string{}
 	for _, agentPool := range uc.K8sCluster.Properties.AgentPoolProfiles {
-		if agentPool.Name == "" {
-			fmt.Println("uc.AgentPoolsToUpgrade has nameless node being appended from AgentPoolProfiles")
-		}
 		uc.AgentPoolsToUpgrade = append(uc.AgentPoolsToUpgrade, agentPool.Name)
 	}
 
-	upgradeCluster := kubernetesupgrade.UpgradeCluster{ // is it a problem that this assumes scale sets as opposed to availability sets?
+	upgradeCluster := kubernetesupgrade.UpgradeCluster{
 		Translator: &i18n.Translator{
 			Locale: uc.Locale,
 		},
@@ -1154,7 +1118,8 @@ func upgradeCluster(d *schema.ResourceData, m interface{}, upgradeVersion string
 		return fmt.Errorf("Error upgrading cluster: %v", err)
 	}
 
-	return saveUpgradedApimodel(&uc, d, m)
+	// I'm not sure this has its certs set... I think it's okay because new ones are being saved
+	return saveUpgradedApimodel(&uc, d)
 }
 
 func initializeUpgradeClient(d *schema.ResourceData, m interface{}, upgradeVersion string) (client.UpgradeClient, error) {
@@ -1208,23 +1173,16 @@ func initializeUpgradeClient(d *schema.ResourceData, m interface{}, upgradeVersi
 		},
 	}
 	if m != nil { // for testing purposes
-		var apimodel string
-		apimodel, err = getBlob(d, m, "apimodel.json")
-		if err != nil {
-			return uc, err
-		}
-		uc.K8sCluster, err = apiloader.LoadContainerService([]byte(apimodel), apiVersion, true, true, nil)
-		// uc.K8sCluster, err = initializeContainerService(d)
+		uc.K8sCluster, err = loadContainerServiceFromApimodel(d, true, true)
 		if err != nil {
 			return uc, fmt.Errorf("error parsing the api model: %s", err.Error())
 		}
 	} else {
-		// uc.APIModelPath = path.Join(uc.DeploymentDirectory, "apimodel.json")
-		// if _, err = os.Stat(uc.APIModelPath); os.IsNotExist(err) {
-		// 	return uc, fmt.Errorf("specified api model does not exist (%s)", uc.APIModelPath)
-		// }
-		// uc.K8sCluster, uc.APIVersion, err = apiloader.LoadContainerServiceFromFile(uc.APIModelPath, true, true, nil) // look into these parameters
-		uc.K8sCluster, err = initializeContainerService(d)
+		uc.APIModelPath = path.Join(uc.DeploymentDirectory, "apimodel.json")
+		if _, err = os.Stat(uc.APIModelPath); os.IsNotExist(err) {
+			return uc, fmt.Errorf("specified api model does not exist (%s)", uc.APIModelPath)
+		}
+		uc.K8sCluster, uc.APIVersion, err = apiloader.LoadContainerServiceFromFile(uc.APIModelPath, true, true, nil) // look into these parameters
 		if err != nil {
 			return uc, fmt.Errorf("error parsing the api model: %s", err.Error())
 		}
@@ -1246,8 +1204,8 @@ func initializeUpgradeClient(d *schema.ResourceData, m interface{}, upgradeVersi
 	return uc, nil
 }
 
-func saveUpgradedApimodel(uc *client.UpgradeClient, d *schema.ResourceData, m interface{}) error {
-	return saveTemplates(uc.K8sCluster, uc.DeploymentDirectory, d, m)
+func saveUpgradedApimodel(uc *client.UpgradeClient, d *schema.ResourceData) error {
+	return saveTemplates(uc.K8sCluster, uc.DeploymentDirectory, d)
 }
 
 // not working yet
@@ -1262,21 +1220,11 @@ func updateTags(d *schema.ResourceData, m interface{}) error {
 	}
 
 	// get cluster apimodel
-	apimodel, err := getBlob(d, m, "apimodel.json")
-	if err != nil {
-		return err
-	}
 	locale, err := i18n.LoadTranslations()
 	if err != nil {
 		return err
 	}
-	apiloader := &api.Apiloader{
-		Translator: &i18n.Translator{
-			Locale: locale,
-		},
-	}
-	// cluster, err := initializeContainerService(d)
-	cluster, err := apiloader.LoadContainerService([]byte(apimodel), apiVersion, true, false, nil)
+	cluster, err := loadContainerServiceFromApimodel(d, true, false)
 	if err != nil {
 		return fmt.Errorf("error parsing API model")
 	}
@@ -1308,17 +1256,17 @@ func updateTags(d *schema.ResourceData, m interface{}) error {
 	}
 
 	// deploy templates
-	// does this know it's updating? I'm not sure
 	_, err = deployTemplate(d, m, template, parameters)
 	if err != nil {
 		return err
 	}
 
 	// do I really want to generate these templates all over again?
-	return saveTemplates(cluster, deploymentDirectory, d, m)
+	return saveTemplates(cluster, deploymentDirectory, d)
 }
 
-func saveTemplates(cluster *api.ContainerService, deploymentDirectory string, d *schema.ResourceData, m interface{}) error {
+// Save templates and certificates based on cluster struct
+func saveTemplates(cluster *api.ContainerService, deploymentDirectory string, d *schema.ResourceData) error {
 	locale, err := i18n.LoadTranslations()
 	if err != nil {
 		return err
@@ -1330,43 +1278,35 @@ func saveTemplates(cluster *api.ContainerService, deploymentDirectory string, d 
 		},
 	}
 
+	// generate template
 	templateGenerator, err := acsengine.InitializeTemplateGenerator(ctx, false)
 	if err != nil {
 		return fmt.Errorf("failed to initialize template generator: %s", err.Error())
 	}
-
 	template, parameters, certsGenerated, err := templateGenerator.GenerateTemplate(cluster, acsengine.DefaultGeneratorCode, false, acsEngineVersion)
 	if err != nil {
 		return fmt.Errorf("error generating templates at %s: %s", deploymentDirectory, err.Error())
 	}
 
+	// format templates
 	if template, err = transform.PrettyPrintArmTemplate(template); err != nil {
 		return fmt.Errorf("error pretty printing template: %s", err.Error())
 	}
 	if parameters, err = transform.BuildAzureParametersFile(parameters); err != nil {
-		return fmt.Errorf("error pretty printing template parameters: %s \n", err.Error())
+		return fmt.Errorf("error pretty printing template parameters: %s", err.Error())
 	}
-	writer := &acsengine.ArtifactWriter{
-		Translator: &i18n.Translator{
-			Locale: locale,
-		},
-	}
-	if err = writer.WriteTLSArtifacts(cluster, apiVersion, template, parameters, deploymentDirectory, certsGenerated, false); err != nil {
-		return fmt.Errorf("error writing artifacts: %s", err.Error())
-	}
-	err = createBlob(d, m, deploymentDirectory, "apimodel.json")
+
+	// save templates and certificates
+	err = writeTemplatesAndCerts(d, cluster, template, parameters, deploymentDirectory, certsGenerated)
 	if err != nil {
-		return fmt.Errorf("Uploading 'apimodel.json' blob failed: %+v", err)
-	}
-	err = createBlob(d, m, deploymentDirectory, "azuredeploy.json")
-	if err != nil {
-		return fmt.Errorf("Uploading 'azuredeploy.json' blob failed: %+v", err)
+		return err
 	}
 
 	return nil
 }
 
 // if I can get rid of this then I only need to store apimodel.json
+// only used to get nameSuffix defaultValue. Maybe computed value?
 func generateParametersMap(deploymentDirectory string) (map[string]interface{}, error) {
 	templatePath := path.Join(deploymentDirectory, "azuredeploy.json")
 	contents, _ := ioutil.ReadFile(templatePath)
@@ -1383,6 +1323,39 @@ func generateParametersMap(deploymentDirectory string) (map[string]interface{}, 
 }
 
 /* Misc. Helper Functions */
+
+func writeTemplatesAndCerts(d *schema.ResourceData, cluster *api.ContainerService, template string, parameters string, deploymentDirectory string, certsGenerated bool) error {
+	locale, err := i18n.LoadTranslations()
+	if err != nil {
+		return err
+	}
+
+	// save templates and certificates
+	writer := &acsengine.ArtifactWriter{
+		Translator: &i18n.Translator{
+			Locale: locale,
+		},
+	}
+	if err := writer.WriteTLSArtifacts(cluster, apiVersion, template, parameters, deploymentDirectory, certsGenerated, false); err != nil {
+		return fmt.Errorf("error writing artifacts: %s", err.Error())
+	}
+
+	// new: set "api_model" to string of file
+	apiloader := &api.Apiloader{
+		Translator: &i18n.Translator{
+			Locale: locale,
+		},
+	}
+	apimodel, err := apiloader.SerializeContainerService(cluster, apiVersion)
+	if err != nil {
+		return fmt.Errorf("error serializing API model: %+v", err)
+	}
+	if err = d.Set("api_model", base64.StdEncoding.EncodeToString(apimodel)); err != nil {
+		return fmt.Errorf("error setting API model: %+v", err)
+	}
+
+	return nil
+}
 
 func flattenLinuxProfile(profile api.LinuxProfile) ([]interface{}, error) {
 	adminUsername := profile.AdminUsername
@@ -1530,6 +1503,7 @@ func flattenKubeConfig(kubeConfigFile string) (string, []interface{}, error) {
 }
 
 func createWindowsProfile() (api.WindowsProfile, error) {
+	// not implemented yet
 	return api.WindowsProfile{}, nil
 }
 
@@ -1662,6 +1636,7 @@ func expandClusterTags(tagsMap map[string]interface{}) map[string]string {
 	return output
 }
 
+// from resource_arm_template_deployment.go
 func expandTemplateBody(template string) (map[string]interface{}, error) {
 	var templateBody map[string]interface{}
 	err := json.Unmarshal([]byte(template), &templateBody)
@@ -1692,6 +1667,7 @@ func validateKubernetesVersion(v interface{}, k string) (ws []string, errors []e
 	return
 }
 
+// Checks that new version is one of the allowed versions for upgrade from current version in ACS Engine
 func validateKubernetesVersionUpgrade(newVersion string, currentVersion string) error {
 	kubernetesProfile := api.OrchestratorProfile{
 		OrchestratorType:    "Kubernetes",
@@ -1730,7 +1706,7 @@ func validateMasterProfileCount(v interface{}, k string) (ws []string, errors []
 	return
 }
 
-// I'm not actually using this... using validation.IntBetween(1, 100)
+// same as validation.IntBetween(1, 100)
 func validateAgentPoolProfileCount(v interface{}, k string) (ws []string, errors []error) {
 	value := v.(int)
 	if value > 100 || value <= 0 {

@@ -81,7 +81,7 @@ func TestAzureCLIProfileFindDefaultSubscription(t *testing.T) {
 				Subscriptions: v.Subscriptions,
 			},
 		}
-		actualSubscriptionId, err := profile.FindDefaultSubscriptionID()
+		actualSubscriptionID, err := profile.FindDefaultSubscriptionID()
 
 		if v.ExpectError && err == nil {
 			t.Fatalf("Expected an error for %q: didn't get one", v.Description)
@@ -91,8 +91,8 @@ func TestAzureCLIProfileFindDefaultSubscription(t *testing.T) {
 			t.Fatalf("Expected there to be no error for %q - but got: %v", v.Description, err)
 		}
 
-		if actualSubscriptionId != v.ExpectedSubscriptionID {
-			t.Fatalf("Expected Subscription ID to be %q - got %q", v.ExpectedSubscriptionID, actualSubscriptionId)
+		if actualSubscriptionID != v.ExpectedSubscriptionID {
+			t.Fatalf("Expected Subscription ID to be %q - got %q", v.ExpectedSubscriptionID, actualSubscriptionID)
 		}
 	}
 }
