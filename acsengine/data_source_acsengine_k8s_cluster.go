@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/Azure/acs-engine/pkg/api"
-	"github.com/Azure/acs-engine/pkg/i18n"
 	"github.com/Azure/terraform-provider-acsengine/acsengine/utils"
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -166,6 +165,12 @@ func dataSourceAcsEngineKubernetesCluster() *schema.Resource {
 				Computed:  true,
 				Sensitive: true,
 			},
+
+			"api_model": {
+				Type:      schema.TypeString,
+				Computed:  true,
+				Sensitive: true,
+			},
 		},
 	}
 }
@@ -199,22 +204,28 @@ func dataSourceACSEngineK8sClusterRead(d *schema.ResourceData, m interface{}) er
 		return err
 	}
 
-	apimodel, err := getBlob(d, m, "apimodel.json")
-	if err != nil {
-		return err
-	}
+	// how am I supposed to get this from the state? Do I open state file??
+	// apimodel, err := getBlob(d, m, "apimodel.json")
+	// if err != nil {
+	// 	return err
+	// }
 
-	locale, err := i18n.LoadTranslations()
-	if err != nil {
-		return err
-	}
-	apiloader := &api.Apiloader{
-		Translator: &i18n.Translator{
-			Locale: locale,
-		},
-	}
+	// locale, err := i18n.LoadTranslations()
+	// if err != nil {
+	// 	return err
+	// }
+	// apiloader := &api.Apiloader{
+	// 	Translator: &i18n.Translator{
+	// 		Locale: locale,
+	// 	},
+	// }
 
-	cluster, err := apiloader.LoadContainerService([]byte(apimodel), apiVersion, true, false, nil)
+	// cluster, err := apiloader.LoadContainerService([]byte(apimodel), apiVersion, true, false, nil)
+	// if err != nil {
+	// 	return fmt.Errorf("error parsing API model")
+	// }
+	// so this knows what resource to get this from?
+	cluster, err := loadContainerServiceFromApimodel(d, true, false)
 	if err != nil {
 		return fmt.Errorf("error parsing API model")
 	}
@@ -280,6 +291,11 @@ func dataSourceACSEngineK8sClusterRead(d *schema.ResourceData, m interface{}) er
 	if err := d.Set("kube_config", kubeConfig); err != nil {
 		return fmt.Errorf("Error setting `kube_config`: %+v", err)
 	}
+
+	// apimodel :=
+	// if err := d.Set("api_model", apimodel); err != nil {
+	// 	return fmt.Errorf("Error setting `api_model`: %+v", err)
+	// }
 
 	fmt.Println("finished reading")
 

@@ -4,7 +4,7 @@ Manages AKS Cluster
 
 **Note:** All arguments including the client secret will be stored in the raw state as plain-text.
 
-**Another Note** A resource group is created for the cluster and will be destroyed when the cluster is destroyed. Do not put resources in this group that should not be deleted with the cluster.
+**Another Note:** A resource group is created for the cluster and will be destroyed when the cluster is destroyed. Do not put resources in this group that should not be deleted with the cluster.
 
 ## Example Usage
 
@@ -13,9 +13,9 @@ Manages AKS Cluster
 ```hcl
 resource "acsengine_k8s_cluster" "test" {
     name               = "acctest"
-        resource_group     = "acctestRG"
-        location           = "southcentralus"
-        kubernetes_version = "1.10.4"
+    resource_group     = "acctestRG"
+    location           = "southcentralus"
+    kubernetes_version = "1.10.4"
 
     master_profile {
         count           = 1

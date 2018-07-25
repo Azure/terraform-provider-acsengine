@@ -1,5 +1,16 @@
 package acsengine
 
+// TO DO
+// - read nameSuffix default value in some other way
+// - fix updateTags
+// - add tests that check if cluster is running on nodes
+// - use a CI tool in GitHub
+// - Write documentation
+// - get data source working (read from api model in resource state somehow)
+// - OS type
+// - make code more unit test-able and write more unit tests (plus clean up ones I have to use mock objects more?)
+// - Important: fix dependency problems and use dep when acs-engine has been updated
+
 import (
 	"bytes"
 	"encoding/base64"
@@ -609,7 +620,6 @@ func loadContainerServiceFromApimodel(d *schema.ResourceData, validate bool, isU
 			return nil, err
 		}
 	}
-	fmt.Printf("string from apimodel bytes: %s\n", string(apimodel))
 
 	cluster, err := apiloader.LoadContainerService(apimodel, apiVersion, validate, isUpdate, nil)
 	if err != nil {
