@@ -1912,6 +1912,19 @@ func testCheckACSEngineClusterExists(name string) resource.TestCheckFunc {
 			return fmt.Errorf("Bad: Kubernetes cluster %q (resource group: %q) does not exist", name, resourceGroup)
 		}
 
+		// test that Kubernetes is running
+		// look into client-go
+		// conn := testAccProvider.Meta().(*kubernetes.Clientset)
+		// namespace, name, err := idParts(rs.Primary.ID) // idParts not defined
+		// if err != nil {
+		// 	return err
+		// }
+		// out, err := conn.CoreV1().Services(namespace).Get("name", meta_v1.GetOptions{})
+		// if err != nil {
+		// 	return err
+		// }
+		// *obj = *out // what is this for?? obj is a second argument
+
 		return nil
 	}
 }
@@ -2045,21 +2058,21 @@ func mockClusterResourceData() *schema.ResourceData {
 	return d
 }
 
-// look into Kubernetes API that Juan-Lee mentioned instead
+// this uses client-go, which should be a recent version
 // based on funcion in aks e2e tests
 // I want to figure out how to use it to test Kubernetes is running on VMs
-// func newClientConfigFromBytes(configBytes []byte) *rest.Config {
+// func newClientConfigFromBytes(configBytes []byte) (*rest.Config, error) { // I need kubeconfig
 // 	config, err := clientcmd.Load(configBytes)
 // 	if err != nil {
-// 		log.Fatalf("%v", err)
+// 		return nil, fmt.Errorf("%v", err)
 // 	}
 
 // 	conf := clientcmd.NewNonInteractiveClientConfig(*config, "", &clientcmd.ConfigOverrides{}, nil)
 
 // 	cc, err := conf.ClientConfig()
 // 	if err != nil {
-// 		log.Fatalf("%v", err)
+// 		return nil, fmt.Errorf("%v", err)
 // 	}
 
-// 	return cc
+// 	return cc, nil
 // }
