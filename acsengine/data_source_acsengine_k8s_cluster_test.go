@@ -3,6 +3,7 @@ package acsengine
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/acctest"
@@ -33,6 +34,7 @@ func TestAccDataSourceACSEngineK8sCluster_basic(t *testing.T) {
 					resource.TestCheckResourceAttrSet(dataSourceName, "kube_config.0.host"),
 					resource.TestCheckResourceAttrSet(dataSourceName, "kube_config.0.username"),
 					// resource.TestCheckResourceAttrSet(dataSourceName, "kube_config.0.password"),
+					resource.TestCheckResourceAttr(dataSourceName, "kube_config.0.host", fmt.Sprintf("http://acctestmaster%s.%s.cloudapp.azure.com", strconv.Itoa(ri), location)),
 				),
 			},
 		},

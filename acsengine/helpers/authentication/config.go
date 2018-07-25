@@ -35,12 +35,12 @@ type Config struct {
 func (c *Config) LoadTokensFromAzureCLI() error {
 	profilePath, err := cli.ProfilePath()
 	if err != nil {
-		return fmt.Errorf("Error loading the Profile Path from the Azure CLI: %+v", err)
+		return fmt.Errorf("error loading the Profile Path from the Azure CLI: %+v", err)
 	}
 
 	profile, err := cli.LoadProfile(profilePath)
 	if err != nil {
-		return fmt.Errorf("Azure CLI Authorization Profile was not found. Please ensure the Azure CLI is installed and then log-in with `az login`.")
+		return fmt.Errorf("the Azure CLI Authorization Profile was not found. Please ensure the Azure CLI is installed and then log-in with `az login`")
 	}
 
 	cliProfile := AzureCLIProfile{
@@ -75,7 +75,7 @@ func (c *Config) LoadTokensFromAzureCLI() error {
 
 		tokens, err := cli.LoadTokens(tokensPath)
 		if err != nil {
-			return fmt.Errorf("Azure CLI Authorization Tokens were not found. Please ensure the Azure CLI is installed and then log-in with `az login`.")
+			return fmt.Errorf("the Azure CLI Authorization Tokens were not found. Please ensure the Azure CLI is installed and then log-in with `az login`")
 		}
 
 		validToken, _ := findValidAccessTokenForTenant(tokens, c.TenantID)
@@ -88,7 +88,7 @@ func (c *Config) LoadTokensFromAzureCLI() error {
 	}
 
 	if !foundToken {
-		return fmt.Errorf("No valid (unexpired) Azure CLI Auth Tokens found. Please run `az login`.")
+		return fmt.Errorf("no valid (unexpired) Azure CLI Auth Tokens found. Please run `az login`")
 	}
 
 	// always pull the Environment from the CLI

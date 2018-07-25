@@ -19,7 +19,7 @@ func (a AzureCLIProfile) FindDefaultSubscriptionID() (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("No Subscription was Marked as Default in the Azure Profile.")
+	return "", fmt.Errorf("no subscription was marked as default in the Azure Profile")
 }
 
 func (a AzureCLIProfile) FindSubscription(subscriptionID string) (*cli.Subscription, error) {
@@ -29,5 +29,5 @@ func (a AzureCLIProfile) FindSubscription(subscriptionID string) (*cli.Subscript
 		}
 	}
 
-	return nil, fmt.Errorf("Subscription %q was not found in your Azure CLI credentials. Please verify it exists in `az account list`.", subscriptionID)
+	return nil, fmt.Errorf("subscription %q was not found in your Azure CLI credentials. Please verify it exists in `az account list`", subscriptionID)
 }
