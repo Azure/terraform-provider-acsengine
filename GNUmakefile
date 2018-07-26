@@ -3,10 +3,34 @@ GOFMT_FILES?=$$(find . -name '*.go' |grep -v vendor)
 WEBSITE_REPO=github.com/hashicorp/terraform-website
 PKG_NAME=acsengine
 
+###############################################################################
+# generate for acs-engine
+###############################################################################
+
+prereqs:
+	go get github.com/golang/dep/cmd/dep
+	go get github.com/jteeuwen/go-bindata/...
+
+generate-templates: prereqs
+	go generate ./vendor/github.com/Azure/acs-engine/pkg/acsengine
+
+generate-translations: prereqs
+	go generate ./vendor/github.com/Azure/acs-engine/pkg/i18n
+
+generate-all: generate-templates generate-translations
+
+###############################################################################
+# build
+###############################################################################
+
 default: build
 
-build: fmtcheck
+build: fmtcheck generate-all
 	go install
+
+###############################################################################
+# testing
+###############################################################################
 
 test: fmtcheck
 	unset TF_ACC
@@ -41,9 +65,6 @@ fmtcheck:
 errcheck:
 	@sh "$(CURDIR)/scripts/errcheck.sh"
 
-vendor-status:
-	@dep status
-
 test-compile:
 	@if [ "$(TEST)" = "./..." ]; then \
 		echo "ERROR: Set TEST to a specific package. For example,"; \
@@ -51,6 +72,13 @@ test-compile:
 		exit 1; \
 	fi
 	go test -c $(TEST) $(TESTARGS)
+
+###############################################################################
+# vendor
+###############################################################################
+
+vendor-status:
+	@dep status
 
 .PHONY: build test testacc vet fmt fmtcheck errcheck vendor-status test-compile
 
