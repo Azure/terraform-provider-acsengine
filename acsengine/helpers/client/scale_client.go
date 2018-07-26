@@ -67,7 +67,7 @@ func (client *ScaleClient) Validate() error {
 	return nil
 }
 
-// DrainNodes ...
+// DrainNodes drains and deletes all nodes in array provided
 func (client *ScaleClient) DrainNodes(kubeConfig string, vmsToDelete []string) error {
 	masterURL := client.MasterFQDN
 	if !strings.HasPrefix(masterURL, "https://") {

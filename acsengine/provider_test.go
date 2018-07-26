@@ -52,12 +52,24 @@ func testAccPreCheck(t *testing.T) {
 	}
 }
 
+func testClientID() string {
+	return os.Getenv("ARM_CLIENT_ID")
+}
+
+func testClientSecret() string {
+	return os.Getenv("ARM_CLIENT_SECRET")
+}
+
 func testLocation() string {
 	return os.Getenv("ARM_TEST_LOCATION")
 }
 
 func testAltLocation() string {
 	return os.Getenv("ARM_TEST_LOCATION_ALT")
+}
+
+func testSSHPublicKey() string {
+	return os.Getenv("SSH_KEY_PUB")
 }
 
 func testArmEnvironmentName() string {

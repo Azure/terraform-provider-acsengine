@@ -2,9 +2,7 @@ package acsengine
 
 import (
 	"context"
-	"crypto/sha1"
 	"encoding/base64"
-	"encoding/hex"
 	"fmt"
 	"log"
 	"strings"
@@ -14,7 +12,6 @@ import (
 	"github.com/Azure/go-autorest/autorest/adal"
 	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/authentication"
 	azSchema "github.com/Azure/terraform-provider-acsengine/acsengine/helpers/schema"
-	"github.com/hashicorp/terraform/helper/mutexkv"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
 )
@@ -173,7 +170,7 @@ func providerConfigure(p *schema.Provider) schema.ConfigureFunc {
 func registerProviderWithSubscription(ctx context.Context, providerName string, client resources.ProvidersClient) error {
 	_, err := client.Register(ctx, providerName)
 	if err != nil {
-		return fmt.Errorf("Cannot register provider %s with Azure Resource Manager: %s.", providerName, err)
+		return fmt.Errorf("cannot register provider %s with Azure Resource Manager: %s", providerName, err)
 	}
 
 	return nil
@@ -249,23 +246,9 @@ func registerAzureResourceProvidersWithSubscription(ctx context.Context, provide
 	return err
 }
 
-// armMutexKV is the instance of MutexKV for ARM resources
-var armMutexKV = mutexkv.NewMutexKV()
-
 // Deprecated - use `azschema.IgnoreCaseDiffSuppressFunc` instead
 func ignoreCaseDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	return azSchema.IgnoreCaseDiffSuppressFunc(k, old, new, d)
-}
-
-func userDataStateFunc(v interface{}) string {
-	switch s := v.(type) {
-	case string:
-		s = base64Encode(s)
-		hash := sha1.Sum([]byte(s))
-		return hex.EncodeToString(hash[:])
-	default:
-		return ""
-	}
 }
 
 // base64Encode encodes data if the input isn't already encoded using

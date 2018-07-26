@@ -309,7 +309,7 @@ func TestACSEngineK8sCluster_expandServicePrincipal(t *testing.T) {
 	r := resourceArmAcsEngineKubernetesCluster()
 	d := r.TestResourceData()
 
-	clientID := os.Getenv("ARM_CLIENT_ID")
+	clientID := testClientID()
 	servicePrincipals := fakeFlattenServicePrincipal()
 	d.Set("service_principal", servicePrincipals)
 
@@ -446,26 +446,6 @@ func TestACSEngineK8sCluster_validateKubernetesVersionUpgrade(t *testing.T) {
 	}
 }
 
-func TestACSEngineK8sCluster_storageAccountName(t *testing.T) {
-	cases := []struct {
-		Value         string
-		ExpectedValue string
-	}{
-		{Value: "My-name", ExpectedValue: "mynameacc"},
-		{Value: "unique", ExpectedValue: "uniqueacc"},
-		{Value: "1234!", ExpectedValue: "1234acc"},
-		{Value: "superloooooooooooongname", ExpectedValue: "superloooooooooooongacc"},
-		{Value: "SuPer!looooong_1234_name", ExpectedValue: "superlooooong1234namacc"},
-	}
-
-	for _, tc := range cases {
-		accountName := storageAccountName(tc.Value)
-		if accountName != tc.ExpectedValue {
-			t.Fatalf("Storage account name is %s instead of %s", accountName, tc.ExpectedValue)
-		}
-	}
-}
-
 func TestACSEngineK8sCluster_initializeContainerService(t *testing.T) {
 	d := mockClusterResourceData()
 
@@ -574,8 +554,8 @@ func TestAccACSEngineK8sCluster_generateTemplateBasic(t *testing.T) {
 		if !strings.Contains(parameters, tc.AdminUsername) {
 			t.Fatalf("Expected the Azure RM Kubernetes cluster to have parameter '%s'", tc.AdminUsername)
 		}
-		if !strings.Contains(parameters, os.Getenv("ARM_CLIENT_ID")) {
-			t.Fatalf("Expected the Azure RM Kubernetes cluster to have parameter '%s'", os.Getenv("ARM_CLIENT_ID"))
+		if !strings.Contains(parameters, testClientID()) {
+			t.Fatalf("Expected the Azure RM Kubernetes cluster to have parameter '%s'", testClientID())
 		}
 		if !strings.Contains(parameters, vmSize) {
 			t.Fatalf("Expected the Azure RM Kubernetes cluster to have parameter '%s'", vmSize)
@@ -661,8 +641,8 @@ func TestAccACSEngineK8sCluster_generateTemplateCustomized(t *testing.T) {
 		if !strings.Contains(parameters, tc.AdminUsername) {
 			t.Fatalf("Expected the Azure RM Kubernetes cluster to have parameter '%s'", tc.AdminUsername)
 		}
-		if !strings.Contains(parameters, os.Getenv("ARM_CLIENT_ID")) {
-			t.Fatalf("Expected the Azure RM Kubernetes cluster to have parameter '%s'", os.Getenv("ARM_CLIENT_ID"))
+		if !strings.Contains(parameters, testClientID()) {
+			t.Fatalf("Expected the Azure RM Kubernetes cluster to have parameter '%s'", testClientID())
 		}
 		if !strings.Contains(parameters, tc.MasterVMSize) {
 			t.Fatalf("Expected the Azure RM Kubernetes cluster to have parameter '%s'", tc.MasterVMSize)
@@ -870,10 +850,10 @@ func TestAccACSEngineK8sCluster_agentPoolProfileCountValidation(t *testing.T) {
 
 func TestAccACSEngineK8sCluster_createBasic(t *testing.T) {
 	ri := acctest.RandInt()
-	clientID := os.Getenv("ARM_CLIENT_ID")
-	clientSecret := os.Getenv("ARM_CLIENT_SECRET")
-	location := os.Getenv("ARM_TEST_LOCATION")
-	keyData := os.Getenv("SSH_KEY_PUB")
+	clientID := testClientID()
+	clientSecret := testClientSecret()
+	location := testLocation()
+	keyData := testSSHPublicKey()
 	config := testAccACSEngineK8sClusterBasic(ri, clientID, clientSecret, location, keyData)
 
 	resource.Test(t, resource.TestCase{
@@ -901,10 +881,10 @@ func TestAccACSEngineK8sCluster_createBasic(t *testing.T) {
 
 func TestAccACSEngineK8sCluster_createMultipleAgentPools(t *testing.T) {
 	ri := acctest.RandInt()
-	clientID := os.Getenv("ARM_CLIENT_ID")
-	clientSecret := os.Getenv("ARM_CLIENT_SECRET")
-	location := os.Getenv("ARM_TEST_LOCATION")
-	keyData := os.Getenv("SSH_KEY_PUB")
+	clientID := testClientID()
+	clientSecret := testClientSecret()
+	location := testLocation()
+	keyData := testSSHPublicKey()
 	config := testAccACSEngineK8sClusterMultipleAgentPools(ri, clientID, clientSecret, location, keyData)
 
 	resource.Test(t, resource.TestCase{
@@ -933,10 +913,10 @@ func TestAccACSEngineK8sCluster_createMultipleAgentPools(t *testing.T) {
 
 func TestAccACSEngineK8sCluster_createCustomized(t *testing.T) {
 	ri := acctest.RandInt()
-	clientID := os.Getenv("ARM_CLIENT_ID")
-	clientSecret := os.Getenv("ARM_CLIENT_SECRET")
-	location := os.Getenv("ARM_TEST_LOCATION")
-	keyData := os.Getenv("SSH_KEY_PUB")
+	clientID := testClientID()
+	clientSecret := testClientSecret()
+	location := testLocation()
+	keyData := testSSHPublicKey()
 	version := "1.9.8"
 	vmSize := "Standard_D2_v2" // change
 	agentCount := 1
@@ -971,10 +951,10 @@ func TestAccACSEngineK8sCluster_createCustomized(t *testing.T) {
 
 func TestAccACSEngineK8sCluster_createVersion10AndAbove(t *testing.T) {
 	ri := acctest.RandInt()
-	clientID := os.Getenv("ARM_CLIENT_ID")
-	clientSecret := os.Getenv("ARM_CLIENT_SECRET")
-	location := os.Getenv("ARM_TEST_LOCATION")
-	keyData := os.Getenv("SSH_KEY_PUB")
+	clientID := testClientID()
+	clientSecret := testClientSecret()
+	location := testLocation()
+	keyData := testSSHPublicKey()
 	version := "1.10.0"
 	vmSize := "Standard_D2_v2"
 	agentCount := 1
@@ -1009,10 +989,10 @@ func TestAccACSEngineK8sCluster_createVersion10AndAbove(t *testing.T) {
 
 func TestAccACSEngineK8sCluster_scaleUp(t *testing.T) {
 	ri := acctest.RandInt()
-	clientID := os.Getenv("ARM_CLIENT_ID")
-	clientSecret := os.Getenv("ARM_CLIENT_SECRET")
-	location := os.Getenv("ARM_TEST_LOCATION")
-	keyData := os.Getenv("SSH_KEY_PUB")
+	clientID := testClientID()
+	clientSecret := testClientSecret()
+	location := testLocation()
+	keyData := testSSHPublicKey()
 	config := testAccACSEngineK8sClusterScale(ri, clientID, clientSecret, location, keyData, 1)
 	updatedConfig := testAccACSEngineK8sClusterScale(ri, clientID, clientSecret, location, keyData, 2)
 
@@ -1042,10 +1022,10 @@ func TestAccACSEngineK8sCluster_scaleUp(t *testing.T) {
 
 func TestAccACSEngineK8sCluster_scaleDown(t *testing.T) {
 	ri := acctest.RandInt()
-	clientID := os.Getenv("ARM_CLIENT_ID")
-	clientSecret := os.Getenv("ARM_CLIENT_SECRET")
-	location := os.Getenv("ARM_TEST_LOCATION")
-	keyData := os.Getenv("SSH_KEY_PUB")
+	clientID := testClientID()
+	clientSecret := testClientSecret()
+	location := testLocation()
+	keyData := testSSHPublicKey()
 	config := testAccACSEngineK8sClusterScale(ri, clientID, clientSecret, location, keyData, 2)
 	updatedConfig := testAccACSEngineK8sClusterScale(ri, clientID, clientSecret, location, keyData, 1)
 
@@ -1074,10 +1054,10 @@ func TestAccACSEngineK8sCluster_scaleDown(t *testing.T) {
 
 func TestAccACSEngineK8sCluster_scaleUpDown(t *testing.T) {
 	ri := acctest.RandInt()
-	clientID := os.Getenv("ARM_CLIENT_ID")
-	clientSecret := os.Getenv("ARM_CLIENT_SECRET")
-	location := os.Getenv("ARM_TEST_LOCATION")
-	keyData := os.Getenv("SSH_KEY_PUB")
+	clientID := testClientID()
+	clientSecret := testClientSecret()
+	location := testLocation()
+	keyData := testSSHPublicKey()
 	config := testAccACSEngineK8sClusterScale(ri, clientID, clientSecret, location, keyData, 1)
 	scaledUpConfig := testAccACSEngineK8sClusterScale(ri, clientID, clientSecret, location, keyData, 2)
 
@@ -1113,10 +1093,10 @@ func TestAccACSEngineK8sCluster_scaleUpDown(t *testing.T) {
 
 func TestAccACSEngineK8sCluster_scaleDownUp(t *testing.T) {
 	ri := acctest.RandInt()
-	clientID := os.Getenv("ARM_CLIENT_ID")
-	clientSecret := os.Getenv("ARM_CLIENT_SECRET")
-	location := os.Getenv("ARM_TEST_LOCATION")
-	keyData := os.Getenv("SSH_KEY_PUB")
+	clientID := testClientID()
+	clientSecret := testClientSecret()
+	location := testLocation()
+	keyData := testSSHPublicKey()
 	config := testAccACSEngineK8sClusterScale(ri, clientID, clientSecret, location, keyData, 2)
 	scaledDownConfig := testAccACSEngineK8sClusterScale(ri, clientID, clientSecret, location, keyData, 1)
 
@@ -1153,10 +1133,10 @@ func TestAccACSEngineK8sCluster_scaleDownUp(t *testing.T) {
 // how can I test that cluster wasn't recreated instead of updated?
 func TestAccACSEngineK8sCluster_upgradeOnce(t *testing.T) {
 	ri := acctest.RandInt()
-	clientID := os.Getenv("ARM_CLIENT_ID")
-	clientSecret := os.Getenv("ARM_CLIENT_SECRET")
-	location := os.Getenv("ARM_TEST_LOCATION")
-	keyData := os.Getenv("SSH_KEY_PUB")
+	clientID := testClientID()
+	clientSecret := testClientSecret()
+	location := testLocation()
+	keyData := testSSHPublicKey()
 	vmSize := "Standard_D2_v2"
 	osDiskSizeGB := 30
 	config := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.8.13", 1, vmSize, osDiskSizeGB)
@@ -1187,10 +1167,10 @@ func TestAccACSEngineK8sCluster_upgradeOnce(t *testing.T) {
 
 func TestAccACSEngineK8sCluster_upgradeMultiple(t *testing.T) {
 	ri := acctest.RandInt()
-	clientID := os.Getenv("ARM_CLIENT_ID")
-	clientSecret := os.Getenv("ARM_CLIENT_SECRET")
-	location := os.Getenv("ARM_TEST_LOCATION")
-	keyData := os.Getenv("SSH_KEY_PUB")
+	clientID := testClientID()
+	clientSecret := testClientSecret()
+	location := testLocation()
+	keyData := testSSHPublicKey()
 	vmSize := "Standard_D2_v2"
 	osDiskSizeGB := 30
 	config := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.8.13", 1, vmSize, osDiskSizeGB)
@@ -1231,10 +1211,10 @@ func TestAccACSEngineK8sCluster_upgradeMultiple(t *testing.T) {
 // also test below certain version upgraded to above, followed by scaling
 func TestAccACSEngineK8sCluster_upgradeVersion10AndAbove(t *testing.T) {
 	ri := acctest.RandInt()
-	clientID := os.Getenv("ARM_CLIENT_ID")
-	clientSecret := os.Getenv("ARM_CLIENT_SECRET")
-	location := os.Getenv("ARM_TEST_LOCATION")
-	keyData := os.Getenv("SSH_KEY_PUB")
+	clientID := testClientID()
+	clientSecret := testClientSecret()
+	location := testLocation()
+	keyData := testSSHPublicKey()
 	vmSize := "Standard_D2_v2"
 	osDiskSizeGB := 30
 	config := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.10.0", 1, vmSize, osDiskSizeGB)
@@ -1267,10 +1247,10 @@ func TestAccACSEngineK8sCluster_upgradeVersion10AndAbove(t *testing.T) {
 
 func TestAccACSEngineK8sCluster_updateUpgradeScaleUp(t *testing.T) {
 	ri := acctest.RandInt()
-	clientID := os.Getenv("ARM_CLIENT_ID")
-	clientSecret := os.Getenv("ARM_CLIENT_SECRET")
-	location := os.Getenv("ARM_TEST_LOCATION")
-	keyData := os.Getenv("SSH_KEY_PUB")
+	clientID := testClientID()
+	clientSecret := testClientSecret()
+	location := testLocation()
+	keyData := testSSHPublicKey()
 	vmSize := "Standard_D2_v2"
 	osDiskSizeGB := 30
 	config := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.8.13", 1, vmSize, osDiskSizeGB)
@@ -1312,10 +1292,10 @@ func TestAccACSEngineK8sCluster_updateUpgradeScaleUp(t *testing.T) {
 
 func TestAccACSEngineK8sCluster_updateScaleUpUpgrade(t *testing.T) {
 	ri := acctest.RandInt()
-	clientID := os.Getenv("ARM_CLIENT_ID")
-	clientSecret := os.Getenv("ARM_CLIENT_SECRET")
-	location := os.Getenv("ARM_TEST_LOCATION")
-	keyData := os.Getenv("SSH_KEY_PUB")
+	clientID := testClientID()
+	clientSecret := testClientSecret()
+	location := testLocation()
+	keyData := testSSHPublicKey()
 	vmSize := "Standard_D2_v2"
 	osDiskSizeGB := 30
 	config := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.8.13", 1, vmSize, osDiskSizeGB)
@@ -1357,10 +1337,10 @@ func TestAccACSEngineK8sCluster_updateScaleUpUpgrade(t *testing.T) {
 
 func TestAccACSEngineK8sCluster_updateUpgradeScaleDown(t *testing.T) {
 	ri := acctest.RandInt()
-	clientID := os.Getenv("ARM_CLIENT_ID")
-	clientSecret := os.Getenv("ARM_CLIENT_SECRET")
-	location := os.Getenv("ARM_TEST_LOCATION")
-	keyData := os.Getenv("SSH_KEY_PUB")
+	clientID := testClientID()
+	clientSecret := testClientSecret()
+	location := testLocation()
+	keyData := testSSHPublicKey()
 	vmSize := "Standard_D2_v2"
 	osDiskSizeGB := 30
 	config := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.8.13", 2, vmSize, osDiskSizeGB)
@@ -1402,10 +1382,10 @@ func TestAccACSEngineK8sCluster_updateUpgradeScaleDown(t *testing.T) {
 
 func TestAccACSEngineK8sCluster_updateScaleDownUpgrade(t *testing.T) {
 	ri := acctest.RandInt()
-	clientID := os.Getenv("ARM_CLIENT_ID")
-	clientSecret := os.Getenv("ARM_CLIENT_SECRET")
-	location := os.Getenv("ARM_TEST_LOCATION")
-	keyData := os.Getenv("SSH_KEY_PUB")
+	clientID := testClientID()
+	clientSecret := testClientSecret()
+	location := testLocation()
+	keyData := testSSHPublicKey()
 	vmSize := "Standard_D2_v2"
 	osDiskSizeGB := 30
 	config := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.8.13", 2, vmSize, osDiskSizeGB)
@@ -1447,10 +1427,10 @@ func TestAccACSEngineK8sCluster_updateScaleDownUpgrade(t *testing.T) {
 
 func TestAccACSEngineK8sCluster_updateScaleUpgradeInOne(t *testing.T) {
 	ri := acctest.RandInt()
-	clientID := os.Getenv("ARM_CLIENT_ID")
-	clientSecret := os.Getenv("ARM_CLIENT_SECRET")
-	location := os.Getenv("ARM_TEST_LOCATION")
-	keyData := os.Getenv("SSH_KEY_PUB")
+	clientID := testClientID()
+	clientSecret := testClientSecret()
+	location := testLocation()
+	keyData := testSSHPublicKey()
 	vmSize := "Standard_D2_v2"
 	osDiskSizeGB := 30
 	config := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.8.13", 1, vmSize, osDiskSizeGB)
@@ -1485,10 +1465,10 @@ func TestAccACSEngineK8sCluster_updateScaleUpgradeInOne(t *testing.T) {
 // can I somehow check that az group show -g *rg* --query tags actually works
 func TestAccACSEngineK8sCluster_updateTags(t *testing.T) {
 	ri := acctest.RandInt()
-	clientID := os.Getenv("ARM_CLIENT_ID")
-	clientSecret := os.Getenv("ARM_CLIENT_SECRET")
-	location := os.Getenv("ARM_TEST_LOCATION")
-	keyData := os.Getenv("SSH_KEY_PUB")
+	clientID := testClientID()
+	clientSecret := testClientSecret()
+	location := testLocation()
+	keyData := testSSHPublicKey()
 	config := testAccACSEngineK8sClusterBasic(ri, clientID, clientSecret, location, keyData)
 	newTagsConfig := testAccACSEngineK8sClusterTags(ri, clientID, clientSecret, location, keyData, "Prod", "IT")
 
@@ -1519,10 +1499,10 @@ func TestAccACSEngineK8sCluster_updateTags(t *testing.T) {
 // failing because I haven't implemented yet
 func TestAccACSEngineK8sCluster_createWindowsAgentCluster(t *testing.T) {
 	ri := acctest.RandInt()
-	clientID := os.Getenv("ARM_CLIENT_ID")
-	clientSecret := os.Getenv("ARM_CLIENT_SECRET")
-	location := os.Getenv("ARM_TEST_LOCATION")
-	keyData := os.Getenv("SSH_KEY_PUB")
+	clientID := testClientID()
+	clientSecret := testClientSecret()
+	location := testLocation()
+	keyData := testSSHPublicKey()
 	kubernetesVersion := "1.8.13"
 	count := 1
 	config := testAccACSEngineK8sClusterOSType(ri, clientID, clientSecret, location, keyData, kubernetesVersion, count)
@@ -1545,10 +1525,10 @@ func TestAccACSEngineK8sCluster_createWindowsAgentCluster(t *testing.T) {
 // failing because I haven't implemented yet
 func TestAccACSEngineK8sCluster_scaleUpDownWindowsAgentCluster(t *testing.T) {
 	ri := acctest.RandInt()
-	clientID := os.Getenv("ARM_CLIENT_ID")
-	clientSecret := os.Getenv("ARM_CLIENT_SECRET")
-	location := os.Getenv("ARM_TEST_LOCATION")
-	keyData := os.Getenv("SSH_KEY_PUB")
+	clientID := testClientID()
+	clientSecret := testClientSecret()
+	location := testLocation()
+	keyData := testSSHPublicKey()
 	kubernetesVersion := "1.8.13"
 	config := testAccACSEngineK8sClusterOSType(ri, clientID, clientSecret, location, keyData, kubernetesVersion, 1)
 	scaledUpConfig := testAccACSEngineK8sClusterOSType(ri, clientID, clientSecret, location, keyData, kubernetesVersion, 2)
@@ -1603,10 +1583,10 @@ func TestAccACSEngineK8sCluster_importBasic(t *testing.T) {
 	resourceName := "acsengine_kubernetes_cluster.test"
 
 	ri := acctest.RandInt()
-	clientID := os.Getenv("ARM_CLIENT_ID")
-	clientSecret := os.Getenv("ARM_CLIENT_SECRET")
-	location := os.Getenv("ARM_TEST_LOCATION")
-	keyData := os.Getenv("SSH_KEY_PUB")
+	clientID := testClientID()
+	clientSecret := testClientSecret()
+	location := testLocation()
+	keyData := testSSHPublicKey()
 	config := testAccACSEngineK8sClusterBasic(ri, clientID, clientSecret, location, keyData)
 
 	resource.Test(t, resource.TestCase{
@@ -1960,7 +1940,7 @@ func fakeFlattenLinuxProfile(adminUsername string) []interface{} {
 		F: resourceLinuxProfilesSSHKeysHash,
 	}
 	keys := map[string]interface{}{
-		"key_data": os.Getenv("SSH_KEY_PUB"),
+		"key_data": testSSHPublicKey(),
 	}
 	sshKeys.Add(keys)
 	values := map[string]interface{}{
@@ -1977,8 +1957,8 @@ func fakeFlattenServicePrincipal() []interface{} {
 	servicePrincipals := []interface{}{}
 
 	spValues := map[string]interface{}{
-		"client_id":     os.Getenv("ARM_CLIENT_ID"),
-		"client_secret": os.Getenv("ARM_CLIENT_SECRET"),
+		"client_id":     testClientID(),
+		"client_secret": testClientSecret(),
 	}
 
 	servicePrincipals = append(servicePrincipals, spValues)

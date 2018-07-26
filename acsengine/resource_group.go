@@ -58,10 +58,11 @@ func createClusterResourceGroup(d *schema.ResourceData, m interface{}) error {
 
 func resourceGroupNameSchema() *schema.Schema {
 	return &schema.Schema{
-		Type:         schema.TypeString,
-		Required:     true,
-		ForceNew:     true,
-		ValidateFunc: validateArmResourceGroupName,
+		Type:             schema.TypeString,
+		Required:         true,
+		ForceNew:         true,
+		DiffSuppressFunc: resourceAzurermResourceGroupNameDiffSuppress,
+		ValidateFunc:     validateArmResourceGroupName,
 	}
 }
 

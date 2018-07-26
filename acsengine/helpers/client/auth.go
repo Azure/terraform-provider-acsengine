@@ -8,7 +8,11 @@ import (
 	"github.com/satori/go.uuid"
 )
 
-// AuthArgs includes various authentication arguments...
+const (
+	emptyID = "00000000-0000-0000-0000-000000000000"
+)
+
+// AuthArgs includes various authentication arguments for Azure client
 type AuthArgs struct {
 	RawAzureEnvironment string
 	RawSubscriptionID   string
@@ -34,33 +38,40 @@ func AddAuthArgs(authArgs *AuthArgs) {
 	authArgs.language = "en-us"
 }
 
-// ValidateAuthArgs ...
+// ValidateAuthArgs handles error checking for auth args
 func (authArgs *AuthArgs) ValidateAuthArgs() error {
-	authArgs.ClientID, _ = uuid.FromString(authArgs.RawClientID)
-	authArgs.SubscriptionID, _ = uuid.FromString(authArgs.RawSubscriptionID)
+	var err error
+	authArgs.ClientID, err = uuid.FromString(authArgs.RawClientID)
+	if err != nil {
+		return err
+	}
+	authArgs.SubscriptionID, err = uuid.FromString(authArgs.RawSubscriptionID)
+	if err != nil {
+		return err
+	}
 
 	if authArgs.AuthMethod == "client_secret" {
-		if authArgs.ClientID.String() == "00000000-0000-0000-0000-000000000000" || authArgs.ClientSecret == "" {
+		if authArgs.ClientID.String() == emptyID || authArgs.ClientSecret == "" {
 			return fmt.Errorf("Client ID and client secret must be specified")
 		}
 	} else if authArgs.AuthMethod == "client_certificate" {
-		if authArgs.ClientID.String() == "00000000-0000-0000-0000-000000000000" || authArgs.CertificatePath == "" || authArgs.PrivateKeyPath == "" {
+		if authArgs.ClientID.String() == emptyID || authArgs.CertificatePath == "" || authArgs.PrivateKeyPath == "" {
 			return fmt.Errorf("Client ID, certificate path, and private key path must be specified")
 		}
 	}
 
-	if authArgs.SubscriptionID.String() == "00000000-0000-0000-0000-000000000000" {
+	if authArgs.SubscriptionID.String() == emptyID {
 		return fmt.Errorf("subscription ID is required (and must be valid UUID)")
 	}
 
-	_, err := azure.EnvironmentFromName(authArgs.RawAzureEnvironment)
+	_, err = azure.EnvironmentFromName(authArgs.RawAzureEnvironment)
 	if err != nil {
 		return fmt.Errorf("failed to parse a valid Azure cloud environment")
 	}
 	return nil
 }
 
-// GetClient ...
+// GetClient returns an Azure client using the auth args and auth method provided
 func (authArgs *AuthArgs) GetClient() (*armhelpers.AzureClient, error) {
 	var client *armhelpers.AzureClient
 	env, err := azure.EnvironmentFromName(authArgs.RawAzureEnvironment)
