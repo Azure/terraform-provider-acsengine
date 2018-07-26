@@ -2,10 +2,14 @@ package client
 
 import (
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/Azure/acs-engine/pkg/api"
 	"github.com/Azure/acs-engine/pkg/armhelpers"
 	"github.com/Azure/acs-engine/pkg/helpers"
+	"github.com/Azure/acs-engine/pkg/i18n"
+	"github.com/Azure/acs-engine/pkg/operations"
 	"github.com/leonelquinteros/gotext"
 	log "github.com/sirupsen/logrus"
 )
@@ -36,12 +40,12 @@ type ScaleClient struct {
 func (client *ScaleClient) Validate() error {
 	// client.Logger = log.NewEntry(log.New())
 	client.Logger = log.New().WithField("source", "scaling update")
-	// var err error
+	var err error
 
-	// client.Locale, err = i18n.LoadTranslations()
-	// if err != nil {
-	// 	return fmt.Errorf("error loading translation files: %s", err.Error())
-	// }
+	client.Locale, err = i18n.LoadTranslations()
+	if err != nil {
+		return fmt.Errorf("error loading translation files: %s", err.Error())
+	}
 
 	if client.ResourceGroupName == "" {
 		return fmt.Errorf("Resource group must be specified")
@@ -65,32 +69,32 @@ func (client *ScaleClient) Validate() error {
 
 // DrainNodes ...
 func (client *ScaleClient) DrainNodes(kubeConfig string, vmsToDelete []string) error {
-	// masterURL := client.MasterFQDN
-	// if !strings.HasPrefix(masterURL, "https://") {
-	// 	masterURL = fmt.Sprintf("https://%s", masterURL)
-	// }
-	// numVmsToDrain := len(vmsToDelete)
-	// errChan := make(chan *operations.VMScalingErrorDetails, numVmsToDrain)
-	// defer close(errChan)
-	// for _, vmName := range vmsToDelete {
-	// 	go func(vmName string) {
-	// 		err := operations.SafelyDrainNode(client.Client, client.Logger,
-	// 			masterURL, kubeConfig, vmName, time.Duration(60)*time.Minute) // is the vmName the node name?
-	// 		if err != nil {
-	// 			log.Errorf("Failed to drain node %s, got error %v", vmName, err)
-	// 			errChan <- &operations.VMScalingErrorDetails{Error: err, Name: vmName}
-	// 			return
-	// 		}
-	// 		errChan <- nil
-	// 	}(vmName)
-	// }
+	masterURL := client.MasterFQDN
+	if !strings.HasPrefix(masterURL, "https://") {
+		masterURL = fmt.Sprintf("https://%s", masterURL)
+	}
+	numVmsToDrain := len(vmsToDelete)
+	errChan := make(chan *operations.VMScalingErrorDetails, numVmsToDrain)
+	defer close(errChan)
+	for _, vmName := range vmsToDelete {
+		go func(vmName string) {
+			err := operations.SafelyDrainNode(client.Client, client.Logger,
+				masterURL, kubeConfig, vmName, time.Duration(60)*time.Minute) // is the vmName the node name?
+			if err != nil {
+				log.Errorf("Failed to drain node %s, got error %v", vmName, err)
+				errChan <- &operations.VMScalingErrorDetails{Error: err, Name: vmName}
+				return
+			}
+			errChan <- nil
+		}(vmName)
+	}
 
-	// for i := 0; i < numVmsToDrain; i++ {
-	// 	errDetails := <-errChan
-	// 	if errDetails != nil {
-	// 		return fmt.Errorf("Node %q failed to drain with error: %v", errDetails.Name, errDetails.Error) // failing here w/ upgrade then scale down
-	// 	}
-	// }
+	for i := 0; i < numVmsToDrain; i++ {
+		errDetails := <-errChan
+		if errDetails != nil {
+			return fmt.Errorf("Node %q failed to drain with error: %v", errDetails.Name, errDetails.Error) // failing here w/ upgrade then scale down
+		}
+	}
 
 	return nil
 }

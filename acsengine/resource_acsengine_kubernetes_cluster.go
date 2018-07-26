@@ -10,9 +10,11 @@ package acsengine
 // - OS type
 // - make code more unit test-able and write more unit tests (plus clean up ones I have to use mock objects more?)
 // - Important: fix dependency problems and use dep when acs-engine has been updated
+// - do I need more translations?
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -31,12 +33,11 @@ import (
 	"github.com/Azure/acs-engine/pkg/api"
 	"github.com/Azure/acs-engine/pkg/api/common"
 	acseutils "github.com/Azure/acs-engine/pkg/armhelpers/utils"
-	"github.com/Azure/acs-engine/pkg/client"
-	// "github.com/Azure/terraform-provider-acsengine/acsengine/helpers/client" // this is what I want to work
 	"github.com/Azure/acs-engine/pkg/i18n"
 	"github.com/Azure/acs-engine/pkg/operations"
 	"github.com/Azure/acs-engine/pkg/operations/kubernetesupgrade"
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
+	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/client" // this is what I want to work
 	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/kubernetes"
 	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/response"
 	"github.com/hashicorp/terraform/helper/hashcode"
@@ -270,25 +271,13 @@ func resourceAcsEngineK8sClusterCreate(d *schema.ResourceData, m interface{}) er
 		return err
 	}
 
-	/* 2. Create storage account */
-	err = createClusterStorageAccount(d, m)
-	if err != nil {
-		return err
-	}
-
-	/* 3. Create storage container */
-	err = createStorageContainer(d, m)
-	if err != nil {
-		return err
-	}
-
-	/* 4. Generate template w/ acs-engine */
+	/* 2. Generate template w/ acs-engine */
 	template, parameters, err := generateACSEngineTemplate(d, true)
 	if err != nil {
 		return err
 	}
 
-	/* 5. Deploy template using AzureRM */
+	/* 3. Deploy template using AzureRM */
 	id, err := deployTemplate(d, m, template, parameters)
 	if err != nil {
 		return err
@@ -508,7 +497,7 @@ func generateACSEngineTemplate(d *schema.ResourceData, write bool) (template str
 	if err != nil {
 		return "", "", fmt.Errorf("failed to initialize template generator: %s", err.Error())
 	}
-	template, parameters, certsGenerated, err := templateGenerator.GenerateTemplate(cluster, acsengine.DefaultGeneratorCode, false, acsEngineVersion)
+	template, parameters, certsGenerated, err := templateGenerator.GenerateTemplate(cluster, acsengine.DefaultGeneratorCode, false, false, acsEngineVersion)
 	if err != nil {
 		return "", "", fmt.Errorf("error generating template: %s", err.Error())
 	}
@@ -655,7 +644,7 @@ func loadContainerService(d *schema.ResourceData, validate bool, isUpdate bool) 
 		return nil, fmt.Errorf("failed to initialize template generator: %s", err.Error())
 	}
 	// Beware, this function sets certs and other default values if they don't already exist
-	_, _, _, err = templateGenerator.GenerateTemplate(cluster, acsengine.DefaultGeneratorCode, false, acsEngineVersion)
+	_, _, _, err = templateGenerator.GenerateTemplate(cluster, acsengine.DefaultGeneratorCode, false, false, acsEngineVersion)
 	if err != nil {
 		return nil, fmt.Errorf("error generating template: %s", err.Error())
 	}
@@ -743,16 +732,17 @@ func scaleCluster(d *schema.ResourceData, m interface{}, agentIndex int, agentCo
 	indexes := make([]int, 0)
 	indexToVM := make(map[int]string)
 	highestUsedIndex = 0
+	ctx := context.Background()
 	if sc.AgentPool.IsAvailabilitySets() {
-		vms, err := sc.Client.ListVirtualMachines(sc.ResourceGroupName)
+		vms, err := sc.Client.ListVirtualMachines(ctx, sc.ResourceGroupName)
 		if err != nil {
 			return fmt.Errorf("failed to get vms in the resource group. Error: %s", err.Error())
-		} else if len(*vms.Value) < 1 {
+		} else if len(vms.Values()) < 1 {
 			return fmt.Errorf("The provided resource group does not contain any vms")
 		}
 		index := 0
-		for _, vm := range *vms.Value {
-			vmTags := *vm.Tags
+		for _, vm := range vms.Values() {
+			vmTags := vm.Tags
 			poolName := *vmTags["poolName"]
 			nameSuf := *vmTags["resourceNameSuffix"]
 
@@ -791,12 +781,12 @@ func scaleCluster(d *schema.ResourceData, m interface{}, agentIndex int, agentCo
 			return scaleDownCluster(&sc, currentNodeCount, indexToVM, d)
 		}
 	} else {
-		vmssList, err := sc.Client.ListVirtualMachineScaleSets(sc.ResourceGroupName)
+		vmssList, err := sc.Client.ListVirtualMachineScaleSets(ctx, sc.ResourceGroupName)
 		if err != nil {
 			return fmt.Errorf("failed to get vmss list in the resource group: %v", err)
 		}
-		for _, vmss := range *vmssList.Value {
-			vmTags := *vmss.Tags
+		for _, vmss := range vmssList.Values() {
+			vmTags := vmss.Tags
 			poolName := *vmTags["poolName"]
 			nameSuffix := *vmTags["resourceNameSuffix"]
 
@@ -867,7 +857,7 @@ func initializeScaleClient(d *schema.ResourceData, m interface{}, agentIndex int
 	if err != nil {
 		return sc, fmt.Errorf("Failed to get client: %s", err.Error())
 	}
-	_, err = sc.Client.EnsureResourceGroup(sc.ResourceGroupName, sc.Location, nil)
+	_, err = sc.Client.EnsureResourceGroup(context.Background(), sc.ResourceGroupName, sc.Location, nil)
 	if err != nil {
 		return sc, err
 	}
@@ -967,7 +957,7 @@ func scaleUpCluster(sc *client.ScaleClient, highestUsedIndex int, currentNodeCou
 
 	sc.K8sCluster.Properties.AgentPoolProfiles = []*api.AgentPoolProfile{sc.AgentPool} // how does this work when there's multiple agent pools?
 
-	template, parameters, _, err := templateGenerator.GenerateTemplate(sc.K8sCluster, acsengine.DefaultGeneratorCode, false, acsEngineVersion)
+	template, parameters, _, err := templateGenerator.GenerateTemplate(sc.K8sCluster, acsengine.DefaultGeneratorCode, false, true, acsEngineVersion)
 	if err != nil {
 		return fmt.Errorf("error generating template %s: %s", sc.APIModelPath, err.Error())
 	}
@@ -1013,11 +1003,11 @@ func scaleUpCluster(sc *client.ScaleClient, highestUsedIndex int, currentNodeCou
 	deploymentSuffix := random.Int31()
 
 	_, err = sc.Client.DeployTemplate(
+		context.Background(),
 		sc.ResourceGroupName,
 		fmt.Sprintf("%s-%d", sc.ResourceGroupName, deploymentSuffix),
 		templateJSON,
-		parametersJSON,
-		nil)
+		parametersJSON)
 	if err != nil {
 		return err
 	}
@@ -1172,7 +1162,7 @@ func initializeUpgradeClient(d *schema.ResourceData, m interface{}, upgradeVersi
 	if err != nil {
 		return uc, fmt.Errorf("Failed to get client: %s", err.Error())
 	}
-	_, err = uc.Client.EnsureResourceGroup(uc.ResourceGroupName, uc.Location, nil)
+	_, err = uc.Client.EnsureResourceGroup(context.Background(), uc.ResourceGroupName, uc.Location, nil)
 	if err != nil {
 		return uc, fmt.Errorf("Error ensuring resource group: %s", err.Error())
 	}
@@ -1253,7 +1243,7 @@ func updateTags(d *schema.ResourceData, m interface{}) error {
 	if err != nil {
 		return fmt.Errorf("failed to initialize template generator: %s", err.Error())
 	}
-	template, parameters, _, err := templateGenerator.GenerateTemplate(cluster, acsengine.DefaultGeneratorCode, false, acsEngineVersion)
+	template, parameters, _, err := templateGenerator.GenerateTemplate(cluster, acsengine.DefaultGeneratorCode, false, false, acsEngineVersion)
 	if err != nil {
 		return fmt.Errorf("error generating templates: %s", err.Error())
 	}
@@ -1293,7 +1283,7 @@ func saveTemplates(cluster *api.ContainerService, deploymentDirectory string, d 
 	if err != nil {
 		return fmt.Errorf("failed to initialize template generator: %s", err.Error())
 	}
-	template, parameters, certsGenerated, err := templateGenerator.GenerateTemplate(cluster, acsengine.DefaultGeneratorCode, false, acsEngineVersion)
+	template, parameters, certsGenerated, err := templateGenerator.GenerateTemplate(cluster, acsengine.DefaultGeneratorCode, false, false, acsEngineVersion)
 	if err != nil {
 		return fmt.Errorf("error generating templates at %s: %s", deploymentDirectory, err.Error())
 	}
