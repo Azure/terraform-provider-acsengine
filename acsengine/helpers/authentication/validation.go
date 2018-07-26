@@ -6,6 +6,7 @@ import (
 	"github.com/hashicorp/go-multierror"
 )
 
+// ValidateBearerAuth checks that...
 func (c *Config) ValidateBearerAuth() error {
 	var err *multierror.Error
 
@@ -28,6 +29,7 @@ func (c *Config) ValidateBearerAuth() error {
 	return err.ErrorOrNil()
 }
 
+// ValidateServicePrincipal validates service principal info including subscription ID, client ID, and client secret
 func (c *Config) ValidateServicePrincipal() error {
 	var err *multierror.Error
 

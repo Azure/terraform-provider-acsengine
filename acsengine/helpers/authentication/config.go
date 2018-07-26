@@ -32,6 +32,7 @@ type Config struct {
 	MsiEndpoint  string
 }
 
+// LoadTokensFromAzureCLI loads tokens based on given values in Config struct
 func (c *Config) LoadTokensFromAzureCLI() error {
 	profilePath, err := cli.ProfilePath()
 	if err != nil {

@@ -1297,12 +1297,7 @@ func saveTemplates(cluster *api.ContainerService, deploymentDirectory string, d 
 	}
 
 	// save templates and certificates
-	err = writeTemplatesAndCerts(d, cluster, template, parameters, deploymentDirectory, certsGenerated)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return writeTemplatesAndCerts(d, cluster, template, parameters, deploymentDirectory, certsGenerated)
 }
 
 // if I can get rid of this then I only need to store apimodel.json

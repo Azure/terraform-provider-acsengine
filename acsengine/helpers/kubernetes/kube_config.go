@@ -38,6 +38,7 @@ type context struct {
 	Namespace string `yaml:"namespace,omitempty"`
 }
 
+// KubeConfig stores information that is found in a kube config file
 type KubeConfig struct {
 	APIVersion     string                 `yaml:"apiVersion"`
 	Clusters       []clusterItem          `yaml:"clusters"`
@@ -48,6 +49,7 @@ type KubeConfig struct {
 	Preferences    map[string]interface{} `yaml:"preferences,omitempty"`
 }
 
+// ParseKubeConfig returns a KubeConfig struct built from input string kube config
 func ParseKubeConfig(config string) (*KubeConfig, error) {
 	if config == "" {
 		return nil, fmt.Errorf("Cannot parse empty config")

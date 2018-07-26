@@ -7,22 +7,16 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"os"
-	"sync"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2017-09-30/containerservice"
-	keyVault "github.com/Azure/azure-sdk-for-go/services/keyvault/2016-10-01/keyvault"
-	"github.com/Azure/azure-sdk-for-go/services/keyvault/mgmt/2016-10-01/keyvault"
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2016-06-01/subscriptions"
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2016-09-01/locks"
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
-	"github.com/Azure/azure-sdk-for-go/services/storage/mgmt/2018-02-01/storage"
-	mainStorage "github.com/Azure/azure-sdk-for-go/storage"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/adal"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/authentication"
-	"github.com/Azure/terraform-provider-acsengine/acsengine/utils"
 	"github.com/hashicorp/terraform/terraform"
 )
 
@@ -36,15 +30,11 @@ type ArmClient struct {
 	environment              azure.Environment
 	skipProviderRegistration bool
 
-	StopContext context.Context
+	StopContext context.Context // is this causing maligned error? Initialized to schema.StopContext() in provider.go
 
 	// Container Management
 	containerServicesClient  containerservice.ContainerServicesClient
 	kubernetesClustersClient containerservice.ManagedClustersClient
-
-	// KeyVault
-	keyVaultClient           keyvault.VaultsClient
-	keyVaultManagementClient keyVault.BaseClient
 
 	// Resources
 	managementLocksClient locks.ManagementLocksClient
@@ -53,9 +43,6 @@ type ArmClient struct {
 	resourcesClient       resources.Client
 	resourceGroupsClient  resources.GroupsClient
 	subscriptionsClient   subscriptions.Client
-
-	// Storage
-	storageServiceClient storage.AccountsClient
 }
 
 func (c *ArmClient) configureClient(client *autorest.Client, auth autorest.Authorizer) {
@@ -80,7 +67,8 @@ func withRequestLogging() autorest.SendDecorator {
 			resp, err := s.Do(r)
 			if resp != nil {
 				// dump response to wire format
-				if dump, err := httputil.DumpResponse(resp, true); err == nil {
+				var dump []byte
+				if dump, err = httputil.DumpResponse(resp, true); err == nil {
 					log.Printf("[DEBUG] AzureRM Response for %s: \n%s\n", r.URL, dump)
 				} else {
 					// fallback to basic message
@@ -183,8 +171,6 @@ func getArmClient(c *authentication.Config) (*ArmClient, error) {
 		return nil, fmt.Errorf("Unable to configure OAuthConfig for tenant %s", c.TenantID)
 	}
 
-	sender := autorest.CreateSender(withRequestLogging())
-
 	// Resource Manager endpoints
 	endpoint := env.ResourceManagerEndpoint
 	auth, err := getAuthorizationToken(c, oauthConfig, endpoint)
@@ -192,20 +178,8 @@ func getArmClient(c *authentication.Config) (*ArmClient, error) {
 		return nil, err
 	}
 
-	// Key Vault Endpoints
-	keyVaultAuth := autorest.NewBearerAuthorizerCallback(sender, func(tenantID, resource string) (*autorest.BearerAuthorizer, error) {
-		keyVaultSpt, err := getAuthorizationToken(c, oauthConfig, resource)
-		if err != nil {
-			return nil, err
-		}
-
-		return keyVaultSpt, nil
-	})
-
 	client.registerContainerServicesClients(endpoint, c.SubscriptionID, auth)
-	client.registerKeyVaultClients(endpoint, c.SubscriptionID, auth, keyVaultAuth, sender)
 	client.registerResourcesClients(endpoint, c.SubscriptionID, auth)
-	client.registerStorageServiceClients(endpoint, c.SubscriptionID, auth)
 
 	return &client, nil
 }
@@ -220,22 +194,6 @@ func (c *ArmClient) registerContainerServicesClients(endpoint, subscriptionID st
 	kubernetesClustersClient := containerservice.NewManagedClustersClientWithBaseURI(endpoint, subscriptionID)
 	c.configureClient(&kubernetesClustersClient.Client, auth)
 	c.kubernetesClustersClient = kubernetesClustersClient
-}
-
-func (c *ArmClient) registerKeyVaultClients(endpoint, subscriptionID string, auth autorest.Authorizer, keyVaultAuth autorest.Authorizer, sender autorest.Sender) {
-	keyVaultClient := keyvault.NewVaultsClientWithBaseURI(endpoint, subscriptionID)
-	setUserAgent(&keyVaultClient.Client)
-	keyVaultClient.Authorizer = auth
-	keyVaultClient.Sender = sender
-	keyVaultClient.SkipResourceProviderRegistration = c.skipProviderRegistration
-	c.keyVaultClient = keyVaultClient
-
-	keyVaultManagementClient := keyVault.New()
-	setUserAgent(&keyVaultManagementClient.Client)
-	keyVaultManagementClient.Authorizer = keyVaultAuth
-	keyVaultManagementClient.Sender = sender
-	keyVaultManagementClient.SkipResourceProviderRegistration = c.skipProviderRegistration
-	c.keyVaultManagementClient = keyVaultManagementClient
 }
 
 func (c *ArmClient) registerResourcesClients(endpoint, subscriptionID string, auth autorest.Authorizer) {
@@ -262,79 +220,4 @@ func (c *ArmClient) registerResourcesClients(endpoint, subscriptionID string, au
 	subscriptionsClient := subscriptions.NewClientWithBaseURI(endpoint)
 	c.configureClient(&subscriptionsClient.Client, auth)
 	c.subscriptionsClient = subscriptionsClient
-}
-
-func (c *ArmClient) registerStorageServiceClients(endpoint, subscriptionID string, auth autorest.Authorizer) {
-	accountsClient := storage.NewAccountsClientWithBaseURI(endpoint, subscriptionID)
-	c.configureClient(&accountsClient.Client, auth)
-	c.storageServiceClient = accountsClient
-}
-
-var (
-	storageKeyCacheMu sync.RWMutex
-	storageKeyCache   = make(map[string]string)
-)
-
-func (c *ArmClient) getKeyForStorageAccount(ctx context.Context, resourceGroupName, storageAccountName string) (string, bool, error) {
-	cacheIndex := resourceGroupName + "/" + storageAccountName
-	storageKeyCacheMu.RLock()
-	key, ok := storageKeyCache[cacheIndex]
-	storageKeyCacheMu.RUnlock()
-
-	if ok {
-		return key, true, nil
-	}
-
-	storageKeyCacheMu.Lock()
-	defer storageKeyCacheMu.Unlock()
-	key, ok = storageKeyCache[cacheIndex]
-	if !ok {
-		accountKeys, err := c.storageServiceClient.ListKeys(ctx, resourceGroupName, storageAccountName)
-		if utils.ResponseWasNotFound(accountKeys.Response) {
-			return "", false, nil
-		}
-		if err != nil {
-			// We assume this is a transient error rather than a 404 (which is caught above),  so assume the
-			// account still exists.
-			return "", true, fmt.Errorf("Error retrieving keys for storage account %q: %s", storageAccountName, err)
-		}
-
-		if accountKeys.Keys == nil {
-			return "", false, fmt.Errorf("Nil key returned for storage account %q", storageAccountName)
-		}
-
-		keys := *accountKeys.Keys
-		if len(keys) <= 0 {
-			return "", false, fmt.Errorf("No keys returned for storage account %q", storageAccountName)
-		}
-
-		keyPtr := keys[0].Value
-		if keyPtr == nil {
-			return "", false, fmt.Errorf("The first key returned is nil for storage account %q", storageAccountName)
-		}
-
-		key = *keyPtr
-		storageKeyCache[cacheIndex] = key
-	}
-
-	return key, true, nil
-}
-
-func (c *ArmClient) getBlobStorageClientForStorageAccount(ctx context.Context, resourceGroupName, storageAccountName string) (*mainStorage.BlobStorageClient, bool, error) {
-	key, accountExists, err := c.getKeyForStorageAccount(ctx, resourceGroupName, storageAccountName)
-	if err != nil {
-		return nil, accountExists, err
-	}
-	if !accountExists {
-		return nil, false, nil
-	}
-
-	storageClient, err := mainStorage.NewClient(storageAccountName, key, c.environment.StorageEndpointSuffix,
-		mainStorage.DefaultAPIVersion, true)
-	if err != nil {
-		return nil, true, fmt.Errorf("Error creating storage client for storage account %q: %s", storageAccountName, err)
-	}
-
-	blobClient := storageClient.GetBlobService()
-	return &blobClient, true, nil
 }
