@@ -5,9 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/authentication"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
@@ -40,7 +38,6 @@ func testAccPreCheck(t *testing.T) {
 		"ARM_SUBSCRIPTION_ID",
 		"ARM_TENANT_ID",
 		"ARM_TEST_LOCATION",
-		"ARM_TEST_LOCATION_ALT",
 		"SSH_KEY_PUB",
 	}
 
@@ -64,10 +61,6 @@ func testLocation() string {
 	return os.Getenv("ARM_TEST_LOCATION")
 }
 
-func testAltLocation() string {
-	return os.Getenv("ARM_TEST_LOCATION_ALT")
-}
-
 func testSSHPublicKey() string {
 	return os.Getenv("SSH_KEY_PUB")
 }
@@ -79,23 +72,6 @@ func testArmEnvironmentName() string {
 	}
 
 	return envName
-}
-
-func testArmEnvironment() (*azure.Environment, error) {
-	envName := testArmEnvironmentName()
-
-	// detect cloud from environment
-	env, envErr := azure.EnvironmentFromName(envName)
-	if envErr != nil {
-		// try again with wrapped value to support readable values like german instead of AZUREGERMANCLOUD
-		wrapped := fmt.Sprintf("AZURE%sCLOUD", envName)
-		var innerErr error
-		if env, innerErr = azure.EnvironmentFromName(wrapped); innerErr != nil {
-			return nil, envErr
-		}
-	}
-
-	return &env, nil
 }
 
 func testGetAzureConfig(t *testing.T) *authentication.Config {
@@ -145,6 +121,6 @@ func TestAccAzureRMResourceProviderRegistration(t *testing.T) {
 
 	needingRegistration := determineAzureResourceProvidersToRegister(providerList.Values())
 	if len(needingRegistration) > 0 {
-		t.Fatalf("'%d' Resource Providers are still Pending Registration: %s", len(needingRegistration), spew.Sprint(needingRegistration))
+		t.Fatalf("'%d' Resource Providers are still Pending Registration: %v", len(needingRegistration), needingRegistration)
 	}
 }

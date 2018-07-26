@@ -6,7 +6,7 @@ import (
 	"github.com/hashicorp/go-multierror"
 )
 
-// ValidateBearerAuth checks that...
+// ValidateBearerAuth validates that essential values for Azure management client config are set
 func (c *Config) ValidateBearerAuth() error {
 	var err *multierror.Error
 
@@ -29,7 +29,7 @@ func (c *Config) ValidateBearerAuth() error {
 	return err.ErrorOrNil()
 }
 
-// ValidateServicePrincipal validates service principal info including subscription ID, client ID, and client secret
+// ValidateServicePrincipal validates service principal info for Azure management client
 func (c *Config) ValidateServicePrincipal() error {
 	var err *multierror.Error
 
@@ -52,6 +52,7 @@ func (c *Config) ValidateServicePrincipal() error {
 	return err.ErrorOrNil()
 }
 
+// ValidateMsi validates managed service identity for Azure management client
 func (c *Config) ValidateMsi() error {
 	var err *multierror.Error
 

@@ -1480,17 +1480,17 @@ func flattenKubeConfig(kubeConfigFile string) (string, []interface{}, error) {
 	}
 
 	kubeConfig := []interface{}{}
-	cluster2 := config.Clusters[0].Cluster
+	cluster := config.Clusters[0].Cluster
 	user := config.Users[0].User
 	name := config.Users[0].Name
 
 	values := map[string]interface{}{}
-	values["host"] = cluster2.Server
+	values["host"] = cluster.Server
 	values["username"] = name
 	values["password"] = user.Token
 	values["client_certificate"] = base64Encode(user.ClientCertificteData)
 	values["client_key"] = base64Encode(user.ClientKeyData)
-	values["cluster_ca_certificate"] = base64Encode(cluster2.ClusterAuthorityData)
+	values["cluster_ca_certificate"] = base64Encode(cluster.ClusterAuthorityData)
 
 	kubeConfig = append(kubeConfig, values)
 
