@@ -52,8 +52,6 @@
     "services/compute/mgmt/2018-04-01/compute",
     "services/containerservice/mgmt/2017-09-30/containerservice",
     "services/graphrbac/1.6/graphrbac",
-    "services/keyvault/2016-10-01/keyvault",
-    "services/keyvault/mgmt/2016-10-01/keyvault",
     "services/network/mgmt/2018-05-01/network",
     "services/resources/mgmt/2016-06-01/subscriptions",
     "services/resources/mgmt/2016-09-01/locks",
@@ -346,7 +344,6 @@
   revision = "0dc08b1671f34c4250ce212759ebd880f743d883"
 
 [[projects]]
-  branch = "master"
   name = "github.com/hashicorp/terraform"
   packages = [
     "config",
@@ -360,7 +357,6 @@
     "helper/hashcode",
     "helper/hilmapstructure",
     "helper/logging",
-    "helper/mutexkv",
     "helper/resource",
     "helper/schema",
     "helper/structure",
@@ -379,7 +375,8 @@
     "tfdiags",
     "version"
   ]
-  revision = "bc90bfc368b12e01df69a494f315b9cd4e3f22f5"
+  revision = "41e50bd32a8825a84535e353c3674af8ce799161"
+  version = "v0.11.7"
 
 [[projects]]
   branch = "master"
@@ -812,6 +809,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "85ec1f890714ed87aa734a8a9ddfb6634e124369d86dc8b54cd4ca152909846d"
+  inputs-digest = "90fb27abb6d6b0cb20a2624d85c837fcf61b3688840e618e53fcb4353e7fd2e4"
   solver-name = "gps-cdcl"
   solver-version = 1
