@@ -10,6 +10,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/azure/cli"
 )
 
+// AccessToken includes info about access token for Azure management client
 type AccessToken struct {
 	ClientID     string
 	AccessToken  *adal.Token

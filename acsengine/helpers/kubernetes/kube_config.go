@@ -63,13 +63,13 @@ func ParseKubeConfig(config string) (*KubeConfig, error) {
 	if len(kubeConfig.Clusters) <= 0 || len(kubeConfig.Users) <= 0 {
 		return nil, fmt.Errorf("Config %+v contains no valid clusters or users", kubeConfig)
 	}
-	user := kubeConfig.Users[0].User
-	if user.Token == "" && (user.ClientCertificteData == "" || user.ClientKeyData == "") {
-		return nil, fmt.Errorf("Config requires either token or certificate auth for user %+v", user)
+	u := kubeConfig.Users[0].User
+	if u.Token == "" && (u.ClientCertificteData == "" || u.ClientKeyData == "") {
+		return nil, fmt.Errorf("Config requires either token or certificate auth for user %+v", u)
 	}
-	cluster := kubeConfig.Clusters[0].Cluster
-	if cluster.Server == "" {
-		return nil, fmt.Errorf("Config has invalid or non existent server for cluster %+v", cluster)
+	c := kubeConfig.Clusters[0].Cluster
+	if c.Server == "" {
+		return nil, fmt.Errorf("Config has invalid or non existent server for cluster %+v", c)
 	}
 
 	return &kubeConfig, nil

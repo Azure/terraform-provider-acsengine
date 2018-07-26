@@ -112,7 +112,6 @@ The following ENV variables must be set in your shell prior to running acceptanc
 - ARM_SUBSCRIPTION_ID
 - ARM_TENANT_ID
 - ARM_TEST_LOCATION
-- ARM_TEST_LOCATION_ALT
 - SSH_KEY_PUB
 
 *Note:* Acceptance tests create real resources, and often cost money to run.

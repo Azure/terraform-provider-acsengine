@@ -8,7 +8,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/azure/cli"
 )
 
-// AzureCLIProfile returns ...
+// AzureCLIProfile returns a go-autorest CLI profile struct
 type AzureCLIProfile struct {
 	cli.Profile
 }
