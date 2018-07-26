@@ -2,6 +2,7 @@ TEST?=$$(go list ./... |grep -v 'vendor')
 GOFMT_FILES?=$$(find . -name '*.go' |grep -v vendor)
 WEBSITE_REPO=github.com/hashicorp/terraform-website
 PKG_NAME=acsengine
+undefine TF_ACC
 
 ###############################################################################
 # build
@@ -20,10 +21,10 @@ prereqs:
 	go get github.com/golang/dep/cmd/dep
 	go get github.com/jteeuwen/go-bindata/...
 
-generate-templates: prereqs vendor
+generate-templates: prereqs
 	go generate ./vendor/github.com/Azure/acs-engine/pkg/acsengine
 
-generate-translations: prereqs vendor
+generate-translations: prereqs
 	go generate ./vendor/github.com/Azure/acs-engine/pkg/i18n
 
 generate-all: generate-templates generate-translations
@@ -35,7 +36,6 @@ generate-all: generate-templates generate-translations
 # do I want all of these?
 
 test: fmtcheck
-	unset TF_ACC
 	go test -i $(TEST) || exit 1
 	echo $(TEST) | \
 		xargs -t -n4 go test $(TESTARGS) -timeout=90s -parallel=4
