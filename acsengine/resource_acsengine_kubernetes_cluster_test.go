@@ -14,6 +14,8 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 // currently running this line to run tests, use -timeout 20m if I want to actually finish a test that deploys and deletes
@@ -2041,18 +2043,18 @@ func mockClusterResourceData() *schema.ResourceData {
 // this uses client-go, which should be a recent version
 // based on funcion in aks e2e tests
 // I want to figure out how to use it to test Kubernetes is running on VMs
-// func newClientConfigFromBytes(configBytes []byte) (*rest.Config, error) { // I need kubeconfig
-// 	config, err := clientcmd.Load(configBytes)
-// 	if err != nil {
-// 		return nil, fmt.Errorf("%v", err)
-// 	}
+func newClientConfigFromBytes(configBytes []byte) (*rest.Config, error) { // I need kubeconfig
+	config, err := clientcmd.Load(configBytes)
+	if err != nil {
+		return nil, fmt.Errorf("%v", err)
+	}
 
-// 	conf := clientcmd.NewNonInteractiveClientConfig(*config, "", &clientcmd.ConfigOverrides{}, nil)
+	conf := clientcmd.NewNonInteractiveClientConfig(*config, "", &clientcmd.ConfigOverrides{}, nil)
 
-// 	cc, err := conf.ClientConfig()
-// 	if err != nil {
-// 		return nil, fmt.Errorf("%v", err)
-// 	}
+	cc, err := conf.ClientConfig()
+	if err != nil {
+		return nil, fmt.Errorf("%v", err)
+	}
 
-// 	return cc, nil
-// }
+	return cc, nil
+}
