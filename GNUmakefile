@@ -11,7 +11,7 @@ default: build
 
 build: fmtcheck generate-all
 	go install
-
+	
 ###############################################################################
 # generate for acs-engine
 ###############################################################################
@@ -20,10 +20,10 @@ prereqs:
 	go get github.com/golang/dep/cmd/dep
 	go get github.com/jteeuwen/go-bindata/...
 
-generate-templates: prereqs
+generate-templates: prereqs vendor
 	go generate ./vendor/github.com/Azure/acs-engine/pkg/acsengine
 
-generate-translations: prereqs
+generate-translations: prereqs vendor
 	go generate ./vendor/github.com/Azure/acs-engine/pkg/i18n
 
 generate-all: generate-templates generate-translations
@@ -31,6 +31,8 @@ generate-all: generate-templates generate-translations
 ###############################################################################
 # testing
 ###############################################################################
+
+# do I want all of these?
 
 test: fmtcheck
 	unset TF_ACC
@@ -46,15 +48,6 @@ debugacc: fmtcheck
 
 lint:
 	gometalinter ./acsengine/... --deadline 100s
-
-vet:
-	@echo "go vet ."
-	@go vet $$(go list ./... | grep -v vendor/) ; if [ $$? -eq 1 ]; then \
-		echo ""; \
-		echo "Vet found suspicious constructs. Please check the reported constructs"; \
-		echo "and fix them if necessary before submitting the code for review."; \
-		exit 1; \
-	fi
 
 fmt:
 	gofmt -w $(GOFMT_FILES)
@@ -77,8 +70,11 @@ test-compile:
 # vendor
 ###############################################################################
 
+vendor:
+	@dep ensure
+
 vendor-status:
 	@dep status
 
-.PHONY: build test testacc vet fmt fmtcheck errcheck vendor-status test-compile
+.PHONY: build prereqs generate-templates generate-translations test testacc lint fmt fmtcheck errcheck vendor vendor-status test-compile
 
