@@ -332,7 +332,6 @@ ASALocalRun/
 # Project specific
 .terraform/
 _output/
-translations/
 /main.tf
 terraform.tfstate
 terraform.tfplan
