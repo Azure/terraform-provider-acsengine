@@ -43,6 +43,7 @@
     "translations/en_US/LC_MESSAGES"
   ]
   revision = "83a60bb673dd1c66837d0efc09bcca68aaf29d96"
+  version = "0.20.2"
 
 [[projects]]
   name = "github.com/Azure/azure-sdk-for-go"
@@ -809,6 +810,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "316a592c212ef18f1d2f413e62e78f3bfa16ae8d752f03d253221b7653175701"
+  inputs-digest = "40c1c92b7a00580afa30d715f0bb7e305af573fd4282bbee8d7f0b42784d937b"
   solver-name = "gps-cdcl"
   solver-version = 1

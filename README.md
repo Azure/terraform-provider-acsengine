@@ -1,22 +1,22 @@
-# ACSEngine Kubernetes Terraform Provider
-
-Note: This is very much still a work in progress (by an intern) :)
-If you try to test run this provider on your own right now, it will not work because I made personal changes to ACS Engine and need to either figure out how to not rely on that any more or just add it to my vendor directory for the time being.
-This started out as a fork of terraform-providers/terraform-provider-azurerm so a lot of code is inspired-by-slash-taken-from that repo.
-Don't trust everything in this doc yet.
+# ACS Engine Kubernetes Terraform Provider
 
 ## Overview
 
-The ACS Engine Kubernetes Terraform provider lets you build clusters from Terraform configurations.
+The Azure Container Service Engine Kubernetes Terraform Provider allows you to create and manage [ACS Engine](https://github.com/Azure/acs-engine) Kubernetes clusters with a simple Terraform configuration. Other container orchestrators are not supported.
 
-## User Guides (coming soon)
-- Resources
-- Updating clusters
+Note: This is very much still a work in progress (by an intern) :)
+This started out as a fork of [terraform-providers/terraform-provider-azurerm](https://github.com/terraform-providers/terraform-provider-azurerm/tree/master/azurerm) so a lot of code is inspired-by-slash-taken-from that repo.
+
+## User Guides
+
+* [Usage](docs/acsengine_k8s_cluster.md) - details about Kubernetes resource schema and how to configure a cluster
+* [Scaling clusters](docs/scaling-agent-pools.md) - shows how to scale a cluster's agent pool count
+* [Upgrading clusters](docs/upgrading-clusters.md) - shows how to upgrade a cluster's Kubernetes version
 
 ## General Requirements
 
--	[Terraform](https://www.terraform.io/downloads.html) 0.10.x
--	[Go](https://golang.org/doc/install) 1.10 (to build the provider plugin)
+* [Terraform](https://www.terraform.io/downloads.html) 0.11.x
+* [Go](https://golang.org/doc/install) 1.10.x (to build the provider plugin)
 
 ## Building The Provider
 
@@ -102,21 +102,20 @@ $ $GOPATH/bin/terraform-provider-acsengine
 
 In order to test the provider, you can simply run `make test`.
 
-disclaimer: I still need to fix this
 
 ```sh
 $ make test
 ```
 
-In order to run the full suite of Acceptance tests, run `make testacc`.
+In order to run the full suite of Acceptance tests, run `make testacc`. This will take some time.
 
 The following ENV variables must be set in your shell prior to running acceptance tests:
-- ARM_CLIENT_ID
-- ARM_CLIENT_SECRET
-- ARM_SUBSCRIPTION_ID
-- ARM_TENANT_ID
-- ARM_TEST_LOCATION
-- SSH_KEY_PUB
+* ARM_CLIENT_ID
+* ARM_CLIENT_SECRET
+* ARM_SUBSCRIPTION_ID
+* ARM_TENANT_ID
+* ARM_TEST_LOCATION
+* SSH_KEY_PUB
 
 *Note:* Acceptance tests create real resources, and often cost money to run.
 
@@ -124,7 +123,9 @@ The following ENV variables must be set in your shell prior to running acceptanc
 $ make testacc
 ```
 
-# Contributing
+## Contributing
+
+This project welcomes contributions and suggestions. Please follow the guidelines on our [contributing page](CONTRIBUTING.md) if you would like to help out.
 
 This project welcomes contributions and suggestions.  Most contributions require you to agree to a
 Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us
@@ -133,6 +134,8 @@ the rights to use your contribution. For details, visit https://cla.microsoft.co
 When you submit a pull request, a CLA-bot will automatically determine whether you need to provide
 a CLA and decorate the PR appropriately (e.g., label, comment). Simply follow the instructions
 provided by the bot. You will only need to do this once across all repos using our CLA.
+
+## Code of Conduct
 
 This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/).
 For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or
