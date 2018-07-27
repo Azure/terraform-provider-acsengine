@@ -29,18 +29,6 @@
     "pkg/openshift/filesystem",
     "pkg/operations",
     "pkg/operations/kubernetesupgrade",
-    "parts",
-    "parts/dcos",
-    "parts/dcos/bstrap",
-    "parts/k8s",
-    "parts/k8s/addons",
-    "parts/k8s/artifacts",
-    "parts/k8s/manifests",
-    "parts/openshift",
-    "parts/openshift/unstable",
-    "parts/openshift/release-3.9",
-    "parts/swarm",
-    "translations/en_US/LC_MESSAGES"
   ]
   revision = "83a60bb673dd1c66837d0efc09bcca68aaf29d96"
   version = "0.20.2"

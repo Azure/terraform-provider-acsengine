@@ -12,6 +12,7 @@ This started out as a fork of [terraform-providers/terraform-provider-azurerm](h
 * [Usage](docs/acsengine_k8s_cluster.md) - details about Kubernetes resource schema and how to configure a cluster
 * [Scaling clusters](docs/scaling-agent-pools.md) - shows how to scale a cluster's agent pool count
 * [Upgrading clusters](docs/upgrading-clusters.md) - shows how to upgrade a cluster's Kubernetes version
+* [Developer guide](docs/developers.md)
 
 ## General Requirements
 
@@ -100,8 +101,7 @@ $ $GOPATH/bin/terraform-provider-acsengine
 ...
 ```
 
-In order to test the provider, you can simply run `make test`.
-
+In order to run the provider unit tests, you can simply run `make test`.
 
 ```sh
 $ make test
@@ -110,6 +110,7 @@ $ make test
 In order to run the full suite of Acceptance tests, run `make testacc`. This will take some time.
 
 The following ENV variables must be set in your shell prior to running acceptance tests:
+
 * ARM_CLIENT_ID
 * ARM_CLIENT_SECRET
 * ARM_SUBSCRIPTION_ID
