@@ -24,6 +24,9 @@
 #   go-tests = true
 #   unused-packages = true
 
+[[constraint]]
+  name = "github.com/Azure/acs-engine"
+  version = "~0.20.2"
 
 [[constraint]]
   name = "github.com/Azure/azure-sdk-for-go"

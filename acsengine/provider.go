@@ -117,18 +117,15 @@ func providerConfigure(p *schema.Provider) schema.ConfigureFunc {
 			}
 		} else if config.ClientSecret != "" {
 			log.Printf("[DEBUG] Client Secret specified - using Service Principal for Authentication")
-			if err := config.ValidateServicePrincipal(); err != nil {
-				return nil, err
-			}
+			err := config.ValidateServicePrincipal()
+			handleError(err)
 		} else {
 			log.Printf("[DEBUG] No Client Secret specified - loading credentials from Azure CLI")
-			if err := config.LoadTokensFromAzureCLI(); err != nil {
-				return nil, err
-			}
+			err := config.LoadTokensFromAzureCLI()
+			handleError(err)
 
-			if err := config.ValidateBearerAuth(); err != nil {
-				return nil, fmt.Errorf("Please specify either a Service Principal, or log in with the Azure CLI (using `az login`)")
-			}
+			err = config.ValidateBearerAuth()
+			handleErrorWithMessage("Please specify either a Service Principal, or log in with the Azure CLI (using `az login`)", err)
 		}
 
 		client, err := getArmClient(config)
@@ -157,9 +154,7 @@ func providerConfigure(p *schema.Provider) schema.ConfigureFunc {
 
 			if !config.SkipProviderRegistration {
 				err = registerAzureResourceProvidersWithSubscription(ctx, providerList.Values(), client.providersClient)
-				if err != nil {
-					return nil, err
-				}
+				handleError(err)
 			}
 		}
 

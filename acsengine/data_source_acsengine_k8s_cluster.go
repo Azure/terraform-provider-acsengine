@@ -166,6 +166,8 @@ func dataSourceAcsEngineKubernetesCluster() *schema.Resource {
 				Sensitive: true,
 			},
 
+			// I can't think of what else to do right now than make this required, maybe make it a path to file??
+			// Can I get this info some other way?
 			"api_model": {
 				Type:      schema.TypeString,
 				Computed:  true,
@@ -198,48 +200,33 @@ func dataSourceACSEngineK8sClusterRead(d *schema.ResourceData, m interface{}) er
 	d.SetId(*resp.ID)
 
 	if err = d.Set("name", name); err != nil {
-		return err
+		return fmt.Errorf("Error setting name: %+v", err)
 	}
+
 	if err = d.Set("resource_group", resourceGroup); err != nil {
-		return err
+		return fmt.Errorf("Error setting resource group: %+v", err)
 	}
 
 	// how am I supposed to get this from the state? Do I open state file??
-	// apimodel, err := getBlob(d, m, "apimodel.json")
-	// if err != nil {
-	// 	return err
-	// }
+	apimodel := ""
 
-	// locale, err := i18n.LoadTranslations()
-	// if err != nil {
-	// 	return err
-	// }
-	// apiloader := &api.Apiloader{
-	// 	Translator: &i18n.Translator{
-	// 		Locale: locale,
-	// 	},
-	// }
-
-	// cluster, err := apiloader.LoadContainerService([]byte(apimodel), apiVersion, true, false, nil)
-	// if err != nil {
-	// 	return fmt.Errorf("error parsing API model")
-	// }
 	// so this knows what resource to get this from?
 	cluster, err := loadContainerServiceFromApimodel(d, true, false)
 	if err != nil {
-		return fmt.Errorf("error parsing API model")
+		return fmt.Errorf("Error parsing API model: %+v", err)
 	}
 
 	if err = d.Set("location", azureRMNormalizeLocation(cluster.Location)); err != nil {
-		return err
+		return fmt.Errorf("Error setting location: %+v", err)
 	}
+
 	if err = d.Set("kubernetes_version", cluster.Properties.OrchestratorProfile.OrchestratorVersion); err != nil {
-		return err
+		return fmt.Errorf("Error setting kubernetes_version: %+v", err)
 	}
 
 	linuxProfile, err := flattenLinuxProfile(*cluster.Properties.LinuxProfile)
 	if err != nil {
-		return err
+		return fmt.Errorf("Error flattening `linux_profile`: %+v", err)
 	}
 	if err = d.Set("linux_profile", linuxProfile); err != nil {
 		return fmt.Errorf("Error setting 'linux_profile': %+v", err)
@@ -247,7 +234,7 @@ func dataSourceACSEngineK8sClusterRead(d *schema.ResourceData, m interface{}) er
 
 	servicePrincipal, err := flattenDataSourceServicePrincipal(*cluster.Properties.ServicePrincipalProfile)
 	if err != nil {
-		return err
+		return fmt.Errorf("Error flattening `service_principal`: %+v", err)
 	}
 	if err = d.Set("service_principal", servicePrincipal); err != nil {
 		return fmt.Errorf("Error setting 'service_principal': %+v", err)
@@ -255,7 +242,7 @@ func dataSourceACSEngineK8sClusterRead(d *schema.ResourceData, m interface{}) er
 
 	masterProfile, err := flattenMasterProfile(*cluster.Properties.MasterProfile, cluster.Location)
 	if err != nil {
-		return err
+		return fmt.Errorf("Error flattening `master_profile`: %+v", err)
 	}
 	if err = d.Set("master_profile", masterProfile); err != nil {
 		return fmt.Errorf("Error setting 'master_profile': %+v", err)
@@ -263,7 +250,7 @@ func dataSourceACSEngineK8sClusterRead(d *schema.ResourceData, m interface{}) er
 
 	agentPoolProfiles, err := flattenAgentPoolProfiles(cluster.Properties.AgentPoolProfiles)
 	if err != nil {
-		return err
+		return fmt.Errorf("Error flattening `agent_pool_profiles`: %+v", err)
 	}
 	if err = d.Set("agent_pool_profiles", agentPoolProfiles); err != nil {
 		return fmt.Errorf("Error setting 'agent_pool_profiles': %+v", err)
@@ -271,7 +258,7 @@ func dataSourceACSEngineK8sClusterRead(d *schema.ResourceData, m interface{}) er
 
 	tags, err := flattenTags(cluster.Tags)
 	if err != nil {
-		return err
+		return fmt.Errorf("Error flattening `tags`: %+v", err)
 	}
 	if err = d.Set("tags", tags); err != nil {
 		return fmt.Errorf("Error setting `tags`: %+v", err)
@@ -279,23 +266,23 @@ func dataSourceACSEngineK8sClusterRead(d *schema.ResourceData, m interface{}) er
 
 	kubeConfigFile, err := getKubeConfig(cluster)
 	if err != nil {
-		return err
+		return fmt.Errorf("Error getting kube config file: %+v", err)
 	}
 	kubeConfigRaw, kubeConfig, err := flattenKubeConfig(kubeConfigFile)
 	if err != nil {
-		return err
+		return fmt.Errorf("Error flattening `kube_config`: %+v", err)
 	}
 	if err = d.Set("kube_config_raw", kubeConfigRaw); err != nil {
 		return fmt.Errorf("Error setting `kube_config_raw`: %+v", err)
 	}
-	if err := d.Set("kube_config", kubeConfig); err != nil {
+	if err = d.Set("kube_config", kubeConfig); err != nil {
 		return fmt.Errorf("Error setting `kube_config`: %+v", err)
 	}
 
-	// apimodel :=
-	// if err := d.Set("api_model", apimodel); err != nil {
-	// 	return fmt.Errorf("Error setting `api_model`: %+v", err)
-	// }
+	apimodelBase64 := base64Encode(apimodel)
+	if err := d.Set("api_model", apimodelBase64); err != nil {
+		return fmt.Errorf("Error setting `api_model`: %+v", err)
+	}
 
 	fmt.Println("finished reading")
 

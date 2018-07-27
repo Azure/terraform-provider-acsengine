@@ -924,6 +924,7 @@ func TestAccACSEngineK8sCluster_createCustomized(t *testing.T) {
 	agentCount := 1
 	osDiskSizeGB := 40
 	config := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, version, agentCount, vmSize, osDiskSizeGB)
+	// var kubeConfig acsengine.
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -1581,6 +1582,7 @@ func TestAccACSEngineK8sCluster_createHybridAgentCluster(t *testing.T) {
 
 // test validation (incorrect commands should not let you do 'apply')
 
+// Why is this failing??
 func TestAccACSEngineK8sCluster_importBasic(t *testing.T) {
 	resourceName := "acsengine_kubernetes_cluster.test"
 
@@ -1894,6 +1896,9 @@ func testCheckACSEngineClusterExists(name string) resource.TestCheckFunc {
 			return fmt.Errorf("Bad: Kubernetes cluster %q (resource group: %q) does not exist", name, resourceGroup)
 		}
 
+		// somehow get kubeConfig
+		// test cluster is running
+
 		// test that Kubernetes is running
 		// look into client-go
 		// conn := testAccProvider.Meta().(*kubernetes.Clientset)
@@ -1933,6 +1938,26 @@ func testCheckACSEngineClusterDestroy(s *terraform.State) error {
 			return fmt.Errorf("Kubernetes cluster still exists:\n%#v", resp)
 		}
 	}
+
+	return nil
+}
+
+func testClusterIsRunning(config string) error {
+	// kubeConfigBytes, err := base64.StdEncoding.DecodeString(config)
+	// if err != nil {
+	// 	return err
+	// }
+	// kubeConfig, err := newClientConfigFromBytes(kubeConfigBytes)
+	// if err != nil {
+	// 	return err
+	// }
+
+	// clientset, err := kubernetes.NewForConfig(kubeConfig)
+	// if err != nil {
+	// 	return fmt.Errorf("Could not get Kubernetes client: %+v", err)
+	// }
+
+	// api := clientset.CoreV1()
 
 	return nil
 }
