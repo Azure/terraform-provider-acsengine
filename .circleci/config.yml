@@ -21,7 +21,7 @@ jobs:
     <<: *defaults
     steps:
       - checkout
-      - run |
+      - run: |
             echo 'unset TF_ACC' >> $BASH_ENV
       - run:
           name: Build
