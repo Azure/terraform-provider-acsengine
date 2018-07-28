@@ -11,15 +11,15 @@ Manages AKS Cluster
 <!-- Try testing this exact configuration -->
 
 ```hcl
-resource "acsengine_k8s_cluster" "test" {
-    name               = "acctest"
-    resource_group     = "acctestRG"
+resource "acsengine_kubernetes_cluster" "test" {
+    name               = "testcluster"
+    resource_group     = "testrg"
     location           = "southcentralus"
     kubernetes_version = "1.10.4"
 
     master_profile {
         count           = 1
-        dns_name_prefix = "acctestmaster"
+        dns_name_prefix = "creativeDNSPrefix"
     }
 
     agent_pool_profiles {
@@ -36,7 +36,7 @@ resource "acsengine_k8s_cluster" "test" {
     }
 
     linux_profile {
-        admin_username = "acctestuser"
+        admin_username = "azureuser"
         ssh {
             key_data = "ssh-rsa AAAAB3NzaC... terraform@demo.tld"
         }
