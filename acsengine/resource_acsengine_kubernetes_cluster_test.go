@@ -1,6 +1,7 @@
 package acsengine
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -14,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -283,10 +285,6 @@ func TestACSEngineK8sCluster_flattenKubeConfig(t *testing.T) {
 			t.Fatalf("Username is not set correctly: %s != %s", user, expected)
 		}
 	}
-	// I'm not sure what kubeconfig with this looks like
-	// if v, ok := kubeConfig["password"]; ok {
-	// 	fmt.Println(v.(string))
-	// }
 }
 
 func TestACSEngineK8sCluster_expandLinuxProfile(t *testing.T) {
@@ -473,29 +471,7 @@ func TestACSEngineK8sCluster_initializeContainerService(t *testing.T) {
 }
 
 func TestACSEngineK8sCluster_loadContainerServiceFromApimodel(t *testing.T) {
-	// d := mockClusterResourceData()
-
-	// cluster, err := loadContainerService(d, true, false)
-	// if err != nil {
-	// 	t.Fatalf("loadContainerService failed: %+v", err)
-	// }
-
-	// if cluster == nil {
-	// 	t.Fatalf("cluster is not set")
-	// }
-	// if cluster.Name != "testcluster" {
-	// 	t.Fatalf("cluster name was not set correctly: was %s but should be testcluster", cluster.Name)
-	// }
-	// if cluster.Properties.AgentPoolProfiles[0].OSType != api.Linux {
-	// 	t.Fatalf("cluster OS type was not set correctly")
-	// }
-	// if cluster.Properties.CertificateProfile == nil {
-	// 	t.Fatalf("cluster certificate profile was not set correctly")
-	// }
-}
-
-func TestACSEngineK8sCluster_loadApimodelFromContainerService(t *testing.T) {
-	// d := mockClusterResourceData()
+	// d := mockClusterResourceData() // I need to add a fake apimodel in here
 }
 
 /* ACCEPTANCE TESTS */
@@ -1641,8 +1617,7 @@ func testACSEngineK8sClusterKubeConfig(dnsPrefix string, location string) string
                 "user": {"client-certificate-data":"4567","client-key-data":"8910"}
             }
         ]
-    }
-`, dnsPrefix, location, dnsPrefix, dnsPrefix, dnsPrefix, dnsPrefix, dnsPrefix, dnsPrefix)
+    }`, dnsPrefix, location, dnsPrefix, dnsPrefix, dnsPrefix, dnsPrefix, dnsPrefix, dnsPrefix)
 }
 
 func testAccACSEngineK8sClusterBasic(rInt int, clientID string, clientSecret string, location string, keyData string) string {
@@ -1872,7 +1847,8 @@ func testAccACSEngineK8sClusterOSType(rInt int, clientID string, clientSecret st
 
 func testCheckACSEngineClusterExists(name string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[name]
+		ms := s.RootModule()
+		rs, ok := ms.Resources[name]
 		if !ok {
 			return fmt.Errorf("Not found: %s", name)
 		}
@@ -1896,16 +1872,19 @@ func testCheckACSEngineClusterExists(name string) resource.TestCheckFunc {
 			return fmt.Errorf("Bad: Kubernetes cluster %q (resource group: %q) does not exist", name, resourceGroup)
 		}
 
-		// somehow get kubeConfig
-		// test cluster is running
+		// check if cluster is actually running (not just that resource exists and deployment exists)
+		is := rs.Primary
+		if is == nil {
+			return fmt.Errorf("Bad: could not get primary instance state: %s in %s", name, ms.Path)
+		}
+		err = clusterIsRunning(is, name)
+		if err != nil {
+			return fmt.Errorf("Bad: cluster not found to be running: %+v", err)
+		}
 
 		// test that Kubernetes is running
 		// look into client-go
-		// conn := testAccProvider.Meta().(*kubernetes.Clientset)
-		// namespace, name, err := idParts(rs.Primary.ID) // idParts not defined
-		// if err != nil {
-		// 	return err
-		// }
+		// get namespace of cluster then...
 		// out, err := conn.CoreV1().Services(namespace).Get("name", meta_v1.GetOptions{})
 		// if err != nil {
 		// 	return err
@@ -1942,24 +1921,79 @@ func testCheckACSEngineClusterDestroy(s *terraform.State) error {
 	return nil
 }
 
-func testClusterIsRunning(config string) error {
-	// kubeConfigBytes, err := base64.StdEncoding.DecodeString(config)
-	// if err != nil {
-	// 	return err
-	// }
-	// kubeConfig, err := newClientConfigFromBytes(kubeConfigBytes)
-	// if err != nil {
-	// 	return err
-	// }
+// clusterIsRunning is a helper function for testCheckACSEngineClusterExists
+func clusterIsRunning(is *terraform.InstanceState, name string) error {
+	// get kube config
+	key := "kube_config_raw"
+	var config []byte
+	var err error
+	if v, ok := is.Attributes[key]; ok {
+		config, err = base64.StdEncoding.DecodeString(v)
+		if err != nil {
+			return fmt.Errorf("kube config could not be decoded from base64: %+v", err)
+		}
+	} else {
+		return fmt.Errorf("%s: Attribute '%s' not found", name, key)
+	}
 
-	// clientset, err := kubernetes.NewForConfig(kubeConfig)
-	// if err != nil {
-	// 	return fmt.Errorf("Could not get Kubernetes client: %+v", err)
-	// }
+	// get kubernetes client
+	kubeConfig, _ /*namespace*/, err := newClientConfigFromBytes(config)
+	if err != nil {
+		return err
+	}
+
+	clientset, err := kubernetes.NewForConfig(kubeConfig)
+	if err != nil {
+		return fmt.Errorf("Could not get Kubernetes client: %+v", err)
+	}
 
 	// api := clientset.CoreV1()
+	clientset.CoreV1()
+
+	// why isn't this successful? I guess because there's not service...
+	// _, err = api.Services(namespace).Get(name, metav1.GetOptions{})
+	// if err != nil {
+	// 	return fmt.Errorf("cluster service was not found: %+v", err)
+	// }
+
+	// was successful once, now keeps timing out
+	// nodes, err := api.Nodes().List(metav1.ListOptions{})
+	// if err != nil {
+	// 	return fmt.Errorf("failed to get nodes: %+v", err)
+	// }
+	// for _, node := range nodes.Items {
+	// 	fmt.Printf("Node: %s\n", node.Name)
+	// }
+	// if nodes.Size() < 2 {
+	// 	return fmt.Errorf("Less than 2 nodes: %d found", nodes.Size())
+	// }
+	// fmt.Printf("Nodes list length: %d", nodes.Size())
+
+	// assert number of nodes? do I want to check things like master dns prefix? do I try to run pods and a service?
 
 	return nil
+}
+
+// Gets a client config, based on function in aks e2e tests
+func newClientConfigFromBytes(configBytes []byte) (*rest.Config, string, error) { // I need kubeconfig
+	config, err := clientcmd.Load(configBytes)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to load kube config from bytes: %+v", err)
+	}
+
+	conf := clientcmd.NewNonInteractiveClientConfig(*config, "", &clientcmd.ConfigOverrides{}, nil)
+
+	namespace, _, err := conf.Namespace()
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to get cluster namespace: %+v", err)
+	}
+
+	cc, err := conf.ClientConfig()
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to : %+v", err)
+	}
+
+	return cc, namespace, nil
 }
 
 func fakeFlattenLinuxProfile(adminUsername string) []interface{} {
@@ -2063,23 +2097,4 @@ func mockClusterResourceData() *schema.ResourceData {
 	d.Set("tags", map[string]interface{}{})
 
 	return d
-}
-
-// this uses client-go, which should be a recent version
-// based on funcion in aks e2e tests
-// I want to figure out how to use it to test Kubernetes is running on VMs
-func newClientConfigFromBytes(configBytes []byte) (*rest.Config, error) { // I need kubeconfig
-	config, err := clientcmd.Load(configBytes)
-	if err != nil {
-		return nil, fmt.Errorf("%v", err)
-	}
-
-	conf := clientcmd.NewNonInteractiveClientConfig(*config, "", &clientcmd.ConfigOverrides{}, nil)
-
-	cc, err := conf.ClientConfig()
-	if err != nil {
-		return nil, fmt.Errorf("%v", err)
-	}
-
-	return cc, nil
 }

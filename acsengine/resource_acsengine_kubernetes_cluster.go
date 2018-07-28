@@ -18,7 +18,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"math/rand"
 	"os"
@@ -322,59 +321,19 @@ func resourceAcsEngineK8sClusterRead(d *schema.ResourceData, m interface{}) erro
 		return fmt.Errorf("error setting `kubernetes_version`: %+v", err)
 	}
 
-	linuxProfile, err := flattenLinuxProfile(*cluster.Properties.LinuxProfile)
-	if err != nil {
-		return fmt.Errorf("error flattening `linux_profile`: %+v", err)
-	}
-	if err := d.Set("linux_profile", linuxProfile); err != nil {
-		return fmt.Errorf("error setting 'linux_profile': %+v", err)
+	// set linux profile, service principal, master profile, and agent pool profiles
+	if err = setProfiles(d, cluster); err != nil {
+		return err
 	}
 
-	servicePrincipal, err := flattenServicePrincipal(*cluster.Properties.ServicePrincipalProfile)
-	if err != nil {
-		return fmt.Errorf("error flattening `service_principal`: %+v", err)
-	}
-	if err := d.Set("service_principal", servicePrincipal); err != nil {
-		return fmt.Errorf("error setting 'service_principal': %+v", err)
+	// sets tags
+	if err = setTags(d, cluster); err != nil {
+		return err
 	}
 
-	masterProfile, err := flattenMasterProfile(*cluster.Properties.MasterProfile, cluster.Location)
-	if err != nil {
-		return fmt.Errorf("error flattening `master_profile`: %+v", err)
-	}
-	if err := d.Set("master_profile", masterProfile); err != nil {
-		return fmt.Errorf("error setting 'master_profile': %+v", err)
-	}
-
-	agentPoolProfiles, err := flattenAgentPoolProfiles(cluster.Properties.AgentPoolProfiles)
-	if err != nil {
-		return fmt.Errorf("error flattening `agent_pool_profiles`: %+v", err)
-	}
-	if err := d.Set("agent_pool_profiles", agentPoolProfiles); err != nil {
-		return fmt.Errorf("error setting 'agent_pool_profiles': %+v", err)
-	}
-
-	tags, err := flattenTags(cluster.Tags)
-	if err != nil {
-		return fmt.Errorf("error flattening `tags`: %+v", err)
-	}
-	if err := d.Set("tags", tags); err != nil {
-		return fmt.Errorf("error setting 'tags': %+v", err)
-	}
-
-	kubeConfigFile, err := getKubeConfig(cluster)
-	if err != nil {
-		return fmt.Errorf("error getting kube config: %+v", err)
-	}
-	kubeConfigRaw, kubeConfig, err := flattenKubeConfig(kubeConfigFile)
-	if err != nil {
-		return fmt.Errorf("error flattening kube config: %+v", err)
-	}
-	if err = d.Set("kube_config_raw", kubeConfigRaw); err != nil {
-		return fmt.Errorf("error setting `kube_config_raw`: %+v", err)
-	}
-	if err = d.Set("kube_config", kubeConfig); err != nil {
-		return fmt.Errorf("error setting `kube_config`: %+v", err)
+	// set kube config fields
+	if err = setKubeConfig(d, cluster); err != nil {
+		return err
 	}
 
 	// set apimodel here? doesn't really make sense if I'm using that to set everything
@@ -418,7 +377,6 @@ func resourceAcsEngineK8sClusterDelete(d *schema.ResourceData, m interface{}) er
 }
 
 func resourceAcsEngineK8sClusterUpdate(d *schema.ResourceData, m interface{}) error {
-	// check that cluster exists? Not so sure I need this, if read is called before
 	// if the deployment exists, that says something, but how do I check more for kubernetes cluster?
 	_, err := parseAzureResourceID(d.Id()) // from resourceid.go
 	if err != nil {
@@ -529,20 +487,21 @@ func generateACSEngineTemplate(d *schema.ResourceData, write bool) (template str
 // Initializes the acs-engine container service struct using Terraform input
 // if update, this could set ca certificate and key
 func initializeContainerService(d *schema.ResourceData) (*api.ContainerService, error) {
-	var name string
-	if v, ok := d.GetOk("name"); ok {
-		name = v.(string)
-	} else {
+	var name, location, kubernetesVersion string
+	var v interface{}
+	var ok bool
+
+	if v, ok = d.GetOk("name"); !ok {
 		return &api.ContainerService{}, fmt.Errorf("cluster 'name' not found")
 	}
-	var location string
-	if v, ok := d.GetOk("location"); ok {
-		location = azureRMNormalizeLocation(v.(string)) // from location.go
-	} else {
+	name = v.(string)
+
+	if v, ok = d.GetOk("location"); !ok {
 		return &api.ContainerService{}, fmt.Errorf("cluster 'location' not found")
 	}
-	var kubernetesVersion string
-	if v, ok := d.GetOk("kubernetes_version"); ok {
+	location = azureRMNormalizeLocation(v.(string)) // from location.go
+
+	if v, ok = d.GetOk("kubernetes_version"); ok {
 		kubernetesVersion = v.(string)
 	} else {
 		kubernetesVersion = common.GetDefaultKubernetesVersion() // will this case ever be needed?
@@ -570,7 +529,7 @@ func initializeContainerService(d *schema.ResourceData) (*api.ContainerService, 
 	// adminPassword = ?
 
 	var tags map[string]interface{}
-	if v, ok := d.GetOk("tags"); ok {
+	if v, ok = d.GetOk("tags"); ok {
 		tags = v.(map[string]interface{})
 	} else {
 		tags = map[string]interface{}{}
@@ -622,59 +581,25 @@ func loadContainerServiceFromApimodel(d *schema.ResourceData, validate bool, isU
 	return cluster, nil
 }
 
-// Loads container service from current configuration. I think this creates new certificates.
-// I'm not using this right now, but if I move away from storing api_model then I will need it
-func loadContainerService(d *schema.ResourceData, validate bool, isUpdate bool) (*api.ContainerService, error) {
-	// create container service struct
-	cluster, err := initializeContainerService(d)
-	if err != nil {
-		return nil, fmt.Errorf("error initializing container service struct: %+v", err)
-	}
-
-	// initialize values
-	locale, err := i18n.LoadTranslations()
-	if err != nil {
-		return nil, fmt.Errorf("error loading translation files: %+v", err)
-	}
-
-	ctx := acsengine.Context{
-		Translator: &i18n.Translator{
-			Locale: locale,
-		},
-	}
-
-	// generate template
-	templateGenerator, err := acsengine.InitializeTemplateGenerator(ctx, false)
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize template generator: %+v", err)
-	}
-	// Beware, this function sets certs and other default values if they don't already exist
-	_, _, _, err = templateGenerator.GenerateTemplate(cluster, acsengine.DefaultGeneratorCode, false, false, acsEngineVersion)
-	if err != nil {
-		return nil, fmt.Errorf("error generating template: %+v", err)
-	}
-
-	return cluster, nil
-}
-
 // Deploys the templates generated by ACS Engine for creating a cluster
 func deployTemplate(d *schema.ResourceData, m interface{}, template string, parameters string) (id string, err error) {
 	client := m.(*ArmClient)
 	deployClient := client.deploymentsClient
 	ctx := client.StopContext
 
-	var name string
-	if v, ok := d.GetOk("name"); ok {
-		name = v.(string)
-	} else {
+	var name, resourceGroup string
+	var v interface{}
+	var ok bool
+
+	if v, ok = d.GetOk("name"); !ok {
 		return "", fmt.Errorf("cluster 'name' not found")
 	}
-	var resourceGroup string
-	if v, ok := d.GetOk("resource_group"); ok {
-		resourceGroup = v.(string)
-	} else {
+	name = v.(string)
+
+	if v, ok = d.GetOk("resource_group"); !ok {
 		return "", fmt.Errorf("cluster 'resource_group' not found")
 	}
+	resourceGroup = v.(string)
 
 	azureDeployTemplate, err := expandTemplateBody(template)
 	if err != nil {
@@ -702,8 +627,7 @@ func deployTemplate(d *schema.ResourceData, m interface{}, template string, para
 
 	fmt.Println("Deployment created (1)")
 
-	err = future.WaitForCompletion(ctx, deployClient.Client)
-	if err != nil {
+	if err = future.WaitForCompletion(ctx, deployClient.Client); err != nil {
 		return "", fmt.Errorf("error creating deployment: %+v", err)
 	}
 
@@ -719,6 +643,77 @@ func deployTemplate(d *schema.ResourceData, m interface{}, template string, para
 	log.Printf("[INFO] cluster %q ID: %q", name, *read.ID)
 
 	return *read.ID, nil
+}
+
+/* 'Read' Helper Functions */
+
+// sets linux profile, service principal, master profile, and agent pool profiles
+func setProfiles(d *schema.ResourceData, cluster *api.ContainerService) error {
+	linuxProfile, err := flattenLinuxProfile(*cluster.Properties.LinuxProfile)
+	if err != nil {
+		return fmt.Errorf("error flattening `linux_profile`: %+v", err)
+	}
+	if err = d.Set("linux_profile", linuxProfile); err != nil {
+		return fmt.Errorf("error setting 'linux_profile': %+v", err)
+	}
+
+	servicePrincipal, err := flattenServicePrincipal(*cluster.Properties.ServicePrincipalProfile)
+	if err != nil {
+		return fmt.Errorf("error flattening `service_principal`: %+v", err)
+	}
+	if err = d.Set("service_principal", servicePrincipal); err != nil {
+		return fmt.Errorf("error setting 'service_principal': %+v", err)
+	}
+
+	masterProfile, err := flattenMasterProfile(*cluster.Properties.MasterProfile, cluster.Location)
+	if err != nil {
+		return fmt.Errorf("error flattening `master_profile`: %+v", err)
+	}
+	if err = d.Set("master_profile", masterProfile); err != nil {
+		return fmt.Errorf("error setting 'master_profile': %+v", err)
+	}
+
+	agentPoolProfiles, err := flattenAgentPoolProfiles(cluster.Properties.AgentPoolProfiles)
+	if err != nil {
+		return fmt.Errorf("error flattening `agent_pool_profiles`: %+v", err)
+	}
+	if err = d.Set("agent_pool_profiles", agentPoolProfiles); err != nil {
+		return fmt.Errorf("error setting 'agent_pool_profiles': %+v", err)
+	}
+
+	return nil
+}
+
+func setTags(d *schema.ResourceData, cluster *api.ContainerService) error {
+	tags, err := flattenTags(cluster.Tags)
+	if err != nil {
+		return fmt.Errorf("error flattening `tags`: %+v", err)
+	}
+	if err := d.Set("tags", tags); err != nil {
+		return fmt.Errorf("error setting 'tags': %+v", err)
+	}
+
+	return nil
+}
+
+// set `kube_config` and `kube_config_raw`
+func setKubeConfig(d *schema.ResourceData, cluster *api.ContainerService) error {
+	kubeConfigFile, err := getKubeConfig(cluster)
+	if err != nil {
+		return fmt.Errorf("error getting kube config: %+v", err)
+	}
+	kubeConfigRaw, kubeConfig, err := flattenKubeConfig(kubeConfigFile)
+	if err != nil {
+		return fmt.Errorf("error flattening kube config: %+v", err)
+	}
+	if err = d.Set("kube_config_raw", kubeConfigRaw); err != nil {
+		return fmt.Errorf("error setting `kube_config_raw`: %+v", err)
+	}
+	if err = d.Set("kube_config", kubeConfig); err != nil {
+		return fmt.Errorf("error setting `kube_config`: %+v", err)
+	}
+
+	return nil
 }
 
 /* 'Update' Helper Functions */
@@ -835,8 +830,7 @@ func initializeScaleClient(d *schema.ResourceData, m interface{}, agentIndex int
 	} else {
 		return sc, fmt.Errorf("agent pool profile name not found")
 	}
-	err := sc.Validate()
-	if err != nil {
+	if err := sc.Validate(); err != nil {
 		return sc, fmt.Errorf("error validating scale client: %+v", err)
 	}
 
@@ -857,8 +851,7 @@ func initializeScaleClient(d *schema.ResourceData, m interface{}, agentIndex int
 		return sc, fmt.Errorf("error validating auth args: %+v", err)
 	}
 
-	sc.Client, err = sc.AuthArgs.GetClient()
-	if err != nil {
+	if sc.Client, err = sc.AuthArgs.GetClient(); err != nil {
 		return sc, fmt.Errorf("failed to get client: %+v", err)
 	}
 
@@ -866,8 +859,7 @@ func initializeScaleClient(d *schema.ResourceData, m interface{}, agentIndex int
 		return sc, fmt.Errorf("failed to get client: %+v", err)
 	}
 
-	sc.Locale, err = i18n.LoadTranslations()
-	if err != nil {
+	if sc.Locale, err = i18n.LoadTranslations(); err != nil {
 		return sc, fmt.Errorf("error loading translation files: %+v", err)
 	}
 	apiloader := &api.Apiloader{
@@ -896,13 +888,7 @@ func initializeScaleClient(d *schema.ResourceData, m interface{}, agentIndex int
 	}
 	sc.AgentPool = sc.K8sCluster.Properties.AgentPoolProfiles[sc.AgentPoolIndex]
 
-	templateParameters, err := generateParametersMap(sc.DeploymentDirectory)
-	if err != nil {
-		return sc, fmt.Errorf("error generating parameters map: %+v", err)
-	}
-
-	nameSuffixParam := templateParameters["nameSuffix"].(map[string]interface{}) // do I actually need this?
-	sc.NameSuffix = nameSuffixParam["defaultValue"].(string)
+	sc.NameSuffix = acsengine.GenerateClusterID(sc.K8sCluster.Properties)
 
 	return sc, nil
 }
@@ -974,13 +960,13 @@ func scaleUpCluster(sc *client.ScaleClient, highestUsedIndex int, currentNodeCou
 	// don't format parameters! It messes things up
 
 	// convert JSON to maps
-	templateJSON := make(map[string]interface{})
-	parametersJSON := make(map[string]interface{})
-	if err = json.Unmarshal([]byte(template), &templateJSON); err != nil {
+	templateJSON, err := expandTemplateBody(template)
+	if err != nil {
 		return fmt.Errorf("error unmarshaling template: %+v", err)
 	}
-	if err = json.Unmarshal([]byte(parameters), &parametersJSON); err != nil {
-		return fmt.Errorf("error unmarshaling parameters: %+v", err)
+	parametersJSON, err := expandParametersBody(parameters)
+	if err != nil {
+		return fmt.Errorf("error unmarshaling template: %+v", err)
 	}
 
 	transformer := transform.Transformer{Translator: ctx.Translator}
@@ -1015,37 +1001,6 @@ func scaleUpCluster(sc *client.ScaleClient, highestUsedIndex int, currentNodeCou
 	}
 
 	return saveScaledApimodel(sc, d)
-}
-
-// I can delete this when I move over to updated ACS Engine. Also I know this is ugly.
-// Meant to get around error about master node data disk create option being changed
-func removeDataDiskCreateOption(templateJSON map[string]interface{}) error {
-	// ["resources"][some index]["properties"]["storageProfile"]["dataDisks"]
-	found := false
-	if v, ok := templateJSON["resources"]; ok {
-		resources := v.([]interface{})
-		for _, r := range resources {
-			resource := r.(map[string]interface{})
-			if apiVer, ok := resource["apiVersion"]; ok {
-				if apiVer == "[variables('apiVersionStorageManagedDisks')]" {
-					if p, ok := resource["properties"]; ok {
-						properties := p.(map[string]interface{})
-						if sp, ok := properties["storageProfile"]; ok {
-							storageProfile := sp.(map[string]interface{})
-							if _, ok := storageProfile["dataDisks"]; ok {
-								delete(storageProfile, "dataDisks")
-								found = true
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-	if !found {
-		return fmt.Errorf("Removing data disk create option failed: dataDisk not found")
-	}
-	return nil
 }
 
 func saveScaledApimodel(sc *client.ScaleClient, d *schema.ResourceData) error {
@@ -1159,8 +1114,7 @@ func initializeUpgradeClient(d *schema.ResourceData, m interface{}, upgradeVersi
 		return uc, fmt.Errorf("error validating auth args: %+v", err)
 	}
 
-	uc.Client, err = uc.AuthArgs.GetClient()
-	if err != nil {
+	if uc.Client, err = uc.AuthArgs.GetClient(); err != nil {
 		return uc, fmt.Errorf("failed to get client: %+v", err)
 	}
 	if _, err = uc.Client.EnsureResourceGroup(context.Background(), uc.ResourceGroupName, uc.Location, nil); err != nil {
@@ -1173,8 +1127,7 @@ func initializeUpgradeClient(d *schema.ResourceData, m interface{}, upgradeVersi
 		},
 	}
 	if m != nil { // for testing purposes
-		uc.K8sCluster, err = loadContainerServiceFromApimodel(d, true, true)
-		if err != nil {
+		if uc.K8sCluster, err = loadContainerServiceFromApimodel(d, true, true); err != nil {
 			return uc, fmt.Errorf("error parsing the api model: %+v", err)
 		}
 	} else {
@@ -1193,13 +1146,7 @@ func initializeUpgradeClient(d *schema.ResourceData, m interface{}, upgradeVersi
 		return uc, fmt.Errorf("location does not match api model location") // this should probably never happen?
 	}
 
-	templateParameters, err := generateParametersMap(uc.DeploymentDirectory)
-	if err != nil {
-		return uc, fmt.Errorf("error generating parameters map: %+v", err)
-	}
-
-	nameSuffixParam := templateParameters["nameSuffix"].(map[string]interface{})
-	uc.NameSuffix = nameSuffixParam["defaultValue"].(string)
+	uc.NameSuffix = acsengine.GenerateClusterID(uc.K8sCluster.Properties)
 
 	return uc, nil
 }
@@ -1303,23 +1250,6 @@ func saveTemplates(cluster *api.ContainerService, deploymentDirectory string, d 
 	return writeTemplatesAndCerts(d, cluster, template, parameters, deploymentDirectory, certsGenerated)
 }
 
-// if I can get rid of this then I only need to store apimodel.json
-// only used to get nameSuffix defaultValue. Maybe computed value?
-func generateParametersMap(deploymentDirectory string) (map[string]interface{}, error) {
-	templatePath := path.Join(deploymentDirectory, "azuredeploy.json")
-	contents, _ := ioutil.ReadFile(templatePath)
-
-	var templateInter interface{}
-	if err := json.Unmarshal(contents, &templateInter); err != nil {
-		return nil, fmt.Errorf("error unmarshaling template")
-	}
-
-	templateMap := templateInter.(map[string]interface{})
-	templateParameters := templateMap["parameters"].(map[string]interface{})
-
-	return templateParameters, nil
-}
-
 /* Misc. Helper Functions */
 
 func writeTemplatesAndCerts(d *schema.ResourceData, cluster *api.ContainerService, template string, parameters string, deploymentDirectory string, certsGenerated bool) error {
@@ -1338,7 +1268,7 @@ func writeTemplatesAndCerts(d *schema.ResourceData, cluster *api.ContainerServic
 		return fmt.Errorf("error writing artifacts: %+v", err)
 	}
 
-	// new: set "api_model" to string of file
+	// set "api_model" to string of file
 	apiloader := &api.Apiloader{
 		Translator: &i18n.Translator{
 			Locale: locale,
@@ -1720,17 +1650,4 @@ func resourceLinuxProfilesSSHKeysHash(v interface{}) int {
 	}
 
 	return hashcode.String(buf.String())
-}
-
-// problem: I'm guessing this doesn't return and print with the other error message
-func handleError(err error) {
-	if err != nil {
-		log.Fatalf("%+v", err)
-	}
-}
-
-func handleErrorWithMessage(message string, err error) {
-	if err != nil {
-		log.Fatalf("%s: %+v", message, err)
-	}
 }

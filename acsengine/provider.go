@@ -89,6 +89,7 @@ func Provider() terraform.ResourceProvider {
 
 func providerConfigure(p *schema.Provider) schema.ConfigureFunc {
 	return func(d *schema.ResourceData) (interface{}, error) {
+		var err error
 		config := &authentication.Config{
 			SubscriptionID:            d.Get("subscription_id").(string),
 			ClientID:                  d.Get("client_id").(string),
@@ -112,20 +113,23 @@ func providerConfigure(p *schema.Provider) schema.ConfigureFunc {
 				config.MsiEndpoint = msiEndpoint
 			}
 			log.Printf("[DEBUG] Using MSI endpoint %s", config.MsiEndpoint)
-			if err := config.ValidateMsi(); err != nil {
+			if err = config.ValidateMsi(); err != nil {
 				return nil, err
 			}
 		} else if config.ClientSecret != "" {
 			log.Printf("[DEBUG] Client Secret specified - using Service Principal for Authentication")
-			err := config.ValidateServicePrincipal()
-			handleError(err)
+			if err = config.ValidateServicePrincipal(); err != nil {
+				return nil, err
+			}
 		} else {
 			log.Printf("[DEBUG] No Client Secret specified - loading credentials from Azure CLI")
-			err := config.LoadTokensFromAzureCLI()
-			handleError(err)
+			if err = config.LoadTokensFromAzureCLI(); err != nil {
+				return nil, err
+			}
 
-			err = config.ValidateBearerAuth()
-			handleErrorWithMessage("Please specify either a Service Principal, or log in with the Azure CLI (using `az login`)", err)
+			if err = config.ValidateBearerAuth(); err != nil {
+				return nil, fmt.Errorf("Please specify either a Service Principal, or log in with the Azure CLI (using `az login`): %+v", err)
+			}
 		}
 
 		client, err := getArmClient(config)
@@ -153,8 +157,9 @@ func providerConfigure(p *schema.Provider) schema.ConfigureFunc {
 			}
 
 			if !config.SkipProviderRegistration {
-				err = registerAzureResourceProvidersWithSubscription(ctx, providerList.Values(), client.providersClient)
-				handleError(err)
+				if err = registerAzureResourceProvidersWithSubscription(ctx, providerList.Values(), client.providersClient); err != nil {
+					return nil, err
+				}
 			}
 		}
 
