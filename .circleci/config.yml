@@ -27,9 +27,9 @@ jobs:
       - run:
           name: Build
           command: make build
-      - run:
-          name: vendor status
-          command: make vendor-status
+    #   - run:
+    #       name: vendor status
+    #       command: make vendor-status
       - run:
           name: Run unit tests
           command: make test
