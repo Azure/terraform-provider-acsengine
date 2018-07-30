@@ -1,5 +1,4 @@
 # Golang CircleCI 2.0 configuration file
-#
 # Check https://circleci.com/docs/2.0/language-go/ for more details
 version: 2
 
@@ -12,9 +11,8 @@ defaults: &defaults
       # Specify service dependencies here if necessary
       # CircleCI maintains a library of pre-built images
       # documented at https://circleci.com/docs/2.0/circleci-images/
-      # - image: circleci/postgres:9.4
   environment:
-    GOPATH: /go # is this the GOPATH I want?? $HOME/go perhaps?
+    GOPATH: /go
 
 jobs:
   build:
@@ -33,3 +31,6 @@ jobs:
       - run:
           name: Run linting rules
           command: make lint
+    #  - run: # I need to add this eventually
+    #       name: Acceptance tests (cluster lifecycle)
+    #       command: make testacc

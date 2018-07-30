@@ -332,6 +332,7 @@ ASALocalRun/
 .terraform/
 _output/
 /main.tf
+/outputs.tf
 terraform.tfstate
 terraform.tfplan
 ./*.tfstate

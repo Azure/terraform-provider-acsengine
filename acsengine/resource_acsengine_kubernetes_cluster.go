@@ -527,6 +527,9 @@ func initializeContainerService(d *schema.ResourceData) (*api.ContainerService, 
 	// do I need to add a Windows profile is osType = Windows?
 	// adminUser = masterProfile.adminUser
 	// adminPassword = ?
+	if _, err := createWindowsProfile(); err != nil {
+		return nil, err
+	}
 
 	var tags map[string]interface{}
 	if v, ok = d.GetOk("tags"); ok {
@@ -651,34 +654,34 @@ func deployTemplate(d *schema.ResourceData, m interface{}, template string, para
 func setProfiles(d *schema.ResourceData, cluster *api.ContainerService) error {
 	linuxProfile, err := flattenLinuxProfile(*cluster.Properties.LinuxProfile)
 	if err != nil {
-		return fmt.Errorf("error flattening `linux_profile`: %+v", err)
+		return fmt.Errorf("Error flattening `linux_profile`: %+v", err)
 	}
 	if err = d.Set("linux_profile", linuxProfile); err != nil {
-		return fmt.Errorf("error setting 'linux_profile': %+v", err)
+		return fmt.Errorf("Error setting 'linux_profile': %+v", err)
 	}
 
 	servicePrincipal, err := flattenServicePrincipal(*cluster.Properties.ServicePrincipalProfile)
 	if err != nil {
-		return fmt.Errorf("error flattening `service_principal`: %+v", err)
+		return fmt.Errorf("Error flattening `service_principal`: %+v", err)
 	}
 	if err = d.Set("service_principal", servicePrincipal); err != nil {
-		return fmt.Errorf("error setting 'service_principal': %+v", err)
+		return fmt.Errorf("Error setting 'service_principal': %+v", err)
 	}
 
 	masterProfile, err := flattenMasterProfile(*cluster.Properties.MasterProfile, cluster.Location)
 	if err != nil {
-		return fmt.Errorf("error flattening `master_profile`: %+v", err)
+		return fmt.Errorf("Error flattening `master_profile`: %+v", err)
 	}
 	if err = d.Set("master_profile", masterProfile); err != nil {
-		return fmt.Errorf("error setting 'master_profile': %+v", err)
+		return fmt.Errorf("Error setting 'master_profile': %+v", err)
 	}
 
 	agentPoolProfiles, err := flattenAgentPoolProfiles(cluster.Properties.AgentPoolProfiles)
 	if err != nil {
-		return fmt.Errorf("error flattening `agent_pool_profiles`: %+v", err)
+		return fmt.Errorf("Error flattening `agent_pool_profiles`: %+v", err)
 	}
 	if err = d.Set("agent_pool_profiles", agentPoolProfiles); err != nil {
-		return fmt.Errorf("error setting 'agent_pool_profiles': %+v", err)
+		return fmt.Errorf("Error setting 'agent_pool_profiles': %+v", err)
 	}
 
 	return nil
@@ -687,10 +690,10 @@ func setProfiles(d *schema.ResourceData, cluster *api.ContainerService) error {
 func setTags(d *schema.ResourceData, cluster *api.ContainerService) error {
 	tags, err := flattenTags(cluster.Tags)
 	if err != nil {
-		return fmt.Errorf("error flattening `tags`: %+v", err)
+		return fmt.Errorf("Error flattening `tags`: %+v", err)
 	}
 	if err := d.Set("tags", tags); err != nil {
-		return fmt.Errorf("error setting 'tags': %+v", err)
+		return fmt.Errorf("Error setting 'tags': %+v", err)
 	}
 
 	return nil
@@ -700,17 +703,17 @@ func setTags(d *schema.ResourceData, cluster *api.ContainerService) error {
 func setKubeConfig(d *schema.ResourceData, cluster *api.ContainerService) error {
 	kubeConfigFile, err := getKubeConfig(cluster)
 	if err != nil {
-		return fmt.Errorf("error getting kube config: %+v", err)
+		return fmt.Errorf("Error getting kube config: %+v", err)
 	}
 	kubeConfigRaw, kubeConfig, err := flattenKubeConfig(kubeConfigFile)
 	if err != nil {
-		return fmt.Errorf("error flattening kube config: %+v", err)
+		return fmt.Errorf("Error flattening kube config: %+v", err)
 	}
 	if err = d.Set("kube_config_raw", kubeConfigRaw); err != nil {
-		return fmt.Errorf("error setting `kube_config_raw`: %+v", err)
+		return fmt.Errorf("Error setting `kube_config_raw`: %+v", err)
 	}
 	if err = d.Set("kube_config", kubeConfig); err != nil {
-		return fmt.Errorf("error setting `kube_config`: %+v", err)
+		return fmt.Errorf("Error setting `kube_config`: %+v", err)
 	}
 
 	return nil
@@ -727,81 +730,14 @@ func scaleCluster(d *schema.ResourceData, m interface{}, agentIndex int, agentCo
 	}
 
 	// find all VMs in agent pool
-	var currentNodeCount, highestUsedIndex, vmNum int
-	windowsIndex := -1
-	indexes := make([]int, 0)
-	indexToVM := make(map[int]string)
-	highestUsedIndex = 0
-	ctx := context.Background()
+	var currentNodeCount, highestUsedIndex, windowsIndex int
 	if sc.AgentPool.IsAvailabilitySets() {
-		vms, err := sc.Client.ListVirtualMachines(ctx, sc.ResourceGroupName)
-		if err != nil {
-			return fmt.Errorf("failed to get vms in the resource group. Error: %s", err.Error())
-		} else if len(vms.Values()) < 1 {
-			return fmt.Errorf("The provided resource group does not contain any vms")
-		}
-		index := 0
-		for _, vm := range vms.Values() {
-			vmTags := vm.Tags
-			poolName := *vmTags["poolName"]
-			nameSuf := *vmTags["resourceNameSuffix"]
-
-			if err != nil || !strings.EqualFold(poolName, sc.AgentPoolToScale) || !strings.Contains(sc.NameSuffix, nameSuf) {
-				continue
-			}
-
-			osPublisher := vm.StorageProfile.ImageReference.Publisher
-			if osPublisher != nil && strings.EqualFold(*osPublisher, "MicrosoftWindowsServer") {
-				_, _, windowsIndex, vmNum, err = acseutils.WindowsVMNameParts(*vm.Name)
-			} else {
-				_, _, vmNum, err = acseutils.K8sLinuxVMNameParts(*vm.Name) // this needs to be tested
-			}
-			if err != nil {
-				return fmt.Errorf("error getting VM parts: %+v", err)
-			}
-			if vmNum > highestUsedIndex {
-				highestUsedIndex = vmNum
-			}
-
-			indexToVM[index] = *vm.Name
-			indexes = append(indexes, index)
-			index++
-		}
-		sortedIndexes := sort.IntSlice(indexes)
-		sortedIndexes.Sort()
-		indexes = []int(sortedIndexes)
-		currentNodeCount = len(indexes)
-
-		if currentNodeCount == sc.DesiredAgentCount {
-			log.Printf("Cluster is currently at the desired agent count")
-			return nil
-		}
-
-		if currentNodeCount > sc.DesiredAgentCount {
-			return scaleDownCluster(&sc, currentNodeCount, indexToVM, d)
+		if highestUsedIndex, currentNodeCount, windowsIndex, err = scaleVMAS(&sc, d); err != nil {
+			return fmt.Errorf("failed to scale availability set: %+v", err)
 		}
 	} else {
-		vmssList, err := sc.Client.ListVirtualMachineScaleSets(ctx, sc.ResourceGroupName)
-		if err != nil {
-			return fmt.Errorf("failed to get vmss list in the resource group: %+v", err)
-		}
-		for _, vmss := range vmssList.Values() {
-			vmTags := vmss.Tags
-			poolName := *vmTags["poolName"]
-			nameSuffix := *vmTags["resourceNameSuffix"]
-
-			if err != nil || !strings.EqualFold(poolName, sc.AgentPoolToScale) || !strings.Contains(sc.NameSuffix, nameSuffix) {
-				continue
-			}
-
-			osPublisher := *vmss.VirtualMachineProfile.StorageProfile.ImageReference.Publisher
-			if strings.EqualFold(osPublisher, "MicrosoftWindowsServer") {
-				_, _, windowsIndex, err = acseutils.WindowsVMSSNameParts(*vmss.Name)
-				// log error here?
-			}
-
-			currentNodeCount = int(*vmss.Sku.Capacity)
-			highestUsedIndex = 0
+		if highestUsedIndex, currentNodeCount, windowsIndex, err = scaleVMSS(&sc); err != nil {
+			return fmt.Errorf("failed to scale scale set: %+v", err)
 		}
 	}
 
@@ -811,6 +747,7 @@ func scaleCluster(d *schema.ResourceData, m interface{}, agentIndex int, agentCo
 // Creates and initializes most fields in client.ScaleClient and returns it
 func initializeScaleClient(d *schema.ResourceData, m interface{}, agentIndex int, agentCount int) (client.ScaleClient, error) {
 	sc := client.ScaleClient{}
+	var err error
 	if v, ok := d.GetOk("resource_group"); ok {
 		sc.ResourceGroupName = v.(string)
 	}
@@ -834,29 +771,8 @@ func initializeScaleClient(d *schema.ResourceData, m interface{}, agentIndex int
 		return sc, fmt.Errorf("error validating scale client: %+v", err)
 	}
 
-	client.AddAuthArgs(&sc.AuthArgs)
-	id, err := parseAzureResourceID(d.Id()) // from resourceid.go
-	if err != nil {
-		return sc, fmt.Errorf("error parsing resource ID: %+v", err)
-	}
-	sc.AuthArgs.RawSubscriptionID = id.SubscriptionID
-	sc.AuthArgs.AuthMethod = "client_secret"
-	if v, ok := d.GetOk("service_principal.0.client_id"); ok {
-		sc.AuthArgs.RawClientID = v.(string)
-	}
-	if v, ok := d.GetOk("service_principal.0.client_secret"); ok {
-		sc.AuthArgs.ClientSecret = v.(string)
-	}
-	if err = sc.AuthArgs.ValidateAuthArgs(); err != nil {
-		return sc, fmt.Errorf("error validating auth args: %+v", err)
-	}
-
-	if sc.Client, err = sc.AuthArgs.GetClient(); err != nil {
-		return sc, fmt.Errorf("failed to get client: %+v", err)
-	}
-
-	if _, err = sc.Client.EnsureResourceGroup(context.Background(), sc.ResourceGroupName, sc.Location, nil); err != nil {
-		return sc, fmt.Errorf("failed to get client: %+v", err)
+	if err = addScaleAuthArgs(d, &sc); err != nil {
+		return sc, fmt.Errorf("failed to add auth args: %+v", err)
 	}
 
 	if sc.Locale, err = i18n.LoadTranslations(); err != nil {
@@ -891,6 +807,124 @@ func initializeScaleClient(d *schema.ResourceData, m interface{}, agentIndex int
 	sc.NameSuffix = acsengine.GenerateClusterID(sc.K8sCluster.Properties)
 
 	return sc, nil
+}
+
+func addScaleAuthArgs(d *schema.ResourceData, sc *client.ScaleClient) error {
+	client.AddAuthArgs(&sc.AuthArgs)
+	id, err := parseAzureResourceID(d.Id()) // from resourceid.go
+	if err != nil {
+		return fmt.Errorf("error parsing resource ID: %+v", err)
+	}
+	sc.AuthArgs.RawSubscriptionID = id.SubscriptionID
+	sc.AuthArgs.AuthMethod = "client_secret"
+	if v, ok := d.GetOk("service_principal.0.client_id"); ok {
+		sc.AuthArgs.RawClientID = v.(string)
+	}
+	if v, ok := d.GetOk("service_principal.0.client_secret"); ok {
+		sc.AuthArgs.ClientSecret = v.(string)
+	}
+	if err = sc.AuthArgs.ValidateAuthArgs(); err != nil {
+		return fmt.Errorf("error validating auth args: %+v", err)
+	}
+
+	if sc.Client, err = sc.AuthArgs.GetClient(); err != nil {
+		return fmt.Errorf("failed to get client: %+v", err)
+	}
+	if _, err = sc.Client.EnsureResourceGroup(context.Background(), sc.ResourceGroupName, sc.Location, nil); err != nil {
+		return fmt.Errorf("failed to get client: %+v", err)
+	}
+
+	return nil
+}
+
+// scale VM availability sets
+func scaleVMAS(sc *client.ScaleClient, d *schema.ResourceData) (int, int, int, error) {
+	var currentNodeCount, highestUsedIndex, vmNum int
+	windowsIndex := -1
+	highestUsedIndex = 0
+	indexes := make([]int, 0)
+	indexToVM := make(map[int]string)
+	ctx := context.Background()
+	vms, err := sc.Client.ListVirtualMachines(ctx, sc.ResourceGroupName)
+	if err != nil {
+		return highestUsedIndex, currentNodeCount, windowsIndex, fmt.Errorf("failed to get vms in the resource group. Error: %s", err.Error())
+	} else if len(vms.Values()) < 1 {
+		return highestUsedIndex, currentNodeCount, windowsIndex, fmt.Errorf("The provided resource group does not contain any vms")
+	}
+	index := 0
+	for _, vm := range vms.Values() {
+		vmTags := vm.Tags
+		poolName := *vmTags["poolName"]
+		nameSuf := *vmTags["resourceNameSuffix"]
+
+		if err != nil || !strings.EqualFold(poolName, sc.AgentPoolToScale) || !strings.Contains(sc.NameSuffix, nameSuf) {
+			continue
+		}
+
+		osPublisher := vm.StorageProfile.ImageReference.Publisher
+		if osPublisher != nil && strings.EqualFold(*osPublisher, "MicrosoftWindowsServer") {
+			_, _, windowsIndex, vmNum, err = acseutils.WindowsVMNameParts(*vm.Name)
+		} else {
+			_, _, vmNum, err = acseutils.K8sLinuxVMNameParts(*vm.Name) // this needs to be tested
+		}
+		if err != nil {
+			return highestUsedIndex, currentNodeCount, windowsIndex, fmt.Errorf("error getting VM parts: %+v", err)
+		}
+		if vmNum > highestUsedIndex {
+			highestUsedIndex = vmNum
+		}
+
+		indexToVM[index] = *vm.Name
+		indexes = append(indexes, index)
+		index++
+	}
+	sortedIndexes := sort.IntSlice(indexes)
+	sortedIndexes.Sort()
+	indexes = []int(sortedIndexes)
+	currentNodeCount = len(indexes)
+
+	if currentNodeCount == sc.DesiredAgentCount {
+		log.Printf("Cluster is currently at the desired agent count")
+		return highestUsedIndex, currentNodeCount, windowsIndex, nil
+	}
+
+	if currentNodeCount > sc.DesiredAgentCount {
+		return highestUsedIndex, currentNodeCount, windowsIndex, scaleDownCluster(sc, currentNodeCount, indexToVM, d)
+	}
+
+	return highestUsedIndex, currentNodeCount, windowsIndex, nil
+}
+
+// scale VM scale sets
+func scaleVMSS(sc *client.ScaleClient) (int, int, int, error) {
+	var currentNodeCount, highestUsedIndex int
+	windowsIndex := -1
+	highestUsedIndex = 0
+	ctx := context.Background()
+	vmssList, err := sc.Client.ListVirtualMachineScaleSets(ctx, sc.ResourceGroupName)
+	if err != nil {
+		return highestUsedIndex, currentNodeCount, windowsIndex, fmt.Errorf("failed to get vmss list in the resource group: %+v", err)
+	}
+	for _, vmss := range vmssList.Values() {
+		vmTags := vmss.Tags
+		poolName := *vmTags["poolName"]
+		nameSuffix := *vmTags["resourceNameSuffix"]
+
+		if err != nil || !strings.EqualFold(poolName, sc.AgentPoolToScale) || !strings.Contains(sc.NameSuffix, nameSuffix) {
+			continue
+		}
+
+		osPublisher := *vmss.VirtualMachineProfile.StorageProfile.ImageReference.Publisher
+		if strings.EqualFold(osPublisher, "MicrosoftWindowsServer") {
+			_, _, windowsIndex, err = acseutils.WindowsVMSSNameParts(*vmss.Name)
+			// log error here?
+		}
+
+		currentNodeCount = int(*vmss.Sku.Capacity)
+		highestUsedIndex = 0
+	}
+
+	return highestUsedIndex, currentNodeCount, windowsIndex, nil
 }
 
 // Scales down a cluster by draining and deleting the nodes given as input
@@ -1097,28 +1131,8 @@ func initializeUpgradeClient(d *schema.ResourceData, m interface{}, upgradeVersi
 		return uc, fmt.Errorf(": %+v", err)
 	}
 
-	client.AddAuthArgs(&uc.AuthArgs)
-	id, err := parseAzureResourceID(d.Id()) // from resourceid.go
-	if err != nil {
-		return uc, fmt.Errorf("error paring resource ID: %+v", err)
-	}
-	uc.AuthArgs.RawSubscriptionID = id.SubscriptionID
-	uc.AuthArgs.AuthMethod = "client_secret"
-	if v, ok := d.GetOk("service_principal.0.client_id"); ok {
-		uc.AuthArgs.RawClientID = v.(string)
-	}
-	if v, ok := d.GetOk("service_principal.0.client_secret"); ok {
-		uc.AuthArgs.ClientSecret = v.(string)
-	}
-	if err = uc.AuthArgs.ValidateAuthArgs(); err != nil {
-		return uc, fmt.Errorf("error validating auth args: %+v", err)
-	}
-
-	if uc.Client, err = uc.AuthArgs.GetClient(); err != nil {
-		return uc, fmt.Errorf("failed to get client: %+v", err)
-	}
-	if _, err = uc.Client.EnsureResourceGroup(context.Background(), uc.ResourceGroupName, uc.Location, nil); err != nil {
-		return uc, fmt.Errorf("error ensuring resource group: %+v", err)
+	if err = addUpgradeAuthArgs(d, &uc); err != nil {
+		return uc, fmt.Errorf("failure to add auth args: %+v", err)
 	}
 
 	apiloader := &api.Apiloader{
@@ -1149,6 +1163,34 @@ func initializeUpgradeClient(d *schema.ResourceData, m interface{}, upgradeVersi
 	uc.NameSuffix = acsengine.GenerateClusterID(uc.K8sCluster.Properties)
 
 	return uc, nil
+}
+
+func addUpgradeAuthArgs(d *schema.ResourceData, uc *client.UpgradeClient) error {
+	client.AddAuthArgs(&uc.AuthArgs)
+	id, err := parseAzureResourceID(d.Id()) // from resourceid.go
+	if err != nil {
+		return fmt.Errorf("error paring resource ID: %+v", err)
+	}
+	uc.AuthArgs.RawSubscriptionID = id.SubscriptionID
+	uc.AuthArgs.AuthMethod = "client_secret"
+	if v, ok := d.GetOk("service_principal.0.client_id"); ok {
+		uc.AuthArgs.RawClientID = v.(string)
+	}
+	if v, ok := d.GetOk("service_principal.0.client_secret"); ok {
+		uc.AuthArgs.ClientSecret = v.(string)
+	}
+	if err = uc.AuthArgs.ValidateAuthArgs(); err != nil {
+		return fmt.Errorf("error validating auth args: %+v", err)
+	}
+
+	if uc.Client, err = uc.AuthArgs.GetClient(); err != nil {
+		return fmt.Errorf("failed to get client: %+v", err)
+	}
+	if _, err = uc.Client.EnsureResourceGroup(context.Background(), uc.ResourceGroupName, uc.Location, nil); err != nil {
+		return fmt.Errorf("error ensuring resource group: %+v", err)
+	}
+
+	return nil
 }
 
 func saveUpgradedApimodel(uc *client.UpgradeClient, d *schema.ResourceData) error {

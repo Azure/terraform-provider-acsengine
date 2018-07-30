@@ -29,6 +29,8 @@ ifndef HAS_GOMETALINTER
 	gometalinter --install
 endif
 
+.PHONY: build prereqs
+
 ###############################################################################
 # generate for acs-engine
 ###############################################################################
@@ -40,6 +42,8 @@ generate-translations:
 	go generate ./vendor/github.com/Azure/acs-engine/pkg/i18n
 
 generate-all: generate-templates generate-translations
+
+.PHONY: generate-templates generate-translations
 
 ###############################################################################
 # testing
@@ -59,10 +63,11 @@ debugacc: fmtcheck
 	TF_ACC=1 dlv test $(TEST) --headless --listen=:2345 --api-version=2 -- -test.v $(TESTARGS)
 
 lint:
-	gometalinter ./acsengine/... --deadline 100s
-
-fmt:
-	gofmt -w $(GOFMT_FILES)
+	gometalinter ./acsengine/... --disable-all \
+		--enable=vet --enable=gotype --enable=deadcode --enable=golint --enable=varcheck \
+		--enable=structcheck --enable=errcheck --enable=ineffassign --enable=unconvert --enable=goconst \
+		--enable=misspell --enable=goimports --enable=gofmt --deadline 100s
+# I would like to add in dupl, vetshadow, and megacheck eventually, maybe gocyclo, gosec, and others
 
 fmtcheck:
 	@sh "$(CURDIR)/scripts/gofmtcheck.sh"
@@ -78,6 +83,11 @@ test-compile:
 	fi
 	go test -c $(TEST) $(TESTARGS)
 
+# figure out coverage
+# coverage:
+
+.PHONY: test testacc lint fmtcheck errcheck test-compile
+
 ###############################################################################
 # vendor
 ###############################################################################
@@ -88,5 +98,4 @@ vendor:
 vendor-status:
 	@dep status
 
-.PHONY: build prereqs generate-templates generate-translations test testacc lint fmt fmtcheck errcheck vendor vendor-status test-compile
-
+.PHONY: vendor vendor-status
