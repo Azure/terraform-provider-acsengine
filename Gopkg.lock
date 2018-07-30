@@ -28,7 +28,7 @@
     "pkg/openshift/certgen/unstable/templates",
     "pkg/openshift/filesystem",
     "pkg/operations",
-    "pkg/operations/kubernetesupgrade",
+    "pkg/operations/kubernetesupgrade"
   ]
   revision = "83a60bb673dd1c66837d0efc09bcca68aaf29d96"
   version = "0.20.2"
@@ -798,6 +798,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "40c1c92b7a00580afa30d715f0bb7e305af573fd4282bbee8d7f0b42784d937b"
+  inputs-digest = "22c8f3fdeb3b1e50ef8de97d429c6e9c3cddf25f681871a9fe2e0daa2196b2c0"
   solver-name = "gps-cdcl"
   solver-version = 1

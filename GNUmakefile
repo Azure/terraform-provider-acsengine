@@ -37,7 +37,7 @@ generate-all: generate-templates generate-translations
 test: fmtcheck
 	go test -i $(TEST) || exit 1
 	echo $(TEST) | \
-		xargs -t -n4 go test $(TESTARGS) -timeout=90s -parallel=4
+		xargs -t -n4 go test $(TESTARGS) -timeout=120s -parallel=4
 
 testacc: fmtcheck
 	TF_ACC=1 go test $(TEST) -v $(TESTARGS) -timeout 10h
