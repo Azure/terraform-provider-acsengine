@@ -25,11 +25,11 @@ jobs:
             echo `unset TF_ACC` >> $BASH_ENV
             echo `export PATH=$GOPATH/bin:$PATH` >> $BASH_ENV
       - run:
+          name: Install dependencies
+          command: make misc-prereqs
+      - run:
           name: Build
           command: make build
-    #   - run:
-    #       name: vendor status
-    #       command: make vendor-status
       - run:
           name: Run unit tests
           command: make test
