@@ -7,7 +7,7 @@ defaults: &defaults
   working_directory: /go/src/github.com/Azure/terraform-provider-acsengine
   docker:
       # specify the version
-      - image: circleci/golang:1.9
+      - image: circleci/golang:1.10
       
       # Specify service dependencies here if necessary
       # CircleCI maintains a library of pre-built images
@@ -22,11 +22,14 @@ jobs:
     steps:
       - checkout
       - run: |
-            echo 'unset TF_ACC' >> $BASH_ENV
+            echo `unset TF_ACC` >> $BASH_ENV
             echo `export PATH=$GOPATH/bin:$PATH` >> $BASH_ENV
       - run:
           name: Build
           command: make build
+      - run:
+          name: vendor status
+          command: make vendor-status
       - run:
           name: Run unit tests
           command: make test
