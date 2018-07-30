@@ -9,21 +9,34 @@ undefine TF_ACC
 
 default: build
 
-build: fmtcheck generate-all
+build: fmtcheck prereqs generate-all
 	go install
 	
+HAS_DEP := $(shell command -v dep;)
+HAS_GIT := $(shell command -v git;)
+HAS_GOMETALINTER := $(shell command -v gometalinter;)
+
+prereqs:
+ifndef HAS_DEP
+	go get -u github.com/golang/dep/cmd/dep
+endif
+	go get github.com/jteeuwen/go-bindata/...
+ifndef HAS_GIT
+	$(error you must install Git)
+endif
+ifndef HAS_GOMETALINTER
+	go get -u github.com/alecthomas/gometalinter
+	gometalinter --install
+endif
+
 ###############################################################################
 # generate for acs-engine
 ###############################################################################
 
-prereqs:
-	go get github.com/golang/dep/cmd/dep
-	go get github.com/jteeuwen/go-bindata/...
-
-generate-templates: prereqs
+generate-templates:
 	go generate ./vendor/github.com/Azure/acs-engine/pkg/acsengine
 
-generate-translations: prereqs
+generate-translations:
 	go generate ./vendor/github.com/Azure/acs-engine/pkg/i18n
 
 generate-all: generate-templates generate-translations
