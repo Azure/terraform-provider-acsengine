@@ -37,17 +37,8 @@ func TestACSEngineK8sCluster_flattenLinuxProfile(t *testing.T) {
 
 	adminUsername := "adminUser"
 	keyData := "public key data"
-	sshPublicKeys := []api.PublicKey{
-		{KeyData: keyData},
-	}
-	profile := api.LinuxProfile{
-		AdminUsername: adminUsername,
-		SSH: struct {
-			PublicKeys []api.PublicKey `json:"publicKeys"`
-		}{
-			PublicKeys: sshPublicKeys,
-		},
-	}
+	profile := fakeExpandLinuxProfile(adminUsername, keyData)
+
 	linuxProfile, err := flattenLinuxProfile(profile)
 	if err != nil {
 		t.Fatalf("flattenLinuxProfile failed: %v", err)
@@ -76,10 +67,8 @@ func TestACSEngineK8sCluster_flattenServicePrincipal(t *testing.T) {
 
 	clientID := "client id"
 	clientSecret := "secret"
-	profile := api.ServicePrincipalProfile{
-		ClientID: clientID,
-		Secret:   clientSecret,
-	}
+	profile := fakeExpandServicePrincipal(clientID, clientSecret)
+
 	servicePrincipal, err := flattenServicePrincipal(profile)
 	if err != nil {
 		t.Fatalf("flattenServicePrincipal failed: %v", err)
@@ -109,12 +98,7 @@ func TestACSEngineK8sCluster_flattenMasterProfile(t *testing.T) {
 	dnsNamePrefix := "testPrefix"
 	vmSize := "Standard_D2_v2"
 	fqdn := "abcdefg"
-	profile := api.MasterProfile{
-		Count:     count,
-		DNSPrefix: dnsNamePrefix,
-		VMSize:    vmSize,
-		FQDN:      fqdn,
-	}
+	profile := fakeExpandMasterProfile(count, dnsNamePrefix, vmSize, fqdn)
 
 	masterProfile, err := flattenMasterProfile(profile, "southcentralus")
 	if err != nil {
@@ -220,7 +204,7 @@ func TestACSEngineK8sCluster_flattenTags(t *testing.T) {
 	}
 
 	if _, ok := output["Environment"]; !ok {
-		t.Fatalf("ouput['Environment'] does not exist")
+		t.Fatalf("output['Environment'] does not exist")
 	}
 	if output["Environment"] != "Production" {
 		t.Fatalf("output['Environment'] is not set correctly")
@@ -2060,6 +2044,46 @@ func fakeFlattenAgentPoolProfiles(name string, count int, vmSize string, osDiskS
 	return agentPoolValues
 }
 
+func fakeExpandLinuxProfile(adminUsername string, keyData string) api.LinuxProfile {
+	sshPublicKeys := []api.PublicKey{
+		{KeyData: keyData},
+	}
+	profile := api.LinuxProfile{
+		AdminUsername: adminUsername,
+		SSH: struct {
+			PublicKeys []api.PublicKey `json:"publicKeys"`
+		}{
+			PublicKeys: sshPublicKeys,
+		},
+	}
+
+	return profile
+}
+
+func fakeExpandServicePrincipal(clientID string, clientSecret string) api.ServicePrincipalProfile {
+	profile := api.ServicePrincipalProfile{
+		ClientID: clientID,
+		Secret:   clientSecret,
+	}
+
+	return profile
+}
+
+func fakeExpandMasterProfile(count int, dnsPrefix string, vmSize string, fqdn string) api.MasterProfile {
+	profile := api.MasterProfile{
+		Count:     count,
+		DNSPrefix: dnsPrefix,
+		VMSize:    vmSize,
+		FQDN:      fqdn,
+	}
+
+	return profile
+}
+
+// func fakeExpandAgentPoolProfile() api.AgentPoolProfile {
+
+// }
+
 func mockClusterResourceData() *schema.ResourceData {
 	r := resourceArmAcsEngineKubernetesCluster()
 	d := r.TestResourceData()
@@ -2096,5 +2120,13 @@ func mockClusterResourceData() *schema.ResourceData {
 
 	d.Set("tags", map[string]interface{}{})
 
+	// set certificate profile?
+
 	return d
 }
+
+// func mockACSEngineContainerService() *api.ContainerService {
+// 	// do I need fake expandLinuxProfile and so on?
+// 	// cluster := &api.ContainerService{}
+// 	return nil
+// }

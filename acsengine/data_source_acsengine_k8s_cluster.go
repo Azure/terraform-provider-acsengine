@@ -224,6 +224,29 @@ func dataSourceACSEngineK8sClusterRead(d *schema.ResourceData, m interface{}) er
 		return fmt.Errorf("Error setting kubernetes_version: %+v", err)
 	}
 
+	if err := setDataSourceProfiles(d, cluster); err != nil {
+		return err
+	}
+
+	if err := setTags(d, cluster); err != nil {
+		return err
+	}
+
+	if err := setKubeConfig(d, cluster); err != nil {
+		return err
+	}
+
+	apimodelBase64 := base64Encode(apimodel)
+	if err := d.Set("api_model", apimodelBase64); err != nil {
+		return fmt.Errorf("Error setting `api_model`: %+v", err)
+	}
+
+	fmt.Println("finished reading")
+
+	return nil
+}
+
+func setDataSourceProfiles(d *schema.ResourceData, cluster *api.ContainerService) error {
 	linuxProfile, err := flattenLinuxProfile(*cluster.Properties.LinuxProfile)
 	if err != nil {
 		return fmt.Errorf("Error flattening `linux_profile`: %+v", err)
@@ -255,36 +278,6 @@ func dataSourceACSEngineK8sClusterRead(d *schema.ResourceData, m interface{}) er
 	if err = d.Set("agent_pool_profiles", agentPoolProfiles); err != nil {
 		return fmt.Errorf("Error setting 'agent_pool_profiles': %+v", err)
 	}
-
-	tags, err := flattenTags(cluster.Tags)
-	if err != nil {
-		return fmt.Errorf("Error flattening `tags`: %+v", err)
-	}
-	if err = d.Set("tags", tags); err != nil {
-		return fmt.Errorf("Error setting `tags`: %+v", err)
-	}
-
-	kubeConfigFile, err := getKubeConfig(cluster)
-	if err != nil {
-		return fmt.Errorf("Error getting kube config file: %+v", err)
-	}
-	kubeConfigRaw, kubeConfig, err := flattenKubeConfig(kubeConfigFile)
-	if err != nil {
-		return fmt.Errorf("Error flattening `kube_config`: %+v", err)
-	}
-	if err = d.Set("kube_config_raw", kubeConfigRaw); err != nil {
-		return fmt.Errorf("Error setting `kube_config_raw`: %+v", err)
-	}
-	if err = d.Set("kube_config", kubeConfig); err != nil {
-		return fmt.Errorf("Error setting `kube_config`: %+v", err)
-	}
-
-	apimodelBase64 := base64Encode(apimodel)
-	if err := d.Set("api_model", apimodelBase64); err != nil {
-		return fmt.Errorf("Error setting `api_model`: %+v", err)
-	}
-
-	fmt.Println("finished reading")
 
 	return nil
 }
