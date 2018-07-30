@@ -134,21 +134,10 @@ func TestACSEngineK8sCluster_flattenAgentPoolProfiles(t *testing.T) {
 	fqdn := "abcdefg"
 	osDiskSize := 200
 
-	profile1 := &api.AgentPoolProfile{
-		Name:   name,
-		Count:  count,
-		VMSize: vmSize,
-		FQDN:   fqdn,
-	}
+	profile1 := fakeExpandAgentPoolProfile(name, count, vmSize, fqdn, 0)
 
 	name = "agentpool2"
-	profile2 := &api.AgentPoolProfile{
-		Name:         name,
-		Count:        count,
-		VMSize:       vmSize,
-		FQDN:         fqdn,
-		OSDiskSizeGB: osDiskSize,
-	}
+	profile2 := fakeExpandAgentPoolProfile(name, count, vmSize, fqdn, osDiskSize)
 
 	profiles := []*api.AgentPoolProfile{profile1, profile2}
 	agentPoolProfiles, err := flattenAgentPoolProfiles(profiles)
@@ -2080,9 +2069,20 @@ func fakeExpandMasterProfile(count int, dnsPrefix string, vmSize string, fqdn st
 	return profile
 }
 
-// func fakeExpandAgentPoolProfile() api.AgentPoolProfile {
+func fakeExpandAgentPoolProfile(name string, count int, vmSize string, fqdn string, osDiskSizeGB int) *api.AgentPoolProfile {
+	profile := &api.AgentPoolProfile{
+		Name:   name,
+		Count:  count,
+		VMSize: vmSize,
+		FQDN:   fqdn,
+	}
 
-// }
+	if osDiskSizeGB > 0 {
+		profile.OSDiskSizeGB = osDiskSizeGB
+	}
+
+	return profile
+}
 
 func mockClusterResourceData() *schema.ResourceData {
 	r := resourceArmAcsEngineKubernetesCluster()
