@@ -1,7 +1,6 @@
 package acsengine
 
 // TO DO
-// - read nameSuffix default value in some other way
 // - fix updateTags
 // - add tests that check if cluster is running on nodes
 // - use a CI tool in GitHub
@@ -98,7 +97,7 @@ func resourceArmAcsEngineKubernetesCluster() *schema.Resource {
 									},
 								},
 							},
-							// looks like I accidentally deleted the hash, do I care?
+							// looks like I accidentally deleted the hash function, do I care?
 						},
 					},
 				},
@@ -731,9 +730,19 @@ func scaleCluster(d *schema.ResourceData, m interface{}, agentIndex int, agentCo
 
 	// find all VMs in agent pool
 	var currentNodeCount, highestUsedIndex, windowsIndex int
+	var indexToVM map[int]string
 	if sc.AgentPool.IsAvailabilitySets() {
-		if highestUsedIndex, currentNodeCount, windowsIndex, err = scaleVMAS(&sc, d); err != nil {
+		if highestUsedIndex, currentNodeCount, windowsIndex, indexToVM, err = scaleVMAS(&sc, d); err != nil {
 			return fmt.Errorf("failed to scale availability set: %+v", err)
+		}
+
+		if currentNodeCount == sc.DesiredAgentCount {
+			log.Printf("Cluster is currently at the desired agent count")
+			return nil
+		}
+
+		if currentNodeCount > sc.DesiredAgentCount {
+			return scaleDownCluster(&sc, currentNodeCount, indexToVM, d)
 		}
 	} else {
 		if highestUsedIndex, currentNodeCount, windowsIndex, err = scaleVMSS(&sc); err != nil {
@@ -838,7 +847,7 @@ func addScaleAuthArgs(d *schema.ResourceData, sc *client.ScaleClient) error {
 }
 
 // scale VM availability sets
-func scaleVMAS(sc *client.ScaleClient, d *schema.ResourceData) (int, int, int, error) {
+func scaleVMAS(sc *client.ScaleClient, d *schema.ResourceData) (int, int, int, map[int]string, error) {
 	var currentNodeCount, highestUsedIndex, vmNum int
 	windowsIndex := -1
 	highestUsedIndex = 0
@@ -847,9 +856,9 @@ func scaleVMAS(sc *client.ScaleClient, d *schema.ResourceData) (int, int, int, e
 	ctx := context.Background()
 	vms, err := sc.Client.ListVirtualMachines(ctx, sc.ResourceGroupName)
 	if err != nil {
-		return highestUsedIndex, currentNodeCount, windowsIndex, fmt.Errorf("failed to get vms in the resource group. Error: %s", err.Error())
+		return highestUsedIndex, currentNodeCount, windowsIndex, indexToVM, fmt.Errorf("failed to get vms in the resource group. Error: %s", err.Error())
 	} else if len(vms.Values()) < 1 {
-		return highestUsedIndex, currentNodeCount, windowsIndex, fmt.Errorf("The provided resource group does not contain any vms")
+		return highestUsedIndex, currentNodeCount, windowsIndex, indexToVM, fmt.Errorf("The provided resource group does not contain any vms")
 	}
 	index := 0
 	for _, vm := range vms.Values() {
@@ -868,7 +877,7 @@ func scaleVMAS(sc *client.ScaleClient, d *schema.ResourceData) (int, int, int, e
 			_, _, vmNum, err = acseutils.K8sLinuxVMNameParts(*vm.Name) // this needs to be tested
 		}
 		if err != nil {
-			return highestUsedIndex, currentNodeCount, windowsIndex, fmt.Errorf("error getting VM parts: %+v", err)
+			return highestUsedIndex, currentNodeCount, windowsIndex, indexToVM, fmt.Errorf("error getting VM parts: %+v", err)
 		}
 		if vmNum > highestUsedIndex {
 			highestUsedIndex = vmNum
@@ -883,16 +892,7 @@ func scaleVMAS(sc *client.ScaleClient, d *schema.ResourceData) (int, int, int, e
 	indexes = []int(sortedIndexes)
 	currentNodeCount = len(indexes)
 
-	if currentNodeCount == sc.DesiredAgentCount {
-		log.Printf("Cluster is currently at the desired agent count")
-		return highestUsedIndex, currentNodeCount, windowsIndex, nil
-	}
-
-	if currentNodeCount > sc.DesiredAgentCount {
-		return highestUsedIndex, currentNodeCount, windowsIndex, scaleDownCluster(sc, currentNodeCount, indexToVM, d)
-	}
-
-	return highestUsedIndex, currentNodeCount, windowsIndex, nil
+	return highestUsedIndex, currentNodeCount, windowsIndex, indexToVM, nil
 }
 
 // scale VM scale sets

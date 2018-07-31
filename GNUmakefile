@@ -57,7 +57,8 @@ test: fmtcheck
 		xargs -t -n4 go test $(TESTARGS) -timeout=120s -parallel=4
 
 testacc: fmtcheck
-	TF_ACC=1 go test $(TEST) -v $(TESTARGS) -timeout 10h
+	# TF_ACC=1 go test $(TEST) -v $(TESTARGS) -timeout 10h
+	TF_ACC=1 go test ./acsengine -v -run TestAccACSEngine -timeout 15h # I'm thinking about running this instead
 
 debugacc: fmtcheck
 	TF_ACC=1 dlv test $(TEST) --headless --listen=:2345 --api-version=2 -- -test.v $(TESTARGS)
