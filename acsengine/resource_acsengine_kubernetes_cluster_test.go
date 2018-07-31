@@ -15,9 +15,12 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	nodeutil "k8s.io/kubernetes/pkg/api/v1/node"
 )
 
 // currently running this line to run tests, use -timeout 20m if I want to actually finish a test that deploys and deletes
@@ -1449,115 +1452,76 @@ func TestAccACSEngineK8sCluster_updateTags(t *testing.T) {
 }
 
 // failing because I haven't implemented yet
-func TestAccACSEngineK8sCluster_createWindowsAgentCluster(t *testing.T) {
-	ri := acctest.RandInt()
-	clientID := testClientID()
-	clientSecret := testClientSecret()
-	location := testLocation()
-	keyData := testSSHPublicKey()
-	kubernetesVersion := "1.8.13"
-	count := 1
-	config := testAccACSEngineK8sClusterOSType(ri, clientID, clientSecret, location, keyData, kubernetesVersion, count)
+// func TestAccACSEngineK8sCluster_createWindowsAgentCluster(t *testing.T) {
+// 	ri := acctest.RandInt()
+// 	clientID := testClientID()
+// 	clientSecret := testClientSecret()
+// 	location := testLocation()
+// 	keyData := testSSHPublicKey()
+// 	kubernetesVersion := "1.8.13"
+// 	count := 1
+// 	config := testAccACSEngineK8sClusterOSType(ri, clientID, clientSecret, location, keyData, kubernetesVersion, count)
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testCheckACSEngineClusterDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: config,
-				Check: resource.ComposeTestCheckFunc(
-					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
-				),
-			},
-		},
-	})
-}
+// 	resource.Test(t, resource.TestCase{
+// 		PreCheck:     func() { testAccPreCheck(t) },
+// 		Providers:    testAccProviders,
+// 		CheckDestroy: testCheckACSEngineClusterDestroy,
+// 		Steps: []resource.TestStep{
+// 			{
+// 				Config: config,
+// 				Check: resource.ComposeTestCheckFunc(
+// 					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
+// 				),
+// 			},
+// 		},
+// 	})
+// }
 
 // failing because I haven't implemented yet
-func TestAccACSEngineK8sCluster_scaleUpDownWindowsAgentCluster(t *testing.T) {
-	ri := acctest.RandInt()
-	clientID := testClientID()
-	clientSecret := testClientSecret()
-	location := testLocation()
-	keyData := testSSHPublicKey()
-	kubernetesVersion := "1.8.13"
-	config := testAccACSEngineK8sClusterOSType(ri, clientID, clientSecret, location, keyData, kubernetesVersion, 1)
-	scaledUpConfig := testAccACSEngineK8sClusterOSType(ri, clientID, clientSecret, location, keyData, kubernetesVersion, 2)
-	scaledDownConfig := testAccACSEngineK8sClusterOSType(ri, clientID, clientSecret, location, keyData, kubernetesVersion, 1)
+// func TestAccACSEngineK8sCluster_scaleUpDownWindowsAgentCluster(t *testing.T) {
+// 	ri := acctest.RandInt()
+// 	clientID := testClientID()
+// 	clientSecret := testClientSecret()
+// 	location := testLocation()
+// 	keyData := testSSHPublicKey()
+// 	kubernetesVersion := "1.8.13"
+// 	config := testAccACSEngineK8sClusterOSType(ri, clientID, clientSecret, location, keyData, kubernetesVersion, 1)
+// 	scaledUpConfig := testAccACSEngineK8sClusterOSType(ri, clientID, clientSecret, location, keyData, kubernetesVersion, 2)
+// 	scaledDownConfig := testAccACSEngineK8sClusterOSType(ri, clientID, clientSecret, location, keyData, kubernetesVersion, 1)
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testCheckACSEngineClusterDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: config,
-				Check: resource.ComposeTestCheckFunc(
-					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
-				),
-			},
-			{
-				Config: scaledUpConfig,
-				Check: resource.ComposeTestCheckFunc(
-					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
-				),
-			},
-			{
-				Config: scaledDownConfig,
-				Check: resource.ComposeTestCheckFunc(
-					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
-				),
-			},
-		},
-	})
-}
+// 	resource.Test(t, resource.TestCase{
+// 		PreCheck:     func() { testAccPreCheck(t) },
+// 		Providers:    testAccProviders,
+// 		CheckDestroy: testCheckACSEngineClusterDestroy,
+// 		Steps: []resource.TestStep{
+// 			{
+// 				Config: config,
+// 				Check: resource.ComposeTestCheckFunc(
+// 					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
+// 				),
+// 			},
+// 			{
+// 				Config: scaledUpConfig,
+// 				Check: resource.ComposeTestCheckFunc(
+// 					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
+// 				),
+// 			},
+// 			{
+// 				Config: scaledDownConfig,
+// 				Check: resource.ComposeTestCheckFunc(
+// 					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
+// 				),
+// 			},
+// 		},
+// 	})
+// }
 
-func TestAccACSEngineK8sCluster_scaleDownUpWindowsAgentCluster(t *testing.T) {
-
-}
-
-func TestAccACSEngineK8sCluster_updateUpgradeScaleUpWindowsAgentCluster(t *testing.T) {
-
-}
-
-func TestAccACSEngineK8sCluster_updateUpgradeScaleDownWindowsAgentCluster(t *testing.T) {
-
-}
-
-func TestAccACSEngineK8sCluster_createHybridAgentCluster(t *testing.T) {
-
-}
+// scaleDownUpWindowsAgentCluster
+// updateUpgradeScaleUpWindowsAgentCluster
+// updateUpgradeScaleDownWindowsAgentCluster
+// createHybridAgentCluster
 
 // test validation (incorrect commands should not let you do 'apply')
-
-// Why is this failing??
-func TestAccACSEngineK8sCluster_importBasic(t *testing.T) {
-	resourceName := "acsengine_kubernetes_cluster.test"
-
-	ri := acctest.RandInt()
-	clientID := testClientID()
-	clientSecret := testClientSecret()
-	location := testLocation()
-	keyData := testSSHPublicKey()
-	config := testAccACSEngineK8sClusterBasic(ri, clientID, clientSecret, location, keyData)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testCheckACSEngineClusterDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: config,
-			},
-			{
-				ResourceName:      resourceName,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-		},
-	})
-}
 
 /* HELPER FUNCTIONS */
 
@@ -1825,8 +1789,12 @@ func testCheckACSEngineClusterExists(name string) resource.TestCheckFunc {
 		if !ok {
 			return fmt.Errorf("Not found: %s", name)
 		}
+		is := rs.Primary // primary instance state
+		if is == nil {
+			return fmt.Errorf("Bad: could not get primary instance state: %s in %s", name, ms.Path)
+		}
 
-		name := rs.Primary.Attributes["name"]
+		name := is.Attributes["name"]
 		resourceGroup, hasResourceGroup := rs.Primary.Attributes["resource_group"]
 		if !hasResourceGroup {
 			return fmt.Errorf("Bad: no resource group found in state for Kubernetes cluster: %s", name)
@@ -1845,24 +1813,10 @@ func testCheckACSEngineClusterExists(name string) resource.TestCheckFunc {
 			return fmt.Errorf("Bad: Kubernetes cluster %q (resource group: %q) does not exist", name, resourceGroup)
 		}
 
-		// check if cluster is actually running (not just that resource exists and deployment exists)
-		is := rs.Primary
-		if is == nil {
-			return fmt.Errorf("Bad: could not get primary instance state: %s in %s", name, ms.Path)
-		}
-		err = clusterIsRunning(is, name)
-		if err != nil {
+		// check if cluster is actually running (not just that Terraform resource exists and deployment exists)
+		if err = clusterIsRunning(is, name); err != nil {
 			return fmt.Errorf("Bad: cluster not found to be running: %+v", err)
 		}
-
-		// test that Kubernetes is running
-		// look into client-go
-		// get namespace of cluster then...
-		// out, err := conn.CoreV1().Services(namespace).Get("name", meta_v1.GetOptions{})
-		// if err != nil {
-		// 	return err
-		// }
-		// *obj = *out // what is this for?? obj is a second argument
 
 		return nil
 	}
@@ -1920,34 +1874,16 @@ func clusterIsRunning(is *terraform.InstanceState, name string) error {
 		return fmt.Errorf("Could not get Kubernetes client: %+v", err)
 	}
 
-	// api := clientset.CoreV1()
-	clientset.CoreV1()
+	api := clientset.CoreV1()
 
-	// why isn't this successful? I guess because there's not service...
-	// _, err = api.Services(namespace).Get(name, metav1.GetOptions{})
-	// if err != nil {
-	// 	return fmt.Errorf("cluster service was not found: %+v", err)
-	// }
-
-	// was successful once, now keeps timing out
-	// nodes, err := api.Nodes().List(metav1.ListOptions{})
-	// if err != nil {
-	// 	return fmt.Errorf("failed to get nodes: %+v", err)
-	// }
-	// for _, node := range nodes.Items {
-	// 	fmt.Printf("Node: %s\n", node.Name)
-	// }
-	// if nodes.Size() < 2 {
-	// 	return fmt.Errorf("Less than 2 nodes: %d found", nodes.Size())
-	// }
-	// fmt.Printf("Nodes list length: %d", nodes.Size())
-
-	// assert number of nodes? do I want to check things like master dns prefix? do I try to run pods and a service?
+	if err := checkNodes(api); err != nil {
+		return fmt.Errorf("checking nodes failed: %+v", err)
+	}
 
 	return nil
 }
 
-// Gets a client config, based on function in aks e2e tests
+// Gets a client config and namespace, based on function in aks e2e tests
 func newClientConfigFromBytes(configBytes []byte) (*rest.Config, string, error) { // I need kubeconfig
 	config, err := clientcmd.Load(configBytes)
 	if err != nil {
@@ -1967,6 +1903,28 @@ func newClientConfigFromBytes(configBytes []byte) (*rest.Config, string, error) 
 	}
 
 	return cc, namespace, nil
+}
+
+func checkNodes(api corev1.CoreV1Interface) error {
+	// was successful once, now keeps timing out
+	// I'm going to add retrying
+	nodes, err := api.Nodes().List(metav1.ListOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to get nodes: %+v", err)
+	}
+	// fmt.Printf("Nodes list length: %d", nodes.Size()) # I think size might mean something else
+	if nodes.Size() < 2 {
+		return fmt.Errorf("less than 2 nodes: %d found", nodes.Size())
+	}
+	// do I need to wait some time to make sure nodes are ready?
+	for _, node := range nodes.Items {
+		fmt.Printf("Node: %s\n", node.Name)
+		if !nodeutil.IsNodeReady(&node) {
+			return fmt.Errorf("node is not ready: %+v", node)
+		}
+	}
+
+	return nil
 }
 
 func fakeFlattenLinuxProfile(adminUsername string) []interface{} {

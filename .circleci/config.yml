@@ -26,11 +26,11 @@ jobs:
           name: Build
           command: make build
       - run:
-          name: Run unit tests
+          name: Run unit tests and shorter tests
           command: make test
       - run:
           name: Run linting rules
           command: make lint
-    #  - run: # I need to add this eventually
-    #       name: Acceptance tests (cluster lifecycle)
-    #       command: make testacc
+     - run:
+          name: Acceptance tests (cluster lifecycle)
+          command: make testacc

@@ -10,11 +10,11 @@ This started out as a fork of [terraform-providers/terraform-provider-azurerm](h
 
 ## User Guides
 
-* [Usage](docs/acsengine_k8s_cluster.md) - details about Kubernetes resource schema and how to configure a cluster
+* [Usage](docs/acsengine_kubernetes_cluster.md) - details about Kubernetes resource schema and how to configure a cluster
 * [Scaling clusters](docs/scaling-agent-pools.md) - shows how to scale a cluster's agent pool count
 * [Upgrading clusters](docs/upgrading-clusters.md) - shows how to upgrade a cluster's Kubernetes version
 * [Terraform state](docs/state.md) - notes on how the state of the cluster is stored and resource creation
-* [Developer guide](docs/developers.md)
+* [Developer guide](docs/developers.md) - Information for contributors on setting up environment (and more)
 
 ## General Requirements
 
