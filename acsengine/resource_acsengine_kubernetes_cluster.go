@@ -1061,7 +1061,7 @@ func upgradeCluster(d *schema.ResourceData, m interface{}, upgradeVersion string
 		return fmt.Errorf("error initializing upgrade client: %+v", err)
 	}
 
-	// I'm not sure that I actually want this, since I'm already validating (but I guess this doesn't hurt?)
+	// I already validated elsewhere, consider deleting
 	kubernetesInfo, err := api.GetOrchestratorVersionProfile(uc.K8sCluster.Properties.OrchestratorProfile)
 	if err != nil {
 		return fmt.Errorf("error getting a list of the available upgrades: %+v", err)
@@ -1109,7 +1109,6 @@ func upgradeCluster(d *schema.ResourceData, m interface{}, upgradeVersion string
 		return fmt.Errorf("failed to deploy upgraded cluster: %+v", err)
 	}
 
-	// I'm not sure this has its certs set... I think it's okay because new ones are being saved
 	return saveUpgradedApimodel(&uc, d)
 }
 
@@ -1593,94 +1592,28 @@ func expandAgentPoolProfiles(d *schema.ResourceData) ([]*api.AgentPoolProfile, e
 	return profiles, nil
 }
 
-// based on expandTags in tags.go
-func expandClusterTags(tagsMap map[string]interface{}) map[string]string {
-	output := make(map[string]string, len(tagsMap))
-
-	for i, v := range tagsMap {
-		// Validate should have ignored this error already
-		value, _ := tagValueToString(v)
-		output[i] = value
-	}
-
-	return output
-}
-
-// from resource_arm_template_deployment.go
 func expandTemplateBody(template string) (map[string]interface{}, error) {
-	var templateBody map[string]interface{}
-	if err := json.Unmarshal([]byte(template), &templateBody); err != nil {
+	templateBody, err := expandBody(template)
+	if err != nil {
 		return nil, fmt.Errorf("error expanding the template_body for Azure RM Template Deployment: %+v", err)
 	}
 	return templateBody, nil
 }
 
-// from resource_arm_template_deployment.go
-func expandParametersBody(body string) (map[string]interface{}, error) {
-	var parametersBody map[string]interface{}
-	if err := json.Unmarshal([]byte(body), &parametersBody); err != nil {
+func expandParametersBody(parameters string) (map[string]interface{}, error) {
+	parametersBody, err := expandBody(parameters)
+	if err != nil {
 		return nil, fmt.Errorf("error expanding the parameters_body for Azure RM Template Deployment: %+v", err)
 	}
 	return parametersBody, nil
 }
 
-// from resource_arm_template_deployment.go
-func validateKubernetesVersion(v interface{}, k string) (ws []string, errors []error) {
-	value := v.(string)
-	capacities := common.AllKubernetesSupportedVersions
-
-	if !capacities[value] {
-		errors = append(errors, fmt.Errorf("ACS Engine Kubernetes Cluster: Kubernetes version %s is invalid or not supported", value))
+func expandBody(body string) (map[string]interface{}, error) {
+	var bodyMap map[string]interface{}
+	if err := json.Unmarshal([]byte(body), &bodyMap); err != nil {
+		return nil, err
 	}
-	return
-}
-
-// Checks that new version is one of the allowed versions for upgrade from current version in ACS Engine
-func validateKubernetesVersionUpgrade(newVersion string, currentVersion string) error {
-	kubernetesProfile := api.OrchestratorProfile{
-		OrchestratorType:    "Kubernetes",
-		OrchestratorVersion: currentVersion,
-	}
-	kubernetesInfo, err := api.GetOrchestratorVersionProfile(&kubernetesProfile)
-	if err != nil {
-		return fmt.Errorf("error getting a list of the available upgrades: %+v", err)
-	}
-	found := false
-	for _, up := range kubernetesInfo.Upgrades { // checking that version I want is within the allowed versions
-		if up.OrchestratorVersion == newVersion {
-			found = true
-			break
-		}
-	}
-	if !found {
-		return fmt.Errorf("version %s is not supported (either doesn't exist, is a downgrade or same version, or is an upgrade by more than 1 minor version)", newVersion)
-	}
-
-	return nil
-}
-
-// from resource_arm_container_service.go
-func validateMasterProfileCount(v interface{}, k string) (ws []string, errors []error) {
-	value := v.(int)
-	capacities := map[int]bool{
-		1: true,
-		3: true,
-		5: true,
-	}
-
-	if !capacities[value] {
-		errors = append(errors, fmt.Errorf("the number of master nodes must be 1, 3 or 5"))
-	}
-	return
-}
-
-// same as validation.IntBetween(1, 100)
-func validateAgentPoolProfileCount(v interface{}, k string) (ws []string, errors []error) {
-	value := v.(int)
-	if value > 100 || value <= 0 {
-		errors = append(errors, fmt.Errorf("the count for an agent pool profile can only be between 1 and 100"))
-	}
-	return
+	return bodyMap, nil
 }
 
 // from resource_arm_container_service.go

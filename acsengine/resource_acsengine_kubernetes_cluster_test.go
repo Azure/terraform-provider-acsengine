@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Azure/acs-engine/pkg/api"
 	"github.com/hashicorp/terraform/helper/acctest"
@@ -16,10 +17,12 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/util/retry"
 	nodeutil "k8s.io/kubernetes/pkg/api/v1/node"
 )
 
@@ -1908,20 +1911,34 @@ func newClientConfigFromBytes(configBytes []byte) (*rest.Config, string, error) 
 func checkNodes(api corev1.CoreV1Interface) error {
 	// was successful once, now keeps timing out
 	// I'm going to add retrying
-	nodes, err := api.Nodes().List(metav1.ListOptions{})
-	if err != nil {
-		return fmt.Errorf("failed to get nodes: %+v", err)
+	retryInfo := wait.Backoff{
+		Steps:    5,
+		Duration: 1000 * time.Millisecond,
+		Factor:   1.5,
+		Jitter:   0.1,
 	}
-	// fmt.Printf("Nodes list length: %d", nodes.Size()) # I think size might mean something else
-	if nodes.Size() < 2 {
-		return fmt.Errorf("less than 2 nodes: %d found", nodes.Size())
-	}
-	// do I need to wait some time to make sure nodes are ready?
-	for _, node := range nodes.Items {
-		fmt.Printf("Node: %s\n", node.Name)
-		if !nodeutil.IsNodeReady(&node) {
-			return fmt.Errorf("node is not ready: %+v", node)
+
+	retryErr := retry.RetryOnConflict(retryInfo, func() error {
+		fmt.Println("trying...")
+		nodes, err := api.Nodes().List(metav1.ListOptions{})
+		if err != nil {
+			return fmt.Errorf("failed to get nodes: %+v", err)
 		}
+		// check number of nodes is at least 2?
+		if len(nodes.Items) < 2 {
+			return fmt.Errorf("not enough nodes found: only %d found", len(nodes.Items))
+		}
+		// do I need to wait some time to make sure nodes are ready?
+		for _, node := range nodes.Items {
+			fmt.Printf("Node: %s\n", node.Name)
+			if !nodeutil.IsNodeReady(&node) {
+				return fmt.Errorf("node is not ready: %+v", node)
+			}
+		}
+		return nil
+	})
+	if retryErr != nil {
+		return fmt.Errorf("Failed to get nodes: %+v", retryErr)
 	}
 
 	return nil
