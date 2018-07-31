@@ -16,13 +16,13 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/retry"
+	// nodeutil "k8s.io/kubernetes/pkg/api/v1/node"
 )
 
 // currently running this line to run tests, use -timeout 20m if I want to actually finish a test that deploys and deletes
@@ -1943,18 +1943,19 @@ func checkNodes(api corev1.CoreV1Interface) error {
 	// I'm going to add retrying
 	// retryInfo := wait.Backoff{
 	// 	Steps:    5,
-	// 	Duration: 1000 * time.Millisecond,
-	// 	Factor:   1.5,
+	// 	Duration: 1 * time.Minute,
+	// 	Factor:   1.0,
 	// 	Jitter:   0.1,
 	// }
 
-	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+	// retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+	retryErr := utils.RetryOnFailedGet(retry.DefaultRetry, func() error {
 		fmt.Println("trying...")
 		nodes, err := api.Nodes().List(metav1.ListOptions{})
 		if err != nil {
-			// return fmt.Errorf("failed to get nodes: %+v", err)
-			fmt.Printf("Reason for error: %+v\n", errors.ReasonForError(err))
-			return utils.Retry(err)
+			return fmt.Errorf("failed to get nodes: %+v", err)
+			// fmt.Printf("Reason for error: %+v\n", errors.ReasonForError(err))
+			// return utils.Retry(err)
 		}
 		// check number of nodes is at least 2?
 		if len(nodes.Items) < 2 {
@@ -1965,11 +1966,11 @@ func checkNodes(api corev1.CoreV1Interface) error {
 			fmt.Printf("Node: %s\n", node.Name)
 			// if !nodeutil.IsNodeReady(&node) { // default eviction time is 5m, so it would probably need to be 5m timeout?
 			// 	// return fmt.Errorf("node is not ready: %+v", node) // do I need to not return here? continue instead?
-			// 	fmt.Printf("node is not ready: %+v\n", node)
-			// 	return utils.Retry(err)
 			// }
+			// maybe I can check the node condition and at least see that it's running? That's not a condition that can be checked...
+			// fmt.Println("node condition: %+v", nodeutil.GetNodeCondition(&node))
 		}
-		return utils.Retry(err)
+		return nil
 	})
 	if retryErr != nil {
 		return fmt.Errorf("Failed to get nodes: %+v", retryErr)
