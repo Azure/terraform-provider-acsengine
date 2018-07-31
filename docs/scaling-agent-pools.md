@@ -20,4 +20,4 @@ agent_pool_profiles {
 }
 ```
 
-When you run `terraform plan`, you should see that only a change will be made, not a creation of a new resource.
+When you run `terraform plan`, you should see that only a change will be made, not a creation of a new resource. You can now run `terraform apply` to apply the update to your cluster.

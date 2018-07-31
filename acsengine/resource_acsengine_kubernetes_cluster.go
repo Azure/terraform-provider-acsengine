@@ -12,10 +12,8 @@ package acsengine
 // - do I need more translations?
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"log"
 	"math/rand"
@@ -38,7 +36,6 @@ import (
 	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/client" // this is what I want to work
 	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/kubernetes"
 	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/response"
-	"github.com/hashicorp/terraform/helper/hashcode"
 	"github.com/hashicorp/terraform/helper/schema"     // update version
 	"github.com/hashicorp/terraform/helper/validation" // update version
 )
@@ -86,7 +83,7 @@ func resourceArmAcsEngineKubernetesCluster() *schema.Resource {
 							Required: true,
 						},
 						"ssh": {
-							Type:     schema.TypeSet,
+							Type:     schema.TypeList,
 							Required: true,
 							MaxItems: 1,
 							Elem: &schema.Resource{
@@ -1048,12 +1045,6 @@ func saveScaledApimodel(sc *client.ScaleClient, d *schema.ResourceData) error {
 	return saveTemplates(sc.K8sCluster, sc.DeploymentDirectory, d)
 }
 
-func addValue(params map[string]interface{}, k string, v interface{}) {
-	params[k] = map[string]interface{}{
-		"value": v,
-	}
-}
-
 // Upgrades a cluster to a higher Kubernetes version
 func upgradeCluster(d *schema.ResourceData, m interface{}, upgradeVersion string) error {
 	uc, err := initializeUpgradeClient(d, m, upgradeVersion)
@@ -1339,13 +1330,11 @@ func flattenLinuxProfile(profile api.LinuxProfile) ([]interface{}, error) {
 
 	values := map[string]interface{}{}
 
-	sshKeys := &schema.Set{
-		F: resourceLinuxProfilesSSHKeysHash,
-	}
+	sshKeys := []interface{}{}
 
 	keys := map[string]interface{}{}
 	keys["key_data"] = keyData
-	sshKeys.Add(keys)
+	sshKeys = append(sshKeys, keys)
 
 	values["admin_username"] = adminUsername
 	values["ssh"] = sshKeys
@@ -1424,16 +1413,6 @@ func flattenAgentPoolProfiles(profiles []*api.AgentPoolProfile) ([]interface{}, 
 	return agentPoolProfiles, nil
 }
 
-func flattenTags(tags map[string]string) (map[string]interface{}, error) {
-	output := make(map[string]interface{}, len(tags))
-
-	for tag, val := range tags {
-		output[tag] = val
-	}
-
-	return output, nil
-}
-
 func getKubeConfig(cluster *api.ContainerService) (string, error) {
 	// maybe check that this is the same function being used when generating all of the templates
 	// convert to base64?
@@ -1486,7 +1465,7 @@ func expandLinuxProfile(d *schema.ResourceData) (api.LinuxProfile, error) {
 	config := profiles[0].(map[string]interface{})
 
 	adminUsername := config["admin_username"].(string)
-	linuxKeys := config["ssh"].(*schema.Set).List()
+	linuxKeys := config["ssh"].([]interface{})
 
 	sshPublicKeys := []api.PublicKey{}
 
@@ -1590,39 +1569,4 @@ func expandAgentPoolProfiles(d *schema.ResourceData) ([]*api.AgentPoolProfile, e
 	}
 
 	return profiles, nil
-}
-
-func expandTemplateBody(template string) (map[string]interface{}, error) {
-	templateBody, err := expandBody(template)
-	if err != nil {
-		return nil, fmt.Errorf("error expanding the template_body for Azure RM Template Deployment: %+v", err)
-	}
-	return templateBody, nil
-}
-
-func expandParametersBody(parameters string) (map[string]interface{}, error) {
-	parametersBody, err := expandBody(parameters)
-	if err != nil {
-		return nil, fmt.Errorf("error expanding the parameters_body for Azure RM Template Deployment: %+v", err)
-	}
-	return parametersBody, nil
-}
-
-func expandBody(body string) (map[string]interface{}, error) {
-	var bodyMap map[string]interface{}
-	if err := json.Unmarshal([]byte(body), &bodyMap); err != nil {
-		return nil, err
-	}
-	return bodyMap, nil
-}
-
-// from resource_arm_container_service.go
-func resourceLinuxProfilesSSHKeysHash(v interface{}) int {
-	var buf bytes.Buffer
-
-	if m, ok := v.(map[string]interface{}); ok {
-		buf.WriteString(fmt.Sprintf("%s-", m["key_data"].(string)))
-	}
-
-	return hashcode.String(buf.String())
 }

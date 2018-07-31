@@ -6,4 +6,4 @@ Unfortunately, this means implementing the acs-engine kubernetes cluster data so
 
 ## Note on resources created
 
-Storing the contents of `apimodel.json` in the Terraform state means that no new resources have to be created to store this information. The resources created include the resource group for the cluster, and all resources that are essential to creating and deploying a cluster. The resource group is deleted to destroy the cluster. This means that new resources should not be created within this resource group unless they can be deleted with the cluster.
+Storing the contents of `apimodel.json` in the Terraform state means that no new resources have to be created to store this information. The resources created include the resource group for the cluster, and all resources that are essential to creating and deploying a cluster. The resource group is deleted to destroy the cluster. **Important:** This means that new resources should not be created within this resource group unless they can be deleted with the cluster.
