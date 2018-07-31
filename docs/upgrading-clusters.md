@@ -17,4 +17,4 @@ To change the Kubernetes version, you just need to change the value of `kubernet
 
 You can still add a value for `kubernetes_version` even if you did not specify this before, since the resource has a default version. At the time of writing this, it is `1.8.13`.
 
-Running `terraform plan` should show that only a change needs to be made to the resource, instead of recreating the resource.
+Running `terraform plan` should show that only a change needs to be made to the resource, instead of recreating the resource. You can now run `terraform apply` to apply the update to your cluster. Upgrading can take some time, especially relative to creating and scaling.

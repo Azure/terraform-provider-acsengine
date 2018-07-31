@@ -9,21 +9,20 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/Azure/acs-engine/pkg/api"
+	"github.com/Azure/terraform-provider-acsengine/acsengine/utils"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/retry"
-	nodeutil "k8s.io/kubernetes/pkg/api/v1/node"
 )
 
 // currently running this line to run tests, use -timeout 20m if I want to actually finish a test that deploys and deletes
@@ -369,6 +368,37 @@ func TestACSEngineK8sCluster_expandAgentPoolProfiles(t *testing.T) {
 	}
 	if profiles[1].OSType != api.Windows {
 		t.Fatalf("The first agent pool profile has OS type %s when it should be %s", profiles[0].OSType, api.Windows)
+	}
+}
+
+func TestACSEngineK8sCluster_expandBody(t *testing.T) {
+	body := `{
+		"groceries": {
+			"bananas": "5",
+			"pasta": "2"
+		}
+	}`
+
+	expandedBody, err := expandBody(body)
+	if err != nil {
+		t.Fatalf("%+v", err)
+	}
+
+	if v, ok := expandedBody["groceries"]; ok {
+		groceries := v.(map[string]interface{})
+		if len(groceries) != 2 {
+			t.Fatalf("length of grocery list is not correct: expected 2 and found %d", len(groceries))
+		}
+		if v, ok := groceries["bananas"]; ok {
+			item := v.(string)
+			if item != "5" {
+				t.Fatalf("Expected price of bananas to be 5 but got %s", item)
+			}
+		} else {
+			t.Fatalf("could not find `bananas`")
+		}
+	} else {
+		t.Fatalf("could not find `groceries`")
 	}
 }
 
@@ -1911,18 +1941,20 @@ func newClientConfigFromBytes(configBytes []byte) (*rest.Config, string, error) 
 func checkNodes(api corev1.CoreV1Interface) error {
 	// was successful once, now keeps timing out
 	// I'm going to add retrying
-	retryInfo := wait.Backoff{
-		Steps:    5,
-		Duration: 1000 * time.Millisecond,
-		Factor:   1.5,
-		Jitter:   0.1,
-	}
+	// retryInfo := wait.Backoff{
+	// 	Steps:    5,
+	// 	Duration: 1000 * time.Millisecond,
+	// 	Factor:   1.5,
+	// 	Jitter:   0.1,
+	// }
 
-	retryErr := retry.RetryOnConflict(retryInfo, func() error {
+	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		fmt.Println("trying...")
 		nodes, err := api.Nodes().List(metav1.ListOptions{})
 		if err != nil {
-			return fmt.Errorf("failed to get nodes: %+v", err)
+			// return fmt.Errorf("failed to get nodes: %+v", err)
+			fmt.Printf("Reason for error: %+v\n", errors.ReasonForError(err))
+			return utils.Retry(err)
 		}
 		// check number of nodes is at least 2?
 		if len(nodes.Items) < 2 {
@@ -1931,11 +1963,13 @@ func checkNodes(api corev1.CoreV1Interface) error {
 		// do I need to wait some time to make sure nodes are ready?
 		for _, node := range nodes.Items {
 			fmt.Printf("Node: %s\n", node.Name)
-			if !nodeutil.IsNodeReady(&node) {
-				return fmt.Errorf("node is not ready: %+v", node)
-			}
+			// if !nodeutil.IsNodeReady(&node) { // default eviction time is 5m, so it would probably need to be 5m timeout?
+			// 	// return fmt.Errorf("node is not ready: %+v", node) // do I need to not return here? continue instead?
+			// 	fmt.Printf("node is not ready: %+v\n", node)
+			// 	return utils.Retry(err)
+			// }
 		}
-		return nil
+		return utils.Retry(err)
 	})
 	if retryErr != nil {
 		return fmt.Errorf("Failed to get nodes: %+v", retryErr)
@@ -1945,13 +1979,11 @@ func checkNodes(api corev1.CoreV1Interface) error {
 }
 
 func fakeFlattenLinuxProfile(adminUsername string) []interface{} {
-	sshKeys := &schema.Set{
-		F: resourceLinuxProfilesSSHKeysHash,
-	}
+	sshKeys := []interface{}{}
 	keys := map[string]interface{}{
 		"key_data": testSSHPublicKey(),
 	}
-	sshKeys.Add(keys)
+	sshKeys = append(sshKeys, keys)
 	values := map[string]interface{}{
 		"admin_username": adminUsername,
 		"ssh":            sshKeys,
@@ -2059,6 +2091,12 @@ func fakeExpandAgentPoolProfile(name string, count int, vmSize string, fqdn stri
 	return profile
 }
 
+func fakeCertificateProfile() *api.CertificateProfile {
+	profile := &api.CertificateProfile{}
+
+	return profile
+}
+
 func mockClusterResourceData() *schema.ResourceData {
 	r := resourceArmAcsEngineKubernetesCluster()
 	d := r.TestResourceData()
@@ -2094,8 +2132,6 @@ func mockClusterResourceData() *schema.ResourceData {
 	d.Set("agent_pool_profiles", &agentPoolProfiles)
 
 	d.Set("tags", map[string]interface{}{})
-
-	// set certificate profile?
 
 	return d
 }

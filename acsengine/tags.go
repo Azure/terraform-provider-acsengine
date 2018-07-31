@@ -62,7 +62,7 @@ func expandTags(tagsMap map[string]interface{}) map[string]*string {
 	output := make(map[string]*string, len(tagsMap))
 
 	for i, v := range tagsMap {
-		//Validate should have ignored this error already
+		// Validate should have ignored this error already
 		value, err := tagValueToString(v)
 		if err != nil {
 			log.Fatalf("%+v", err)
@@ -82,4 +82,14 @@ func expandClusterTags(tagsMap map[string]interface{}) map[string]string {
 	}
 
 	return output
+}
+
+func flattenTags(tags map[string]string) (map[string]interface{}, error) {
+	output := make(map[string]interface{}, len(tags))
+
+	for tag, val := range tags {
+		output[tag] = val
+	}
+
+	return output, nil
 }
