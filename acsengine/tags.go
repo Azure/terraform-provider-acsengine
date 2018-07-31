@@ -72,3 +72,14 @@ func expandTags(tagsMap map[string]interface{}) map[string]*string {
 
 	return output
 }
+
+func expandClusterTags(tagsMap map[string]interface{}) map[string]string {
+	output := make(map[string]string, len(tagsMap))
+
+	for i, v := range tagsMap {
+		value, _ := tagValueToString(v)
+		output[i] = value
+	}
+
+	return output
+}
