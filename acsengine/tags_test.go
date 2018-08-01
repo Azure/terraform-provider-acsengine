@@ -94,3 +94,73 @@ func TestExpandARMTags(t *testing.T) {
 		}
 	}
 }
+
+func TestExpandClusterTags(t *testing.T) {
+	testData := make(map[string]interface{})
+	testData["key1"] = "value1"
+	testData["key2"] = 21
+	testData["key3"] = "value3"
+
+	expanded := expandClusterTags(testData)
+
+	if len(expanded) != 3 {
+		t.Fatalf("Expected 3 results in expanded tag map, got %d", len(expanded))
+	}
+
+	for k, v := range testData {
+		var strVal string
+		switch v.(type) {
+		case string:
+			strVal = v.(string)
+		case int:
+			strVal = fmt.Sprintf("%d", v.(int))
+		}
+
+		if expanded[k] != strVal {
+			t.Fatalf("Expanded value %q incorrect: expected %q, got %q", k, strVal, expanded[k])
+		}
+	}
+}
+
+func TestACSEngineK8sCluster_flattenTags(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("flattenTags failed")
+		}
+	}()
+
+	tags := map[string]string{
+		"Environment": "Production",
+	}
+
+	output, err := flattenTags(tags)
+	if err != nil {
+		t.Fatalf("flattenTags failed: %v", err)
+	}
+
+	if _, ok := output["Environment"]; !ok {
+		t.Fatalf("output['Environment'] does not exist")
+	}
+	if output["Environment"] != "Production" {
+		t.Fatalf("output['Environment'] is not set correctly")
+	}
+}
+
+func TestACSEngineK8sCluster_flattenTagsEmpty(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("flattenTags failed")
+		}
+	}()
+
+	tags := map[string]string{}
+
+	output, err := flattenTags(tags)
+	if err != nil {
+		t.Fatalf("flattenTags failed: %v", err)
+	}
+
+	if len(output) != 0 {
+		t.Fatalf("len(output) != 0")
+	}
+}

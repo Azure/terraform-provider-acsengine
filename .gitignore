@@ -329,13 +329,15 @@ ASALocalRun/
 .mfractor/
 
 # Project specific
-# .terraform/
-# _output/
-# /main.tf
-# /outputs.tf
-# terraform.tfstate
-# terraform.tfplan
-# ./*.tfstate
-# *.backup
-# .terraform.tfstate.lock.info
+.terraform/
+_output/
+/main.tf
+/outputs.tf
+terraform.tfstate
+terraform.tfplan
+./*.tfstate
+*.backup
+.terraform.tfstate.lock.info
 *.test
+# for now
+coverage.out

@@ -49,19 +49,13 @@ generate-all: generate-templates generate-translations
 # testing
 ###############################################################################
 
-# do I want all of these?
-
 test: fmtcheck
 	go test -i $(TEST) || exit 1
 	echo $(TEST) | \
-		xargs -t -n4 go test $(TESTARGS) -timeout=120s -parallel=4
+		xargs -t -n4 go test $(TESTARGS) -cover -timeout=2m -parallel=4
 
 testacc: fmtcheck
-	# TF_ACC=1 go test $(TEST) -v $(TESTARGS) -timeout 10h
-	TF_ACC=1 go test ./acsengine -v -run TestAccACSEngine -timeout 15h # I'm thinking about running this instead
-
-debugacc: fmtcheck
-	TF_ACC=1 dlv test $(TEST) --headless --listen=:2345 --api-version=2 -- -test.v $(TESTARGS)
+	TF_ACC=1 go test ./acsengine -v -run TestAccACSEngine -timeout 15h
 
 lint:
 	gometalinter ./acsengine/... --disable-all \
@@ -72,6 +66,11 @@ lint:
 
 fmtcheck:
 	@sh "$(CURDIR)/scripts/gofmtcheck.sh"
+
+# do I want all of these?
+
+debugacc: fmtcheck
+	TF_ACC=1 dlv test $(TEST) --headless --listen=:2345 --api-version=2 -- -test.v $(TESTARGS)
 
 errcheck:
 	@sh "$(CURDIR)/scripts/errcheck.sh"
@@ -86,8 +85,26 @@ test-compile:
 
 # figure out coverage
 # coverage:
-
+ 
 .PHONY: test testacc lint fmtcheck errcheck test-compile
+
+###############################################################################
+# CI tests
+###############################################################################
+
+cluster-create:
+	TF_ACC=1 go test ./acsengine -v -run create -timeout 5h
+
+cluster-scale:
+	TF_ACC=1 go test ./acsengine -v -run scale -timeout 5h
+
+cluster-upgrade:
+	TF_ACC=1 go test ./acsengine -v -run upgrade -timeout 5h
+
+cluster-update:
+	TF_ACC=1 go test ./acsengine -v -run update -timeout 5h
+
+.PHONY: cluster-create cluster-scale cluster-upgrade cluster-update
 
 ###############################################################################
 # vendor

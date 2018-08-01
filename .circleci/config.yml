@@ -30,5 +30,14 @@ jobs:
           name: Run linting rules
           command: make lint
       - run:
-          name: Acceptance tests (cluster lifecycle)
-          command: make testacc
+          name: Cluster creation acceptance tests
+          command: make cluster-create
+      - run:
+          name: Cluster scale acceptance tests
+          command: make cluster-scale
+      - run:
+          name: Cluster upgrade acceptance tests
+          command: make cluster-upgrade
+      - run:
+          name: Cluster acceptance tests with combined update operations
+          command: make cluster-update
