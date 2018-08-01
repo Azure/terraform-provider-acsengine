@@ -1,10 +1,12 @@
 package acsengine
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"net/http"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 	"testing"
@@ -1740,13 +1742,6 @@ func newClientConfigFromBytes(configBytes []byte) (*rest.Config, string, error) 
 }
 
 func checkNodes(api corev1.CoreV1Interface) error {
-	// retryInfo := wait.Backoff{
-	// 	Steps:    5,
-	// 	Duration: 1 * time.Minute,
-	// 	Factor:   1.0,
-	// 	Jitter:   0.1,
-	// }
-
 	retryErr := utils.RetryOnFailedGet(retry.DefaultRetry, func() error {
 		fmt.Println("trying to get nodes...")
 		nodes, err := api.Nodes().List(metav1.ListOptions{})
@@ -1770,6 +1765,25 @@ func checkNodes(api corev1.CoreV1Interface) error {
 	})
 	if retryErr != nil {
 		return fmt.Errorf("Failed to get nodes: %+v", retryErr)
+	}
+
+	return nil
+}
+
+// not used yet
+func checkTags(resourceGroup string, tags map[string]string) error {
+	// try to run az group show -g *rg* --query tags and check string contains tags?
+	ctx := context.Background()
+	cmd := exec.CommandContext(ctx, "az", "group", "show", "-g", resourceGroup, "--query", "tags")
+	by, err := cmd.CombinedOutput()
+	if err != nil {
+		return nil
+	}
+	results := string(by)
+	for key, val := range tags {
+		if !strings.Contains(results, key) || !strings.Contains(results, val) {
+			return fmt.Errorf("key value pair (%s, %s) not found", key, val)
+		}
 	}
 
 	return nil

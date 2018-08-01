@@ -12,6 +12,8 @@ package acsengine
 // - get data source working (read from api model in resource state somehow)
 // - OS type
 // - make sure DataDisk.CreateOption problem is still sorted out
+// - refactor: better organization of functions, get rid of code duplication, inheritance where it makes sense, better function/variable naming
+// - ask about additions to acs-engine: doesn't seem to allow tagging deployment, weird index problem
 
 import (
 	"context"
@@ -21,7 +23,6 @@ import (
 	"math/rand"
 	"os"
 	"path"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -405,10 +406,8 @@ func resourceAcsEngineK8sClusterUpdate(d *schema.ResourceData, m interface{}) er
 		d.SetPartial(profileCount)
 	}
 
-	// I should make this come first so the tags can be updated at the same time
-	// as another re-deployment (if one happens)
+	// currently just adding to resource group, add to deployment or VMs as well?
 	if d.HasChange("tags") {
-		// do I need to pass in "new" tags from d.GetChange? I'm pretty sure I don't
 		if err = updateTags(d, m); err != nil {
 			return fmt.Errorf("Error updating tags: %+v", err)
 		}
@@ -461,9 +460,12 @@ func generateACSEngineTemplate(d *schema.ResourceData, write bool) (template str
 
 	if write { // this should be default but allow for more testing
 		deploymentDirectory := path.Join("_output", cluster.Properties.MasterProfile.DNSPrefix)
-		if err = writeTemplatesAndCerts(d, cluster, template, parameters, deploymentDirectory, certsGenerated); err != nil {
+		if err = writeTemplatesAndCerts(cluster, template, parameters, deploymentDirectory, certsGenerated); err != nil {
 			return "", "", fmt.Errorf("error writing templates and certificates: %+v", err)
 		}
+	}
+	if err = setAPIModel(d, cluster); err != nil {
+		return "", "", fmt.Errorf("error setting API model: %+v", err)
 	}
 
 	return template, parameters, nil
@@ -514,12 +516,7 @@ func initializeContainerService(d *schema.ResourceData) (*api.ContainerService, 
 		return nil, err
 	}
 
-	var tags map[string]interface{}
-	if v, ok = d.GetOk("tags"); ok {
-		tags = v.(map[string]interface{})
-	} else {
-		tags = map[string]interface{}{}
-	}
+	tags := getTags(d)
 
 	cluster := &api.ContainerService{
 		Name:     name,
@@ -667,18 +664,6 @@ func setProfiles(d *schema.ResourceData, cluster *api.ContainerService) error {
 	return nil
 }
 
-func setTags(d *schema.ResourceData, cluster *api.ContainerService) error {
-	tags, err := flattenTags(cluster.Tags)
-	if err != nil {
-		return fmt.Errorf("Error flattening `tags`: %+v", err)
-	}
-	if err := d.Set("tags", tags); err != nil {
-		return fmt.Errorf("Error setting 'tags': %+v", err)
-	}
-
-	return nil
-}
-
 func setKubeConfig(d *schema.ResourceData, cluster *api.ContainerService) error {
 	kubeConfigFile, err := getKubeConfig(cluster)
 	if err != nil {
@@ -708,7 +693,7 @@ func scaleCluster(d *schema.ResourceData, m interface{}, agentIndex int, agentCo
 	}
 
 	var currentNodeCount, highestUsedIndex, windowsIndex int
-	var indexToVM map[int]string
+	var indexToVM []string
 	if sc.AgentPool.IsAvailabilitySets() {
 		if highestUsedIndex, currentNodeCount, windowsIndex, indexToVM, err = scaleVMAS(&sc, d); err != nil {
 			return fmt.Errorf("failed to scale availability set: %+v", err)
@@ -770,7 +755,7 @@ func initializeScaleClient(d *schema.ResourceData, m interface{}, agentIndex int
 		},
 	}
 	if m != nil { // for testing purposes
-		sc.K8sCluster, err = loadContainerServiceFromApimodel(d, true, true)
+		sc.Cluster, err = loadContainerServiceFromApimodel(d, true, true)
 		if err != nil {
 			return sc, fmt.Errorf("error parsing the api model: %+v", err)
 		}
@@ -779,18 +764,18 @@ func initializeScaleClient(d *schema.ResourceData, m interface{}, agentIndex int
 		if _, err = os.Stat(sc.APIModelPath); os.IsNotExist(err) {
 			return sc, fmt.Errorf("specified api model does not exist (%s)", sc.APIModelPath)
 		}
-		sc.K8sCluster, _, err = apiloader.LoadContainerServiceFromFile(sc.APIModelPath, true, true, nil)
+		sc.Cluster, _, err = apiloader.LoadContainerServiceFromFile(sc.APIModelPath, true, true, nil)
 		if err != nil {
 			return sc, fmt.Errorf("error parsing the api model: %+v", err)
 		}
 
 	}
-	if sc.K8sCluster.Location != sc.Location {
+	if sc.Cluster.Location != sc.Location {
 		return sc, fmt.Errorf("location does not match api model location") // this should probably never happen?
 	}
-	sc.AgentPool = sc.K8sCluster.Properties.AgentPoolProfiles[sc.AgentPoolIndex]
+	sc.AgentPool = sc.Cluster.Properties.AgentPoolProfiles[sc.AgentPoolIndex]
 
-	sc.NameSuffix = acsengine.GenerateClusterID(sc.K8sCluster.Properties)
+	sc.NameSuffix = acsengine.GenerateClusterID(sc.Cluster.Properties)
 
 	return sc, nil
 }
@@ -801,19 +786,19 @@ func addScaleAuthArgs(d *schema.ResourceData, sc *client.ScaleClient) error {
 	if err != nil {
 		return fmt.Errorf("error parsing resource ID: %+v", err)
 	}
-	sc.AuthArgs.RawSubscriptionID = id.SubscriptionID
-	sc.AuthArgs.AuthMethod = "client_secret"
+	sc.RawSubscriptionID = id.SubscriptionID
+	sc.AuthMethod = "client_secret"
 	if v, ok := d.GetOk("service_principal.0.client_id"); ok {
-		sc.AuthArgs.RawClientID = v.(string)
+		sc.RawClientID = v.(string)
 	}
 	if v, ok := d.GetOk("service_principal.0.client_secret"); ok {
-		sc.AuthArgs.ClientSecret = v.(string)
+		sc.ClientSecret = v.(string)
 	}
-	if err = sc.AuthArgs.ValidateAuthArgs(); err != nil {
+	if err = sc.ValidateAuthArgs(); err != nil {
 		return fmt.Errorf("error validating auth args: %+v", err)
 	}
 
-	if sc.Client, err = sc.AuthArgs.GetClient(); err != nil {
+	if sc.Client, err = sc.GetClient(); err != nil {
 		return fmt.Errorf("failed to get client: %+v", err)
 	}
 	if _, err = sc.Client.EnsureResourceGroup(context.Background(), sc.ResourceGroupName, sc.Location, nil); err != nil {
@@ -824,12 +809,11 @@ func addScaleAuthArgs(d *schema.ResourceData, sc *client.ScaleClient) error {
 }
 
 // scale VM availability sets
-func scaleVMAS(sc *client.ScaleClient, d *schema.ResourceData) (int, int, int, map[int]string, error) {
+func scaleVMAS(sc *client.ScaleClient, d *schema.ResourceData) (int, int, int, []string, error) {
 	var currentNodeCount, highestUsedIndex, vmNum int
 	windowsIndex := -1
 	highestUsedIndex = 0
-	indexes := make([]int, 0)
-	indexToVM := make(map[int]string)
+	indexToVM := make([]string, 0)
 	ctx := context.Background()
 	vms, err := sc.Client.ListVirtualMachines(ctx, sc.ResourceGroupName)
 	if err != nil {
@@ -860,14 +844,10 @@ func scaleVMAS(sc *client.ScaleClient, d *schema.ResourceData) (int, int, int, m
 			highestUsedIndex = vmNum
 		}
 
-		indexToVM[index] = *vm.Name
-		indexes = append(indexes, index)
+		indexToVM = append(indexToVM, *vm.Name)
 		index++
 	}
-	sortedIndexes := sort.IntSlice(indexes)
-	sortedIndexes.Sort()
-	indexes = []int(sortedIndexes)
-	currentNodeCount = len(indexes)
+	currentNodeCount = len(indexToVM)
 
 	return highestUsedIndex, currentNodeCount, windowsIndex, indexToVM, nil
 }
@@ -905,7 +885,7 @@ func scaleVMSS(sc *client.ScaleClient) (int, int, int, error) {
 }
 
 // Scales down a cluster by draining and deleting the nodes given as input
-func scaleDownCluster(sc *client.ScaleClient, currentNodeCount int, indexToVM map[int]string, d *schema.ResourceData) error {
+func scaleDownCluster(sc *client.ScaleClient, currentNodeCount int, indexToVM []string, d *schema.ResourceData) error {
 	if sc.MasterFQDN == "" {
 		return fmt.Errorf("Master FQDN is required to scale down a Kubernetes cluster's agent pool")
 	}
@@ -915,7 +895,7 @@ func scaleDownCluster(sc *client.ScaleClient, currentNodeCount int, indexToVM ma
 		vmsToDelete = append(vmsToDelete, indexToVM[i])
 	}
 
-	kubeconfig, err := acsengine.GenerateKubeConfig(sc.K8sCluster.Properties, sc.Location)
+	kubeconfig, err := acsengine.GenerateKubeConfig(sc.Cluster.Properties, sc.Location)
 	if err != nil {
 		return fmt.Errorf("failed to generate kube config: %+v", err)
 	}
@@ -926,7 +906,7 @@ func scaleDownCluster(sc *client.ScaleClient, currentNodeCount int, indexToVM ma
 	errList := operations.ScaleDownVMs(
 		sc.Client,
 		sc.Logger,
-		sc.AuthArgs.SubscriptionID.String(),
+		sc.SubscriptionID.String(),
 		sc.ResourceGroupName,
 		vmsToDelete...)
 	if errList != nil {
@@ -956,9 +936,9 @@ func scaleUpCluster(sc *client.ScaleClient, highestUsedIndex int, currentNodeCou
 		return fmt.Errorf("failed to initialize template generator: %+v", err)
 	}
 
-	sc.K8sCluster.Properties.AgentPoolProfiles = []*api.AgentPoolProfile{sc.AgentPool} // how does this work when there's multiple agent pools?
+	sc.Cluster.Properties.AgentPoolProfiles = []*api.AgentPoolProfile{sc.AgentPool} // how does this work when there's multiple agent pools?
 
-	template, parameters, _, err := templateGenerator.GenerateTemplate(sc.K8sCluster, acsengine.DefaultGeneratorCode, false, true, acsEngineVersion)
+	template, parameters, _, err := templateGenerator.GenerateTemplate(sc.Cluster, acsengine.DefaultGeneratorCode, false, true, acsEngineVersion)
 	if err != nil {
 		return fmt.Errorf("error generating template: %+v", err)
 	}
@@ -1014,13 +994,13 @@ func scaleUpCluster(sc *client.ScaleClient, highestUsedIndex int, currentNodeCou
 
 func saveScaledApimodel(sc *client.ScaleClient, d *schema.ResourceData) error {
 	var err error
-	sc.K8sCluster, err = loadContainerServiceFromApimodel(d, false, true)
+	sc.Cluster, err = loadContainerServiceFromApimodel(d, false, true)
 	if err != nil {
 		return fmt.Errorf("failed to load container service from apimodel: %+v", err)
 	}
-	sc.K8sCluster.Properties.AgentPoolProfiles[sc.AgentPoolIndex].Count = sc.DesiredAgentCount
+	sc.Cluster.Properties.AgentPoolProfiles[sc.AgentPoolIndex].Count = sc.DesiredAgentCount
 
-	return saveTemplates(sc.K8sCluster, sc.DeploymentDirectory, d)
+	return saveTemplates(d, sc.Cluster, sc.DeploymentDirectory)
 }
 
 // Upgrades a cluster to a higher Kubernetes version
@@ -1031,14 +1011,14 @@ func upgradeCluster(d *schema.ResourceData, m interface{}, upgradeVersion string
 	}
 
 	// I already validated elsewhere, consider deleting
-	kubernetesInfo, err := api.GetOrchestratorVersionProfile(uc.K8sCluster.Properties.OrchestratorProfile)
+	kubernetesInfo, err := api.GetOrchestratorVersionProfile(uc.Cluster.Properties.OrchestratorProfile)
 	if err != nil {
 		return fmt.Errorf("error getting a list of the available upgrades: %+v", err)
 	}
 	found := false
 	for _, up := range kubernetesInfo.Upgrades { // checking that version I want is within the allowed versions
 		if up.OrchestratorVersion == uc.UpgradeVersion {
-			uc.K8sCluster.Properties.OrchestratorProfile.OrchestratorVersion = uc.UpgradeVersion
+			uc.Cluster.Properties.OrchestratorProfile.OrchestratorVersion = uc.UpgradeVersion
 			found = true
 			break
 		}
@@ -1048,7 +1028,7 @@ func upgradeCluster(d *schema.ResourceData, m interface{}, upgradeVersion string
 	}
 
 	uc.AgentPoolsToUpgrade = []string{}
-	for _, agentPool := range uc.K8sCluster.Properties.AgentPoolProfiles {
+	for _, agentPool := range uc.Cluster.Properties.AgentPoolProfiles {
 		uc.AgentPoolsToUpgrade = append(uc.AgentPoolsToUpgrade, agentPool.Name)
 	}
 
@@ -1061,16 +1041,16 @@ func upgradeCluster(d *schema.ResourceData, m interface{}, upgradeVersion string
 		StepTimeout: uc.Timeout,
 	}
 
-	kubeconfig, err := acsengine.GenerateKubeConfig(uc.K8sCluster.Properties, uc.Location)
+	kubeconfig, err := acsengine.GenerateKubeConfig(uc.Cluster.Properties, uc.Location)
 	if err != nil {
 		return fmt.Errorf("failed to generate kube config: %+v", err)
 	}
 
 	err = upgradeCluster.UpgradeCluster(
-		uc.AuthArgs.SubscriptionID,
+		uc.SubscriptionID,
 		kubeconfig,
 		uc.ResourceGroupName,
-		uc.K8sCluster,
+		uc.Cluster,
 		uc.NameSuffix,
 		uc.AgentPoolsToUpgrade,
 		acsEngineVersion)
@@ -1109,7 +1089,7 @@ func initializeUpgradeClient(d *schema.ResourceData, m interface{}, upgradeVersi
 		},
 	}
 	if m != nil { // for testing purposes
-		if uc.K8sCluster, err = loadContainerServiceFromApimodel(d, true, true); err != nil {
+		if uc.Cluster, err = loadContainerServiceFromApimodel(d, true, true); err != nil {
 			return uc, fmt.Errorf("error parsing the api model: %+v", err)
 		}
 	} else {
@@ -1117,18 +1097,18 @@ func initializeUpgradeClient(d *schema.ResourceData, m interface{}, upgradeVersi
 		if _, err = os.Stat(uc.APIModelPath); os.IsNotExist(err) {
 			return uc, fmt.Errorf("specified api model does not exist (%s)", uc.APIModelPath)
 		}
-		uc.K8sCluster, uc.APIVersion, err = apiloader.LoadContainerServiceFromFile(uc.APIModelPath, true, true, nil) // look into these parameters
+		uc.Cluster, uc.APIVersion, err = apiloader.LoadContainerServiceFromFile(uc.APIModelPath, true, true, nil) // look into these parameters
 		if err != nil {
 			return uc, fmt.Errorf("error parsing the api model: %+v", err)
 		}
 	}
-	if uc.K8sCluster.Location == "" { // not sure if this block is necessary, might only matter if people are messing w/ the apimodel
-		uc.K8sCluster.Location = uc.Location
-	} else if uc.K8sCluster.Location != uc.Location {
+	if uc.Cluster.Location == "" { // not sure if this block is necessary, might only matter if people are messing w/ the apimodel
+		uc.Cluster.Location = uc.Location
+	} else if uc.Cluster.Location != uc.Location {
 		return uc, fmt.Errorf("location does not match api model location") // this should probably never happen?
 	}
 
-	uc.NameSuffix = acsengine.GenerateClusterID(uc.K8sCluster.Properties)
+	uc.NameSuffix = acsengine.GenerateClusterID(uc.Cluster.Properties)
 
 	return uc, nil
 }
@@ -1139,19 +1119,19 @@ func addUpgradeAuthArgs(d *schema.ResourceData, uc *client.UpgradeClient) error 
 	if err != nil {
 		return fmt.Errorf("error paring resource ID: %+v", err)
 	}
-	uc.AuthArgs.RawSubscriptionID = id.SubscriptionID
-	uc.AuthArgs.AuthMethod = "client_secret"
+	uc.RawSubscriptionID = id.SubscriptionID
+	uc.AuthMethod = "client_secret"
 	if v, ok := d.GetOk("service_principal.0.client_id"); ok {
-		uc.AuthArgs.RawClientID = v.(string)
+		uc.RawClientID = v.(string)
 	}
 	if v, ok := d.GetOk("service_principal.0.client_secret"); ok {
-		uc.AuthArgs.ClientSecret = v.(string)
+		uc.ClientSecret = v.(string)
 	}
-	if err = uc.AuthArgs.ValidateAuthArgs(); err != nil {
+	if err = uc.ValidateAuthArgs(); err != nil {
 		return fmt.Errorf("error validating auth args: %+v", err)
 	}
 
-	if uc.Client, err = uc.AuthArgs.GetClient(); err != nil {
+	if uc.Client, err = uc.GetClient(); err != nil {
 		return fmt.Errorf("failed to get client: %+v", err)
 	}
 	if _, err = uc.Client.EnsureResourceGroup(context.Background(), uc.ResourceGroupName, uc.Location, nil); err != nil {
@@ -1162,69 +1142,34 @@ func addUpgradeAuthArgs(d *schema.ResourceData, uc *client.UpgradeClient) error 
 }
 
 func saveUpgradedApimodel(uc *client.UpgradeClient, d *schema.ResourceData) error {
-	return saveTemplates(uc.K8sCluster, uc.DeploymentDirectory, d)
+	return saveTemplates(d, uc.Cluster, uc.DeploymentDirectory)
 }
 
-// not working yet
+// only updates resource group tags
 func updateTags(d *schema.ResourceData, m interface{}) error {
-	// get new tags
-	var tags map[string]interface{}
-	if v, ok := d.GetOk("tags"); ok {
-		tags = v.(map[string]interface{})
-		fmt.Println(tags)
-	} else {
-		tags = map[string]interface{}{}
+	if err := createClusterResourceGroup(d, m); err != nil { // this should update... let's see if it works
+		return fmt.Errorf("failed to update resource group: %+v", err)
 	}
 
-	// get cluster apimodel
-	locale, err := i18n.LoadTranslations()
-	if err != nil {
-		return fmt.Errorf("error loading translations: %+v", err)
-	}
+	// do I want to tag deployment as well?
+
+	tags := getTags(d)
+
 	cluster, err := loadContainerServiceFromApimodel(d, true, false)
 	if err != nil {
 		return fmt.Errorf("error parsing API model: %+v", err)
 	}
-
-	// set tags
 	cluster.Tags = expandClusterTags(tags)
 
-	// get templates
-	ctx := acsengine.Context{
-		Translator: &i18n.Translator{
-			Locale: locale,
-		},
-	}
 	deploymentDirectory := path.Join("_output", cluster.Properties.MasterProfile.DNSPrefix)
-	templateGenerator, err := acsengine.InitializeTemplateGenerator(ctx, false)
-	if err != nil {
-		return fmt.Errorf("failed to initialize template generator: %+v", err)
-	}
-	template, parameters, _, err := templateGenerator.GenerateTemplate(cluster, acsengine.DefaultGeneratorCode, false, false, acsEngineVersion)
-	if err != nil {
-		return fmt.Errorf("error generating templates: %+v", err)
-	}
 
-	template, err = transform.PrettyPrintArmTemplate(template)
-	if err != nil {
-		return fmt.Errorf("error pretty printing template: %+v", err)
-	}
-	parameters, err = transform.BuildAzureParametersFile(parameters)
-	if err != nil {
-		return fmt.Errorf("error building azure parameters file: %+v", err)
-	}
-
-	// deploy templates
-	if _, err = deployTemplate(d, m, template, parameters); err != nil {
-		return fmt.Errorf("failed to deploy updated tags template: %+v", err)
-	}
-
-	// do I really want to generate these templates all over again?
-	return saveTemplates(cluster, deploymentDirectory, d)
+	return saveTemplates(d, cluster, deploymentDirectory)
 }
 
+/* Misc. Helper Functions */
+
 // Save templates and certificates based on cluster struct
-func saveTemplates(cluster *api.ContainerService, deploymentDirectory string, d *schema.ResourceData) error {
+func saveTemplates(d *schema.ResourceData, cluster *api.ContainerService, deploymentDirectory string) error {
 	locale, err := i18n.LoadTranslations()
 	if err != nil {
 		return fmt.Errorf("error loading translations: %+v", err)
@@ -1257,25 +1202,20 @@ func saveTemplates(cluster *api.ContainerService, deploymentDirectory string, d 
 	}
 
 	// save templates and certificates
-	return writeTemplatesAndCerts(d, cluster, template, parameters, deploymentDirectory, certsGenerated)
+	if err = writeTemplatesAndCerts(cluster, template, parameters, deploymentDirectory, certsGenerated); err != nil {
+		return fmt.Errorf("error writing templates and certificates: %+v", err)
+	}
+	if err = setAPIModel(d, cluster); err != nil {
+		return fmt.Errorf("error setting API model: %+v", err)
+	}
+
+	return nil
 }
 
-/* Misc. Helper Functions */
-
-func writeTemplatesAndCerts(d *schema.ResourceData, cluster *api.ContainerService, template string, parameters string, deploymentDirectory string, certsGenerated bool) error {
+func setAPIModel(d *schema.ResourceData, cluster *api.ContainerService) error {
 	locale, err := i18n.LoadTranslations()
 	if err != nil {
 		return fmt.Errorf("error loading translations: %+v", err)
-	}
-
-	// save templates and certificates
-	writer := &acsengine.ArtifactWriter{
-		Translator: &i18n.Translator{
-			Locale: locale,
-		},
-	}
-	if err = writer.WriteTLSArtifacts(cluster, apiVersion, template, parameters, deploymentDirectory, certsGenerated, false); err != nil {
-		return fmt.Errorf("error writing artifacts: %+v", err)
 	}
 
 	// set "api_model" to string of file

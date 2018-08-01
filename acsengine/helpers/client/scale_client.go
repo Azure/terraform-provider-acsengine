@@ -16,7 +16,7 @@ import (
 
 // ScaleClient includes arguments needed to scale a Kubernetes cluster
 type ScaleClient struct {
-	AuthArgs AuthArgs
+	AuthArgs
 	// user input
 	ResourceGroupName   string
 	DeploymentDirectory string
@@ -25,7 +25,7 @@ type ScaleClient struct {
 	AgentPoolToScale    string
 	MasterFQDN          string
 
-	K8sCluster     *api.ContainerService
+	Cluster        *api.ContainerService
 	APIVersion     string
 	APIModelPath   string // Do I really need this and DeploymentDirectory?
 	AgentPool      *api.AgentPoolProfile

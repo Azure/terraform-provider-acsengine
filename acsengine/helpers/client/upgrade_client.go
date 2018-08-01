@@ -14,7 +14,7 @@ import (
 
 // UpgradeClient includes arguments needed to upgrade a Kubernetes cluster
 type UpgradeClient struct {
-	AuthArgs AuthArgs
+	AuthArgs
 
 	ResourceGroupName   string
 	DeploymentDirectory string
@@ -22,7 +22,7 @@ type UpgradeClient struct {
 	Location            string
 	TimeoutInMinutes    int
 
-	K8sCluster          *api.ContainerService
+	Cluster             *api.ContainerService
 	APIVersion          string
 	APIModelPath        string // Do I really need this and DeploymentDirectory?
 	Client              armhelpers.ACSEngineClient
