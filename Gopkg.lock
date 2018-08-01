@@ -475,14 +475,6 @@
   revision = "0b12d6b5"
 
 [[projects]]
-  digest = "1:b6bbd2f9e0724bd81890c8644259f920c6d61c08453978faff0bebd25f3e7d3e"
-  name = "github.com/jpillora/backoff"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "8eab2debe79d12b7bd3d10653910df25fa9552ba"
-  version = "1.0.0"
-
-[[projects]]
   digest = "1:8f9110ae8a250da0af248c7d6f78d6244ac86e0afebf16ddd4e6849650bbf2a1"
   name = "github.com/json-iterator/go"
   packages = ["."]
@@ -987,11 +979,11 @@
     "github.com/hashicorp/terraform/helper/validation",
     "github.com/hashicorp/terraform/plugin",
     "github.com/hashicorp/terraform/terraform",
-    "github.com/jpillora/backoff",
     "github.com/leonelquinteros/gotext",
     "github.com/satori/go.uuid",
     "github.com/sirupsen/logrus",
     "gopkg.in/yaml.v2",
+    "k8s.io/apimachinery/pkg/api/errors",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
     "k8s.io/apimachinery/pkg/util/wait",
     "k8s.io/client-go/kubernetes",

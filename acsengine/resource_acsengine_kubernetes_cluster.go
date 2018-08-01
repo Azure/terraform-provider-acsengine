@@ -2,14 +2,16 @@ package acsengine
 
 // TO DO
 // - fix updateTags
-// - add tests that check if cluster is running on nodes
-// - use a CI tool in GitHub
+// - add tests that check if cluster is running on nodes (I can basically only check if cluster API is there...)
+// - use a CI tool in GitHub (seems to be mostly working, now I just need a successful build with acceptance tests)
 // - Write documentation
+// - add code coverage
+// - make code more unit test-able and write more unit tests (plus clean up ones I have to use mock objects more?)
+// - Important: fix dependency problems and use dep when acs-engine has been updated - DONE but update when acs-engine version has my change
+// - do I need more translations?
 // - get data source working (read from api model in resource state somehow)
 // - OS type
-// - make code more unit test-able and write more unit tests (plus clean up ones I have to use mock objects more?)
-// - Important: fix dependency problems and use dep when acs-engine has been updated
-// - do I need more translations?
+// - make sure DataDisk.CreateOption problem is still sorted out
 
 import (
 	"context"
@@ -24,7 +26,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Azure/acs-engine/pkg/acsengine" // make sure I'm using a recent release of acs-engine
+	"github.com/Azure/acs-engine/pkg/acsengine"
 	"github.com/Azure/acs-engine/pkg/acsengine/transform"
 	"github.com/Azure/acs-engine/pkg/api"
 	"github.com/Azure/acs-engine/pkg/api/common"
@@ -33,11 +35,11 @@ import (
 	"github.com/Azure/acs-engine/pkg/operations"
 	"github.com/Azure/acs-engine/pkg/operations/kubernetesupgrade"
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
-	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/client" // this is what I want to work
+	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/client"
 	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/kubernetes"
 	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/response"
-	"github.com/hashicorp/terraform/helper/schema"     // update version
-	"github.com/hashicorp/terraform/helper/validation" // update version
+	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform/helper/validation"
 )
 
 func resourceArmAcsEngineKubernetesCluster() *schema.Resource {
@@ -94,7 +96,6 @@ func resourceArmAcsEngineKubernetesCluster() *schema.Resource {
 									},
 								},
 							},
-							// looks like I accidentally deleted the hash function, do I care?
 						},
 					},
 				},
@@ -255,7 +256,7 @@ func resourceArmAcsEngineKubernetesCluster() *schema.Resource {
 }
 
 const (
-	acsEngineVersion = "0.19.1" // is this completely separate from the package that calls this?
+	acsEngineVersion = "0.20.2" // is this completely separate from the package that calls this?
 	apiVersion       = "vlabs"
 )
 
@@ -298,7 +299,6 @@ func resourceAcsEngineK8sClusterRead(d *schema.ResourceData, m interface{}) erro
 		return fmt.Errorf("Error setting `resource_group`: %+v", err)
 	}
 
-	// load from apimodel or configuration? apimodel is a better depiction of state of cluster
 	cluster, err := loadContainerServiceFromApimodel(d, true, false)
 	if err != nil {
 		return fmt.Errorf("error parsing API model: %+v", err)
@@ -317,17 +317,14 @@ func resourceAcsEngineK8sClusterRead(d *schema.ResourceData, m interface{}) erro
 		return fmt.Errorf("error setting `kubernetes_version`: %+v", err)
 	}
 
-	// set linux profile, service principal, master profile, and agent pool profiles
 	if err = setProfiles(d, cluster); err != nil {
 		return err
 	}
 
-	// sets tags
 	if err = setTags(d, cluster); err != nil {
 		return err
 	}
 
-	// set kube config fields
 	if err = setKubeConfig(d, cluster); err != nil {
 		return err
 	}
@@ -373,8 +370,7 @@ func resourceAcsEngineK8sClusterDelete(d *schema.ResourceData, m interface{}) er
 }
 
 func resourceAcsEngineK8sClusterUpdate(d *schema.ResourceData, m interface{}) error {
-	// if the deployment exists, that says something, but how do I check more for kubernetes cluster?
-	_, err := parseAzureResourceID(d.Id()) // from resourceid.go
+	_, err := parseAzureResourceID(d.Id())
 	if err != nil {
 		d.SetId("")
 		return err
@@ -384,7 +380,6 @@ func resourceAcsEngineK8sClusterUpdate(d *schema.ResourceData, m interface{}) er
 
 	// UPGRADE
 	if d.HasChange("kubernetes_version") {
-		// validate to make sure it's valid and > current version
 		old, new := d.GetChange("kubernetes_version")
 		if err = validateKubernetesVersionUpgrade(new.(string), old.(string)); err != nil {
 			return fmt.Errorf("Error upgrading Kubernetes version: %+v", err)
@@ -430,15 +425,12 @@ func resourceAcsEngineK8sClusterUpdate(d *schema.ResourceData, m interface{}) er
 
 /* 'Create' Helper Functions */
 
-// Generates apimodel.json and other templates, saves these files along with certificates
 func generateACSEngineTemplate(d *schema.ResourceData, write bool) (template string, parameters string, err error) {
-	// create container service struct
 	cluster, err := initializeContainerService(d)
 	if err != nil {
 		return "", "", err
 	}
 
-	// initialize values
 	locale, err := i18n.LoadTranslations()
 	if err != nil {
 		return "", "", fmt.Errorf("error loading translation files: %+v", err)
@@ -449,7 +441,6 @@ func generateACSEngineTemplate(d *schema.ResourceData, write bool) (template str
 		},
 	}
 
-	// generate template
 	templateGenerator, err := acsengine.InitializeTemplateGenerator(ctx, false)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to initialize template generator: %+v", err)
@@ -459,7 +450,6 @@ func generateACSEngineTemplate(d *schema.ResourceData, write bool) (template str
 		return "", "", fmt.Errorf("error generating template: %+v", err)
 	}
 
-	// format templates
 	template, err = transform.PrettyPrintArmTemplate(template)
 	if err != nil {
 		return "", "", fmt.Errorf("error pretty printing template: %+v", err)
@@ -469,7 +459,6 @@ func generateACSEngineTemplate(d *schema.ResourceData, write bool) (template str
 		return "", "", fmt.Errorf("error pretty printing template parameters: %+v", err)
 	}
 
-	// save templates
 	if write { // this should be default but allow for more testing
 		deploymentDirectory := path.Join("_output", cluster.Properties.MasterProfile.DNSPrefix)
 		if err = writeTemplatesAndCerts(d, cluster, template, parameters, deploymentDirectory, certsGenerated); err != nil {
@@ -480,8 +469,6 @@ func generateACSEngineTemplate(d *schema.ResourceData, write bool) (template str
 	return template, parameters, nil
 }
 
-// Initializes the acs-engine container service struct using Terraform input
-// if update, this could set ca certificate and key
 func initializeContainerService(d *schema.ResourceData) (*api.ContainerService, error) {
 	var name, location, kubernetesVersion string
 	var v interface{}
@@ -553,7 +540,6 @@ func initializeContainerService(d *schema.ResourceData) (*api.ContainerService, 
 	return cluster, nil
 }
 
-// Loads container service from apimodel JSON
 func loadContainerServiceFromApimodel(d *schema.ResourceData, validate bool, isUpdate bool) (*api.ContainerService, error) {
 	locale, err := i18n.LoadTranslations()
 	if err != nil {
@@ -580,7 +566,6 @@ func loadContainerServiceFromApimodel(d *schema.ResourceData, validate bool, isU
 	return cluster, nil
 }
 
-// Deploys the templates generated by ACS Engine for creating a cluster
 func deployTemplate(d *schema.ResourceData, m interface{}, template string, parameters string) (id string, err error) {
 	client := m.(*ArmClient)
 	deployClient := client.deploymentsClient
@@ -646,7 +631,6 @@ func deployTemplate(d *schema.ResourceData, m interface{}, template string, para
 
 /* 'Read' Helper Functions */
 
-// sets linux profile, service principal, master profile, and agent pool profiles
 func setProfiles(d *schema.ResourceData, cluster *api.ContainerService) error {
 	linuxProfile, err := flattenLinuxProfile(*cluster.Properties.LinuxProfile)
 	if err != nil {
@@ -695,7 +679,6 @@ func setTags(d *schema.ResourceData, cluster *api.ContainerService) error {
 	return nil
 }
 
-// set `kube_config` and `kube_config_raw`
 func setKubeConfig(d *schema.ResourceData, cluster *api.ContainerService) error {
 	kubeConfigFile, err := getKubeConfig(cluster)
 	if err != nil {
@@ -719,13 +702,11 @@ func setKubeConfig(d *schema.ResourceData, cluster *api.ContainerService) error 
 
 // Creates ScaleClient, loads ACS Engine templates, finds relevant node VM info, calls appropriate function for scaling up or down
 func scaleCluster(d *schema.ResourceData, m interface{}, agentIndex int, agentCount int) error {
-	// initialize scale client based on most recent values
 	sc, err := initializeScaleClient(d, m, agentIndex, agentCount)
 	if err != nil {
 		return fmt.Errorf("failed to initialize scale client: %+v", err)
 	}
 
-	// find all VMs in agent pool
 	var currentNodeCount, highestUsedIndex, windowsIndex int
 	var indexToVM map[int]string
 	if sc.AgentPool.IsAvailabilitySets() {
@@ -737,7 +718,6 @@ func scaleCluster(d *schema.ResourceData, m interface{}, agentIndex int, agentCo
 			log.Printf("Cluster is currently at the desired agent count")
 			return nil
 		}
-
 		if currentNodeCount > sc.DesiredAgentCount {
 			return scaleDownCluster(&sc, currentNodeCount, indexToVM, d)
 		}
@@ -817,7 +797,7 @@ func initializeScaleClient(d *schema.ResourceData, m interface{}, agentIndex int
 
 func addScaleAuthArgs(d *schema.ResourceData, sc *client.ScaleClient) error {
 	client.AddAuthArgs(&sc.AuthArgs)
-	id, err := parseAzureResourceID(d.Id()) // from resourceid.go
+	id, err := parseAzureResourceID(d.Id())
 	if err != nil {
 		return fmt.Errorf("error parsing resource ID: %+v", err)
 	}
@@ -983,14 +963,12 @@ func scaleUpCluster(sc *client.ScaleClient, highestUsedIndex int, currentNodeCou
 		return fmt.Errorf("error generating template: %+v", err)
 	}
 
-	// format templates
 	template, err = transform.PrettyPrintArmTemplate(template)
 	if err != nil {
 		return fmt.Errorf("error pretty printing template: %+v", err)
 	}
 	// don't format parameters! It messes things up
 
-	// convert JSON to maps
 	templateJSON, err := expandTemplateBody(template)
 	if err != nil {
 		return fmt.Errorf("error unmarshaling template: %+v", err)
@@ -1414,8 +1392,6 @@ func flattenAgentPoolProfiles(profiles []*api.AgentPoolProfile) ([]interface{}, 
 }
 
 func getKubeConfig(cluster *api.ContainerService) (string, error) {
-	// maybe check that this is the same function being used when generating all of the templates
-	// convert to base64?
 	kubeConfig, err := acsengine.GenerateKubeConfig(cluster.Properties, cluster.Location)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate kube config: %+v", err)
@@ -1424,7 +1400,6 @@ func getKubeConfig(cluster *api.ContainerService) (string, error) {
 }
 
 func flattenKubeConfig(kubeConfigFile string) (string, []interface{}, error) {
-	// Do I actually want all of this to be base64 encoded? I'm confused
 	rawKubeConfig := base64Encode(kubeConfigFile)
 
 	config, err := kubernetes.ParseKubeConfig(kubeConfigFile)

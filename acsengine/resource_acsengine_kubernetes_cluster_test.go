@@ -2,7 +2,6 @@ package acsengine
 
 import (
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -16,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -25,14 +25,10 @@ import (
 	// nodeutil "k8s.io/kubernetes/pkg/api/v1/node"
 )
 
-// currently running this line to run tests, use -timeout 20m if I want to actually finish a test that deploys and deletes
-// go test -v -run ACSEngine
-
 /* TESTS */
 
 /* UNIT TESTS */
 
-// these flatten tests are needed because they were causing seg faults
 func TestACSEngineK8sCluster_flattenLinuxProfile(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -178,49 +174,6 @@ func TestACSEngineK8sCluster_flattenAgentPoolProfiles(t *testing.T) {
 		}
 	} else {
 		t.Fatalf("agent pool os disk size is not set when it should be")
-	}
-}
-
-func TestACSEngineK8sCluster_flattenTags(t *testing.T) {
-	defer func() {
-		if r := recover(); r != nil {
-			t.Fatalf("flattenTags failed")
-		}
-	}()
-
-	tags := map[string]string{
-		"Environment": "Production",
-	}
-
-	output, err := flattenTags(tags)
-	if err != nil {
-		t.Fatalf("flattenTags failed: %v", err)
-	}
-
-	if _, ok := output["Environment"]; !ok {
-		t.Fatalf("output['Environment'] does not exist")
-	}
-	if output["Environment"] != "Production" {
-		t.Fatalf("output['Environment'] is not set correctly")
-	}
-}
-
-func TestACSEngineK8sCluster_flattenTagsEmpty(t *testing.T) {
-	defer func() {
-		if r := recover(); r != nil {
-			t.Fatalf("flattenTags failed")
-		}
-	}()
-
-	tags := map[string]string{}
-
-	output, err := flattenTags(tags)
-	if err != nil {
-		t.Fatalf("flattenTags failed: %v", err)
-	}
-
-	if len(output) != 0 {
-		t.Fatalf("len(output) != 0")
 	}
 }
 
@@ -371,90 +324,6 @@ func TestACSEngineK8sCluster_expandAgentPoolProfiles(t *testing.T) {
 	}
 }
 
-func TestACSEngineK8sCluster_expandBody(t *testing.T) {
-	body := `{
-		"groceries": {
-			"bananas": "5",
-			"pasta": "2"
-		}
-	}`
-
-	expandedBody, err := expandBody(body)
-	if err != nil {
-		t.Fatalf("%+v", err)
-	}
-
-	if v, ok := expandedBody["groceries"]; ok {
-		groceries := v.(map[string]interface{})
-		if len(groceries) != 2 {
-			t.Fatalf("length of grocery list is not correct: expected 2 and found %d", len(groceries))
-		}
-		if v, ok := groceries["bananas"]; ok {
-			item := v.(string)
-			if item != "5" {
-				t.Fatalf("Expected price of bananas to be 5 but got %s", item)
-			}
-		} else {
-			t.Fatalf("could not find `bananas`")
-		}
-	} else {
-		t.Fatalf("could not find `groceries`")
-	}
-}
-
-func TestACSEngineK8sCluster_validateKubernetesVersion(t *testing.T) {
-	cases := []struct {
-		Version     string
-		ExpectError bool
-	}{
-		{Version: "1.8.2", ExpectError: false},
-		{Version: "3.0.0", ExpectError: true},
-		{Version: "1.7.12", ExpectError: false},
-		{Version: "181", ExpectError: true},
-		{Version: "2.18.3", ExpectError: true},
-	}
-
-	for _, tc := range cases {
-		_, errors := validateKubernetesVersion(tc.Version, "")
-		if !tc.ExpectError && len(errors) > 0 {
-			t.Fatalf("Version %s should not have failed", tc.Version)
-		}
-		if tc.ExpectError && len(errors) == 0 {
-			t.Fatalf("Version %s should have failed", tc.Version)
-		}
-	}
-}
-
-func TestACSEngineK8sCluster_validateKubernetesVersionUpgrade(t *testing.T) {
-	cases := []struct {
-		NewValue     string
-		CurrentValue string
-		ExpectError  bool
-	}{
-		{NewValue: "1.8.2", CurrentValue: "1.8.0", ExpectError: false},
-		{NewValue: "1.8.2", CurrentValue: "1.8.2", ExpectError: true},
-		{NewValue: "1.8.0", CurrentValue: "1.8.2", ExpectError: true},
-		{NewValue: "1.11.0", CurrentValue: "1.8.2", ExpectError: true},
-		{NewValue: "1.9.1", CurrentValue: "1.8.2", ExpectError: false},
-		{NewValue: "1.10.0", CurrentValue: "1.8.0", ExpectError: true},
-		{NewValue: "1.9.8", CurrentValue: "1.8.0", ExpectError: false},
-		{NewValue: "1.8.1", CurrentValue: "1.7.12", ExpectError: false},
-	}
-
-	for _, tc := range cases {
-		valid := true
-		err := validateKubernetesVersionUpgrade(tc.NewValue, tc.CurrentValue)
-		if err != nil {
-			valid = false
-		}
-		if tc.ExpectError && valid {
-			t.Fatalf("Expected the Kubernetes version validator to trigger an error for new version = '%s', current version = '%s'", tc.NewValue, tc.CurrentValue)
-		} else if !tc.ExpectError && !valid {
-			t.Fatalf("Expected the Kubernetes version validator to not trigger an error for new version = '%s', current version = '%s'. Instead got %+v", tc.NewValue, tc.CurrentValue, err)
-		}
-	}
-}
-
 func TestACSEngineK8sCluster_initializeContainerService(t *testing.T) {
 	d := mockClusterResourceData()
 
@@ -555,16 +424,6 @@ func TestAccACSEngineK8sCluster_generateTemplateBasic(t *testing.T) {
 			t.Fatalf("Expected the Azure RM Kubernetes cluster to have field '%s'", agentPoolName+"Count")
 		}
 
-		templateJSON := make(map[string]interface{})
-		err = json.Unmarshal([]byte(template), &templateJSON)
-		if err != nil {
-			t.Fatalf("Unmarshaling template failed: %v", err)
-		}
-		// err = removeDataDiskCreateOption(templateJSON)
-		// if err != nil {
-		// 	t.Fatalf("removeDataDiskCreateOption failed: %v", err)
-		// }
-
 		if tc.ExpectError {
 			t.Fatalf("Expected the Kubernetes Cluster Agent Pool Name to trigger an error for '%s'", tc.Name)
 		}
@@ -645,16 +504,6 @@ func TestAccACSEngineK8sCluster_generateTemplateCustomized(t *testing.T) {
 			t.Fatalf("Expected the Azure RM Kubernetes cluster to have field '%s'", agentPoolName+"Count")
 		}
 
-		// templateJSON := make(map[string]interface{})
-		// err = json.Unmarshal([]byte(template), &templateJSON)
-		// if err != nil {
-		// 	t.Fatalf("Unmarshaling template failed: %v", err)
-		// }
-		// err = removeDataDiskCreateOption(templateJSON)
-		// if err != nil {
-		// 	t.Fatalf("removeDataDiskCreateOption failed: %v", err)
-		// }
-
 		if tc.ExpectError {
 			t.Fatalf("Expected the Kubernetes Cluster Agent Pool Name to trigger an error for '%s'", tc.Name)
 		}
@@ -690,7 +539,7 @@ func TestAccACSEngineK8sCluster_initializeScaleClient(t *testing.T) {
 	d.Set("agent_pool_profiles", &agentPoolProfiles)
 
 	// create and delete file for testing
-	apimodelPath := "_output/k8scluster" // where is this actually being used other than deletion?
+	apimodelPath := "_output/k8scluster" // this isn't accurate anymore
 	_, _, err := generateACSEngineTemplate(d, true)
 	if err != nil {
 		t.Fatalf("GenerateACSEngineTemplate failed: %+v", err)
@@ -724,6 +573,7 @@ func TestAccACSEngineK8sCluster_initializeScaleClient(t *testing.T) {
 	}
 }
 
+// very similar to initializeScaleClient test, get rid of duplicate code (with mock ResourceData function?)
 func TestAccACSEngineK8sCluster_initializeUpgradeClient(t *testing.T) {
 	r := resourceArmAcsEngineKubernetesCluster()
 	d := r.TestResourceData()
@@ -753,7 +603,7 @@ func TestAccACSEngineK8sCluster_initializeUpgradeClient(t *testing.T) {
 	d.Set("agent_pool_profiles", &agentPoolProfiles)
 
 	// create and delete file for testing
-	apimodelPath := "_output/k8scluster"
+	apimodelPath := "_output/k8scluster" // this isn't accurate anymore
 	_, _, err := generateACSEngineTemplate(d, true)
 	if err != nil {
 		t.Fatalf("GenerateACSEngineTemplate failed: %+v", err)
@@ -783,55 +633,6 @@ func TestAccACSEngineK8sCluster_initializeUpgradeClient(t *testing.T) {
 	}
 	if uc.AuthArgs.SubscriptionID.String() != os.Getenv("ARM_SUBSCRIPTION_ID") {
 		t.Fatalf("Subscription ID is not set correctly")
-	}
-}
-
-// correct values are 1, 3, and 5
-func TestAccACSEngineK8sCluster_masterProfileCountValidation(t *testing.T) {
-	cases := []struct {
-		Value    int
-		ErrCount int
-	}{
-		{Value: 0, ErrCount: 1},
-		{Value: 1, ErrCount: 0},
-		{Value: 2, ErrCount: 1},
-		{Value: 3, ErrCount: 0},
-		{Value: 4, ErrCount: 1},
-		{Value: 5, ErrCount: 0},
-		{Value: 6, ErrCount: 1},
-	}
-
-	for _, tc := range cases { // for each test case
-		// from resource_arm_container_service.go
-		_, errors := validateMasterProfileCount(tc.Value, "acsengine_kubernetes_cluster")
-
-		if len(errors) != tc.ErrCount {
-			t.Fatalf("Expected the Azure RM Kubernetes cluster master profile count to trigger a validation error for '%d'", tc.Value)
-		}
-	}
-}
-
-// correct values are 1-100, can be even or odd
-func TestAccACSEngineK8sCluster_agentPoolProfileCountValidation(t *testing.T) {
-	cases := []struct {
-		Value    int
-		ErrCount int
-	}{
-		{Value: 0, ErrCount: 1},
-		{Value: 1, ErrCount: 0},
-		{Value: 2, ErrCount: 0},
-		{Value: 99, ErrCount: 0},
-		{Value: 100, ErrCount: 0},
-		{Value: 101, ErrCount: 1},
-	}
-
-	for _, tc := range cases { // for each test case
-		// from resource_arm_container_service.go
-		_, errors := validateAgentPoolProfileCount(tc.Value, "acsengine_kubernetes_cluster")
-
-		if len(errors) != tc.ErrCount {
-			t.Fatalf("Expected the Azure RM Kubernetes cluster agent pool profile Count to trigger a validation error for '%d'", tc.Value)
-		}
 	}
 }
 
@@ -909,7 +710,6 @@ func TestAccACSEngineK8sCluster_createCustomized(t *testing.T) {
 	agentCount := 1
 	osDiskSizeGB := 40
 	config := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, version, agentCount, vmSize, osDiskSizeGB)
-	// var kubeConfig acsengine.
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -1558,6 +1358,7 @@ func TestAccACSEngineK8sCluster_updateTags(t *testing.T) {
 
 /* HELPER FUNCTIONS */
 
+// can I get rid of some of these? There's so many
 func testACSEngineK8sClusterKubeConfig(dnsPrefix string, location string) string {
 	return fmt.Sprintf(`    {
         "apiVersion": "v1",
@@ -1939,8 +1740,6 @@ func newClientConfigFromBytes(configBytes []byte) (*rest.Config, string, error) 
 }
 
 func checkNodes(api corev1.CoreV1Interface) error {
-	// was successful once, now keeps timing out
-	// I'm going to add retrying
 	// retryInfo := wait.Backoff{
 	// 	Steps:    5,
 	// 	Duration: 1 * time.Minute,
@@ -1948,18 +1747,15 @@ func checkNodes(api corev1.CoreV1Interface) error {
 	// 	Jitter:   0.1,
 	// }
 
-	// retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 	retryErr := utils.RetryOnFailedGet(retry.DefaultRetry, func() error {
-		fmt.Println("trying...")
+		fmt.Println("trying to get nodes...")
 		nodes, err := api.Nodes().List(metav1.ListOptions{})
 		if err != nil {
+			fmt.Printf("Reason for error: %+v\n", errors.ReasonForError(err))
 			return fmt.Errorf("failed to get nodes: %+v", err)
-			// fmt.Printf("Reason for error: %+v\n", errors.ReasonForError(err))
-			// return utils.Retry(err)
 		}
-		// check number of nodes is at least 2?
 		if len(nodes.Items) < 2 {
-			return fmt.Errorf("not enough nodes found: only %d found", len(nodes.Items))
+			return fmt.Errorf("not enough nodes found (there should be a at least one master and agent pool): only %d found", len(nodes.Items))
 		}
 		// do I need to wait some time to make sure nodes are ready?
 		for _, node := range nodes.Items {
