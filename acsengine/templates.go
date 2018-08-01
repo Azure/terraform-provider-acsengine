@@ -3,6 +3,10 @@ package acsengine
 import (
 	"encoding/json"
 	"fmt"
+
+	"github.com/Azure/acs-engine/pkg/acsengine"
+	"github.com/Azure/acs-engine/pkg/api"
+	"github.com/Azure/acs-engine/pkg/i18n"
 )
 
 func addValue(params map[string]interface{}, k string, v interface{}) {
@@ -33,4 +37,23 @@ func expandBody(body string) (map[string]interface{}, error) {
 		return nil, err
 	}
 	return bodyMap, nil
+}
+
+func writeTemplatesAndCerts(cluster *api.ContainerService, template string, parameters string, deploymentDirectory string, certsGenerated bool) error {
+	locale, err := i18n.LoadTranslations()
+	if err != nil {
+		return fmt.Errorf("error loading translations: %+v", err)
+	}
+
+	// save templates and certificates
+	writer := &acsengine.ArtifactWriter{
+		Translator: &i18n.Translator{
+			Locale: locale,
+		},
+	}
+	if err = writer.WriteTLSArtifacts(cluster, apiVersion, template, parameters, deploymentDirectory, certsGenerated, false); err != nil {
+		return fmt.Errorf("error writing artifacts: %+v", err)
+	}
+
+	return nil
 }

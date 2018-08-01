@@ -5,7 +5,7 @@ import (
 )
 
 // RetryOnFailedGet is based on k8s.io/client-go RetryOnConflict but for any error
-// I would like to figure out what the exact error is so I can use it
+// If I figure out common error(s) I can use it as case instead of having default retry
 func RetryOnFailedGet(backoff wait.Backoff, fn func() error) error {
 	var lastConflictErr error
 	err := wait.ExponentialBackoff(backoff, func() (bool, error) {
@@ -13,12 +13,9 @@ func RetryOnFailedGet(backoff wait.Backoff, fn func() error) error {
 		switch {
 		case err == nil:
 			return true, nil
-		// case errors.IsConflict(err):
 		default:
 			lastConflictErr = err
 			return false, nil
-			// default:
-			// return false, err
 		}
 	})
 	if err == wait.ErrWaitTimeout {
