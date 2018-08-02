@@ -11,7 +11,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Azure/acs-engine/pkg/api"
 	"github.com/Azure/terraform-provider-acsengine/acsengine/utils"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
@@ -31,49 +30,13 @@ import (
 
 /* UNIT TESTS */
 
-func TestACSEngineK8sCluster_flattenKubeConfig(t *testing.T) {
-	defer func() {
-		if r := recover(); r != nil {
-			t.Fatalf("flattenKubeConfig failed")
-		}
-	}()
-
-	kubeConfigFile := testACSEngineK8sClusterKubeConfig("masterfqdn", "southcentralus")
-
-	_, kubeConfigs, err := flattenKubeConfig(kubeConfigFile)
-	if err != nil {
-		t.Fatalf("flattenKubeConfig failed: %+v", err)
-	}
-	if len(kubeConfigs) != 1 {
-		t.Fatalf("Incorrect number of kube configs: there are %d kube configs", len(kubeConfigs))
-	}
-	kubeConfig := kubeConfigs[0].(map[string]interface{})
-	if v, ok := kubeConfig["cluster_ca_certificate"]; ok {
-		caCert := v.(string)
-		if caCert != base64Encode("0123") {
-			t.Fatalf("'cluster_ca_certificate' not set correctly: set to %s", caCert)
-		}
-	} else {
-		t.Fatalf("'cluster_ca_certificate' not found")
-	}
-	if v, ok := kubeConfig["host"]; ok {
-		server := v.(string)
-		expected := fmt.Sprintf("https://%s.%s.cloudapp.azure.com", "masterfqdn", "southcentralus")
-		if server != expected {
-			t.Fatalf("Master fqdn is not set correctly: %s != %s", server, expected)
-		}
-	}
-	if v, ok := kubeConfig["username"]; ok {
-		user := v.(string)
-		expected := fmt.Sprintf("%s-admin", "masterfqdn")
-		if user != expected {
-			t.Fatalf("Username is not set correctly: %s != %s", user, expected)
-		}
-	}
-}
-
 func TestACSEngineK8sCluster_initializeContainerService(t *testing.T) {
-	d := mockClusterResourceData()
+	name := "testcluster"
+	location := "southcentralus"
+	resourceGroup := "testrg"
+	masterDNSPrefix := "creativeMasterDNSPrefix"
+
+	d := mockClusterResourceData(name, location, resourceGroup, masterDNSPrefix)
 
 	cluster, err := initializeContainerService(d)
 	if err != nil {
@@ -88,7 +51,7 @@ func TestACSEngineK8sCluster_initializeContainerService(t *testing.T) {
 		t.Fatalf("cluster Kubernetes version was not set correctly: was '%s' but it should be '1.10.0'", version)
 	}
 	dnsPrefix := cluster.Properties.MasterProfile.DNSPrefix
-	if dnsPrefix != "masterDNSPrefix" {
+	if dnsPrefix != masterDNSPrefix {
 		t.Fatalf("master DNS prefix was not set correctly: was %s but it should be 'masterDNSPrefix'", dnsPrefix)
 	}
 	if cluster.Properties.AgentPoolProfiles[0].Count != 1 {
@@ -97,7 +60,22 @@ func TestACSEngineK8sCluster_initializeContainerService(t *testing.T) {
 }
 
 func TestACSEngineK8sCluster_loadContainerServiceFromApimodel(t *testing.T) {
-	// d := mockClusterResourceData() // I need to add a fake apimodel in here
+	name := "testcluster"
+	location := "southcentralus"
+
+	d := mockClusterResourceData(name, location, "testrg", "creativeMasterDNSPrefix") // I need to add a test apimodel in here
+
+	apimodel, err := loadContainerServiceFromApimodel(d, true, false)
+	if err != nil {
+		t.Fatalf("failed to load container service from api model: %+v", err)
+	}
+
+	if apimodel.Name != name {
+		t.Fatalf("cluster name '%s' not found", name)
+	}
+	if apimodel.Location != location {
+		t.Fatalf("cluster location '%s' not found", location)
+	}
 }
 
 /* ACCEPTANCE TESTS */
@@ -130,22 +108,22 @@ func TestAccACSEngineK8sCluster_generateTemplateBasic(t *testing.T) {
 		d.Set("location", tc.Location)
 		d.Set("resource_group", tc.ResourceGroup)
 
-		linuxProfiles := fakeFlattenLinuxProfile(tc.AdminUsername)
+		linuxProfiles := testFlattenLinuxProfile(tc.AdminUsername)
 		d.Set("linux_profile", &linuxProfiles)
 
-		servicePrincipals := fakeFlattenServicePrincipal()
+		servicePrincipals := testFlattenServicePrincipal()
 		d.Set("service_principal", servicePrincipals)
 
 		vmSize := "Standard_D2_v2"
-		masterProfiles := fakeFlattenMasterProfile(tc.MasterCount, tc.DNSPrefix, vmSize)
+		masterProfiles := testFlattenMasterProfile(tc.MasterCount, tc.DNSPrefix, vmSize)
 		d.Set("master_profile", &masterProfiles)
 
 		agentPoolProfiles := []interface{}{}
 		agentPoolName := "agentpool0"
-		agentPoolProfile0 := fakeFlattenAgentPoolProfiles(agentPoolName, tc.AgentPoolCount, vmSize, 0, false)
+		agentPoolProfile0 := testFlattenAgentPoolProfiles(agentPoolName, tc.AgentPoolCount, vmSize, 0, false)
 		agentPoolProfiles = append(agentPoolProfiles, agentPoolProfile0)
 		agentPoolName = "agentpool1"
-		agentPoolProfile1 := fakeFlattenAgentPoolProfiles(agentPoolName, tc.AgentPoolCount+1, vmSize, 0, false)
+		agentPoolProfile1 := testFlattenAgentPoolProfiles(agentPoolName, tc.AgentPoolCount+1, vmSize, 0, false)
 		agentPoolProfiles = append(agentPoolProfiles, agentPoolProfile1)
 		d.Set("agent_pool_profiles", &agentPoolProfiles)
 
@@ -209,21 +187,21 @@ func TestAccACSEngineK8sCluster_generateTemplateCustomized(t *testing.T) {
 		d.Set("resource_group", tc.ResourceGroup)
 		d.Set("kubernetes_version", tc.Version)
 
-		linuxProfiles := fakeFlattenLinuxProfile(tc.AdminUsername)
+		linuxProfiles := testFlattenLinuxProfile(tc.AdminUsername)
 		d.Set("linux_profile", &linuxProfiles)
 
-		servicePrincipals := fakeFlattenServicePrincipal()
+		servicePrincipals := testFlattenServicePrincipal()
 		d.Set("service_principal", servicePrincipals)
 
-		masterProfiles := fakeFlattenMasterProfile(tc.MasterCount, tc.DNSPrefix, tc.MasterVMSize)
+		masterProfiles := testFlattenMasterProfile(tc.MasterCount, tc.DNSPrefix, tc.MasterVMSize)
 		d.Set("master_profile", &masterProfiles)
 
 		agentPoolProfiles := []interface{}{}
 		agentPoolName := "agentpool0"
-		agentPoolProfile0 := fakeFlattenAgentPoolProfiles(agentPoolName, tc.AgentPoolCount, tc.AgentVMSize, 0, false)
+		agentPoolProfile0 := testFlattenAgentPoolProfiles(agentPoolName, tc.AgentPoolCount, tc.AgentVMSize, 0, false)
 		agentPoolProfiles = append(agentPoolProfiles, agentPoolProfile0)
 		agentPoolName = "agentpool1"
-		agentPoolProfile1 := fakeFlattenAgentPoolProfiles(agentPoolName, tc.AgentPoolCount+1, tc.AgentVMSize, 0, false)
+		agentPoolProfile1 := testFlattenAgentPoolProfiles(agentPoolName, tc.AgentPoolCount+1, tc.AgentVMSize, 0, false)
 		agentPoolProfiles = append(agentPoolProfiles, agentPoolProfile1)
 		d.Set("agent_pool_profiles", &agentPoolProfiles)
 
@@ -270,19 +248,19 @@ func TestAccACSEngineK8sCluster_initializeScaleClient(t *testing.T) {
 	id := "/subscriptions/" + os.Getenv("ARM_SUBSCRIPTION_ID") + "/resourceGroups/" + resourceGroupName + "/providers/Microsoft.Resources/deployments/" + masterDNSPrefix
 	d.SetId(id)
 
-	linuxProfiles := fakeFlattenLinuxProfile("azureuser")
+	linuxProfiles := testFlattenLinuxProfile("azureuser")
 	d.Set("linux_profile", &linuxProfiles)
 
-	servicePrincipals := fakeFlattenServicePrincipal()
+	servicePrincipals := testFlattenServicePrincipal()
 	d.Set("service_principal", servicePrincipals)
 
-	masterProfiles := fakeFlattenMasterProfile(1, "masterDNSPrefix", "Standard_D2_v2")
+	masterProfiles := testFlattenMasterProfile(1, "masterDNSPrefix", "Standard_D2_v2")
 	d.Set("master_profile", &masterProfiles)
 
 	agentPoolProfiles := []interface{}{}
-	agentPoolProfile0 := fakeFlattenAgentPoolProfiles("agentpool1", 1, "Standard_D2_v2", 0, false)
+	agentPoolProfile0 := testFlattenAgentPoolProfiles("agentpool1", 1, "Standard_D2_v2", 0, false)
 	agentPoolProfiles = append(agentPoolProfiles, agentPoolProfile0)
-	agentPoolProfile1 := fakeFlattenAgentPoolProfiles("agentpool2", 2, "Standard_D2_v2", 0, false)
+	agentPoolProfile1 := testFlattenAgentPoolProfiles("agentpool2", 2, "Standard_D2_v2", 0, false)
 	agentPoolProfiles = append(agentPoolProfiles, agentPoolProfile1)
 	d.Set("agent_pool_profiles", &agentPoolProfiles)
 
@@ -334,19 +312,19 @@ func TestAccACSEngineK8sCluster_initializeUpgradeClient(t *testing.T) {
 	id := "/subscriptions/" + os.Getenv("ARM_SUBSCRIPTION_ID") + "/resourceGroups/" + resourceGroupName + "/providers/Microsoft.Resources/deployments/" + masterDNSPrefix
 	d.SetId(id)
 
-	linuxProfiles := fakeFlattenLinuxProfile("azureuser")
+	linuxProfiles := testFlattenLinuxProfile("azureuser")
 	d.Set("linux_profile", &linuxProfiles)
 
-	servicePrincipals := fakeFlattenServicePrincipal()
+	servicePrincipals := testFlattenServicePrincipal()
 	d.Set("service_principal", servicePrincipals)
 
-	masterProfiles := fakeFlattenMasterProfile(1, "masterDNSPrefix", "Standard_D2_v2")
+	masterProfiles := testFlattenMasterProfile(1, "masterDNSPrefix", "Standard_D2_v2")
 	d.Set("master_profile", &masterProfiles)
 
 	agentPoolProfiles := []interface{}{}
-	agentPoolProfile0 := fakeFlattenAgentPoolProfiles("agentpool1", 1, "Standard_D2_v2", 0, false)
+	agentPoolProfile0 := testFlattenAgentPoolProfiles("agentpool1", 1, "Standard_D2_v2", 0, false)
 	agentPoolProfiles = append(agentPoolProfiles, agentPoolProfile0)
-	agentPoolProfile1 := fakeFlattenAgentPoolProfiles("agentpool2", 2, "Standard_D2_v2", 0, false)
+	agentPoolProfile1 := testFlattenAgentPoolProfiles("agentpool2", 2, "Standard_D2_v2", 0, false)
 	agentPoolProfiles = append(agentPoolProfiles, agentPoolProfile1)
 	d.Set("agent_pool_profiles", &agentPoolProfiles)
 
@@ -1107,37 +1085,6 @@ func TestAccACSEngineK8sCluster_updateTags(t *testing.T) {
 /* HELPER FUNCTIONS */
 
 // can I get rid of some of these? There's so many
-func testACSEngineK8sClusterKubeConfig(dnsPrefix string, location string) string {
-	return fmt.Sprintf(`    {
-        "apiVersion": "v1",
-        "clusters": [
-            {
-                "cluster": {
-                    "certificate-authority-data": "0123",
-                    "server": "https://%s.%s.cloudapp.azure.com"
-                },
-                "name": "%s"
-            }
-        ],
-        "contexts": [
-            {
-                "context": {
-                    "cluster": "%s",
-                    "user": "%s-admin"
-                },
-                "name": "%s"
-            }
-        ],
-        "current-context": "%s",
-        "kind": "Config",
-        "users": [
-            {
-                "name": "%s-admin",
-                "user": {"client-certificate-data":"4567","client-key-data":"8910"}
-            }
-        ]
-    }`, dnsPrefix, location, dnsPrefix, dnsPrefix, dnsPrefix, dnsPrefix, dnsPrefix, dnsPrefix)
-}
 
 func testAccACSEngineK8sClusterBasic(rInt int, clientID string, clientSecret string, location string, keyData string) string {
 	return fmt.Sprintf(`resource "acsengine_kubernetes_cluster" "test" {
@@ -1535,31 +1482,25 @@ func checkTags(resourceGroup string, tags map[string]string) error {
 	return nil
 }
 
-func fakeCertificateProfile() *api.CertificateProfile {
-	profile := &api.CertificateProfile{}
-
-	return profile
-}
-
-func mockClusterResourceData() *schema.ResourceData {
+func mockClusterResourceData(name string, location string, resourceGroup string, dnsPrefix string) *schema.ResourceData {
 	r := resourceArmAcsEngineKubernetesCluster()
 	d := r.TestResourceData()
 
-	d.Set("name", "testcluster")
-	d.Set("location", "southcentralus")
-	d.Set("resource_group", "testrg")
+	d.Set("name", name)
+	d.Set("location", location)
+	d.Set("resource_group", resourceGroup)
 	d.Set("kubernetes_version", "1.10.0")
 
 	adminUsername := "azureuser"
-	linuxProfiles := fakeFlattenLinuxProfile(adminUsername)
+	linuxProfiles := testFlattenLinuxProfile(adminUsername)
 	d.Set("linux_profile", &linuxProfiles)
 
-	servicePrincipals := fakeFlattenServicePrincipal()
+	servicePrincipals := testFlattenServicePrincipal()
 	d.Set("service_principal", servicePrincipals)
 
-	dnsPrefix := "masterDNSPrefix"
+	// dnsPrefix := "masterDNSPrefix"
 	vmSize := "Standard_D2_v2"
-	masterProfiles := fakeFlattenMasterProfile(1, dnsPrefix, vmSize)
+	masterProfiles := testFlattenMasterProfile(1, dnsPrefix, vmSize)
 	d.Set("master_profile", &masterProfiles)
 
 	agentPool1Name := "agentpool1"
@@ -1569,19 +1510,16 @@ func mockClusterResourceData() *schema.ResourceData {
 	agentPool2osDiskSize := 30
 
 	agentPoolProfiles := []interface{}{}
-	agentPoolProfile0 := fakeFlattenAgentPoolProfiles(agentPool1Name, agentPool1Count, "Standard_D2_v2", 0, false)
+	agentPoolProfile0 := testFlattenAgentPoolProfiles(agentPool1Name, agentPool1Count, "Standard_D2_v2", 0, false)
 	agentPoolProfiles = append(agentPoolProfiles, agentPoolProfile0)
-	agentPoolProfile1 := fakeFlattenAgentPoolProfiles(agentPool2Name, agentPool2Count, "Standard_D2_v2", agentPool2osDiskSize, true)
+	agentPoolProfile1 := testFlattenAgentPoolProfiles(agentPool2Name, agentPool2Count, "Standard_D2_v2", agentPool2osDiskSize, true)
 	agentPoolProfiles = append(agentPoolProfiles, agentPoolProfile1)
 	d.Set("agent_pool_profiles", &agentPoolProfiles)
 
 	d.Set("tags", map[string]interface{}{})
 
+	apimodel := utils.ACSEngineK8sClusterAPIModel(name, location)
+	d.Set("api_model", base64Encode(apimodel))
+
 	return d
 }
-
-// func mockACSEngineContainerService() *api.ContainerService {
-// 	// do I need fake expandLinuxProfile and so on?
-// 	// cluster := &api.ContainerService{}
-// 	return nil
-// }

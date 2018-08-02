@@ -15,7 +15,7 @@ func TestACSEngineK8sCluster_flattenLinuxProfile(t *testing.T) {
 
 	adminUsername := "adminUser"
 	keyData := "public key data"
-	profile := fakeExpandLinuxProfile(adminUsername, keyData)
+	profile := testExpandLinuxProfile(adminUsername, keyData)
 
 	linuxProfile, err := flattenLinuxProfile(profile)
 	if err != nil {
@@ -45,7 +45,7 @@ func TestACSEngineK8sCluster_flattenServicePrincipal(t *testing.T) {
 
 	clientID := "client id"
 	clientSecret := "secret"
-	profile := fakeExpandServicePrincipal(clientID, clientSecret)
+	profile := testExpandServicePrincipal(clientID, clientSecret)
 
 	servicePrincipal, err := flattenServicePrincipal(profile)
 	if err != nil {
@@ -76,7 +76,7 @@ func TestACSEngineK8sCluster_flattenMasterProfile(t *testing.T) {
 	dnsNamePrefix := "testPrefix"
 	vmSize := "Standard_D2_v2"
 	fqdn := "abcdefg"
-	profile := fakeExpandMasterProfile(count, dnsNamePrefix, vmSize, fqdn)
+	profile := testExpandMasterProfile(count, dnsNamePrefix, vmSize, fqdn)
 
 	masterProfile, err := flattenMasterProfile(profile, "southcentralus")
 	if err != nil {
@@ -112,10 +112,10 @@ func TestACSEngineK8sCluster_flattenAgentPoolProfiles(t *testing.T) {
 	fqdn := "abcdefg"
 	osDiskSize := 200
 
-	profile1 := fakeExpandAgentPoolProfile(name, count, vmSize, fqdn, 0)
+	profile1 := testExpandAgentPoolProfile(name, count, vmSize, fqdn, 0)
 
 	name = "agentpool2"
-	profile2 := fakeExpandAgentPoolProfile(name, count, vmSize, fqdn, osDiskSize)
+	profile2 := testExpandAgentPoolProfile(name, count, vmSize, fqdn, osDiskSize)
 
 	profiles := []*api.AgentPoolProfile{profile1, profile2}
 	agentPoolProfiles, err := flattenAgentPoolProfiles(profiles)
@@ -159,7 +159,7 @@ func TestACSEngineK8sCluster_expandLinuxProfile(t *testing.T) {
 	d := r.TestResourceData()
 
 	adminUsername := "azureuser"
-	linuxProfiles := fakeFlattenLinuxProfile(adminUsername)
+	linuxProfiles := testFlattenLinuxProfile(adminUsername)
 	d.Set("linux_profile", &linuxProfiles)
 
 	linuxProfile, err := expandLinuxProfile(d)
@@ -177,7 +177,7 @@ func TestACSEngineK8sCluster_expandServicePrincipal(t *testing.T) {
 	d := r.TestResourceData()
 
 	clientID := testClientID()
-	servicePrincipals := fakeFlattenServicePrincipal()
+	servicePrincipals := testFlattenServicePrincipal()
 	d.Set("service_principal", servicePrincipals)
 
 	servicePrincipal, err := expandServicePrincipal(d)
@@ -196,7 +196,7 @@ func TestACSEngineK8sCluster_expandMasterProfile(t *testing.T) {
 
 	dnsPrefix := "masterDNSPrefix"
 	vmSize := "Standard_D2_v2"
-	masterProfiles := fakeFlattenMasterProfile(1, dnsPrefix, vmSize)
+	masterProfiles := testFlattenMasterProfile(1, dnsPrefix, vmSize)
 	d.Set("master_profile", &masterProfiles)
 
 	masterProfile, err := expandMasterProfile(d)
@@ -223,9 +223,9 @@ func TestACSEngineK8sCluster_expandAgentPoolProfiles(t *testing.T) {
 	agentPool2osDiskSize := 30
 
 	agentPoolProfiles := []interface{}{}
-	agentPoolProfile0 := fakeFlattenAgentPoolProfiles(agentPool1Name, agentPool1Count, "Standard_D2_v2", 0, false)
+	agentPoolProfile0 := testFlattenAgentPoolProfiles(agentPool1Name, agentPool1Count, "Standard_D2_v2", 0, false)
 	agentPoolProfiles = append(agentPoolProfiles, agentPoolProfile0)
-	agentPoolProfile1 := fakeFlattenAgentPoolProfiles(agentPool2Name, agentPool2Count, "Standard_D2_v2", agentPool2osDiskSize, true)
+	agentPoolProfile1 := testFlattenAgentPoolProfiles(agentPool2Name, agentPool2Count, "Standard_D2_v2", agentPool2osDiskSize, true)
 	agentPoolProfiles = append(agentPoolProfiles, agentPoolProfile1)
 	d.Set("agent_pool_profiles", &agentPoolProfiles)
 
@@ -260,7 +260,7 @@ func TestACSEngineK8sCluster_expandAgentPoolProfiles(t *testing.T) {
 	}
 }
 
-func fakeFlattenLinuxProfile(adminUsername string) []interface{} {
+func testFlattenLinuxProfile(adminUsername string) []interface{} {
 	sshKeys := []interface{}{}
 	keys := map[string]interface{}{
 		"key_data": testSSHPublicKey(),
@@ -276,7 +276,7 @@ func fakeFlattenLinuxProfile(adminUsername string) []interface{} {
 	return linuxProfiles
 }
 
-func fakeFlattenServicePrincipal() []interface{} {
+func testFlattenServicePrincipal() []interface{} {
 	servicePrincipals := []interface{}{}
 
 	spValues := map[string]interface{}{
@@ -289,7 +289,7 @@ func fakeFlattenServicePrincipal() []interface{} {
 	return servicePrincipals
 }
 
-func fakeFlattenMasterProfile(count int, dnsNamePrefix string, vmSize string) []interface{} {
+func testFlattenMasterProfile(count int, dnsNamePrefix string, vmSize string) []interface{} {
 	masterProfiles := []interface{}{}
 
 	masterProfile := make(map[string]interface{}, 5)
@@ -304,7 +304,7 @@ func fakeFlattenMasterProfile(count int, dnsNamePrefix string, vmSize string) []
 	return masterProfiles
 }
 
-func fakeFlattenAgentPoolProfiles(name string, count int, vmSize string, osDiskSizeGB int, windows bool) map[string]interface{} {
+func testFlattenAgentPoolProfiles(name string, count int, vmSize string, osDiskSizeGB int, windows bool) map[string]interface{} {
 	agentPoolValues := map[string]interface{}{
 		"name":    name,
 		"count":   count,
@@ -322,7 +322,7 @@ func fakeFlattenAgentPoolProfiles(name string, count int, vmSize string, osDiskS
 	return agentPoolValues
 }
 
-func fakeExpandLinuxProfile(adminUsername string, keyData string) api.LinuxProfile {
+func testExpandLinuxProfile(adminUsername string, keyData string) api.LinuxProfile {
 	sshPublicKeys := []api.PublicKey{
 		{KeyData: keyData},
 	}
@@ -338,7 +338,7 @@ func fakeExpandLinuxProfile(adminUsername string, keyData string) api.LinuxProfi
 	return profile
 }
 
-func fakeExpandServicePrincipal(clientID string, clientSecret string) api.ServicePrincipalProfile {
+func testExpandServicePrincipal(clientID string, clientSecret string) api.ServicePrincipalProfile {
 	profile := api.ServicePrincipalProfile{
 		ClientID: clientID,
 		Secret:   clientSecret,
@@ -347,7 +347,7 @@ func fakeExpandServicePrincipal(clientID string, clientSecret string) api.Servic
 	return profile
 }
 
-func fakeExpandMasterProfile(count int, dnsPrefix string, vmSize string, fqdn string) api.MasterProfile {
+func testExpandMasterProfile(count int, dnsPrefix string, vmSize string, fqdn string) api.MasterProfile {
 	profile := api.MasterProfile{
 		Count:     count,
 		DNSPrefix: dnsPrefix,
@@ -358,7 +358,7 @@ func fakeExpandMasterProfile(count int, dnsPrefix string, vmSize string, fqdn st
 	return profile
 }
 
-func fakeExpandAgentPoolProfile(name string, count int, vmSize string, fqdn string, osDiskSizeGB int) *api.AgentPoolProfile {
+func testExpandAgentPoolProfile(name string, count int, vmSize string, fqdn string, osDiskSizeGB int) *api.AgentPoolProfile {
 	profile := &api.AgentPoolProfile{
 		Name:   name,
 		Count:  count,
@@ -371,4 +371,38 @@ func fakeExpandAgentPoolProfile(name string, count int, vmSize string, fqdn stri
 	}
 
 	return profile
+}
+
+func testCertificateProfile() *api.CertificateProfile {
+	profile := &api.CertificateProfile{}
+
+	return profile
+}
+
+func mockACSEngineContainerService() *api.ContainerService {
+	// do I need test expandLinuxProfile and so on?
+	linuxProfile := testExpandLinuxProfile("azureuser", "public key data")
+	servicePrincipal := testExpandServicePrincipal("clientid", "clientsecret")
+	masterProfile := testExpandMasterProfile(3, "creativeDNSPrefix", "Standard_D2_v2", "fqdn.com")
+
+	agentPoolProfile1 := testExpandAgentPoolProfile("agentpool1", 5, "Standard_DS_v2", "fqdn", 40)
+	agentPoolProfile2 := testExpandAgentPoolProfile("agentpool1", 2, "Standard_DS_v2", "fqdn", 40)
+	agentPoolProfiles := []*api.AgentPoolProfile{
+		agentPoolProfile1,
+		agentPoolProfile2,
+	}
+
+	// certificates?
+
+	properties := &api.Properties{
+		LinuxProfile:            &linuxProfile,
+		ServicePrincipalProfile: &servicePrincipal,
+		MasterProfile:           &masterProfile,
+		AgentPoolProfiles:       agentPoolProfiles,
+	}
+	cluster := &api.ContainerService{
+		Properties: properties,
+	}
+
+	return cluster
 }
