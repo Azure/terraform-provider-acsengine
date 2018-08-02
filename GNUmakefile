@@ -93,16 +93,16 @@ test-compile:
 ###############################################################################
 
 cluster-create:
-	TF_ACC=1 go test ./acsengine -v -run create -timeout 5h
+	TF_ACC=1 go test ./acsengine -v -run create -timeout 2h
 
 cluster-scale:
 	TF_ACC=1 go test ./acsengine -v -run scale -timeout 5h
 
 cluster-upgrade:
-	TF_ACC=1 go test ./acsengine -v -run upgrade -timeout 5h
+	TF_ACC=1 go test ./acsengine -v -run upgrade -timeout 8h
 
 cluster-update:
-	TF_ACC=1 go test ./acsengine -v -run update -timeout 5h
+	TF_ACC=1 go test ./acsengine -v -run update -timeout 10h
 
 .PHONY: cluster-create cluster-scale cluster-upgrade cluster-update
 
