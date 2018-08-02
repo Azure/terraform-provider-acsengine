@@ -3,6 +3,7 @@ package acsengine
 // This file may end up being deleted
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/acctest"
@@ -11,14 +12,13 @@ import (
 
 // Why is this failing??
 func TestAccImportACSEngineK8sCluster_importBasic(t *testing.T) {
-	resourceName := "acsengine_kubernetes_cluster.test"
-
 	ri := acctest.RandInt()
 	clientID := testClientID()
 	clientSecret := testClientSecret()
 	location := testLocation()
 	keyData := testSSHPublicKey()
 	config := testAccACSEngineK8sClusterBasic(ri, clientID, clientSecret, location, keyData)
+	resourceName := "acsengine_kubernetes_cluster.test" + strconv.Itoa(ri)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },

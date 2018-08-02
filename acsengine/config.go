@@ -10,8 +10,6 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2017-09-30/containerservice"
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2016-06-01/subscriptions"
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2016-09-01/locks"
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/adal"
@@ -37,12 +35,10 @@ type ArmClient struct {
 	kubernetesClustersClient containerservice.ManagedClustersClient
 
 	// Resources
-	managementLocksClient locks.ManagementLocksClient
-	deploymentsClient     resources.DeploymentsClient
-	providersClient       resources.ProvidersClient
-	resourcesClient       resources.Client
-	resourceGroupsClient  resources.GroupsClient
-	subscriptionsClient   subscriptions.Client
+	deploymentsClient    resources.DeploymentsClient
+	providersClient      resources.ProvidersClient
+	resourcesClient      resources.Client
+	resourceGroupsClient resources.GroupsClient
 }
 
 func (c *ArmClient) configureClient(client *autorest.Client, auth autorest.Authorizer) {
@@ -197,10 +193,6 @@ func (c *ArmClient) registerContainerServicesClients(endpoint, subscriptionID st
 }
 
 func (c *ArmClient) registerResourcesClients(endpoint, subscriptionID string, auth autorest.Authorizer) {
-	locksClient := locks.NewManagementLocksClientWithBaseURI(endpoint, subscriptionID)
-	c.configureClient(&locksClient.Client, auth)
-	c.managementLocksClient = locksClient
-
 	deploymentsClient := resources.NewDeploymentsClientWithBaseURI(endpoint, subscriptionID)
 	c.configureClient(&deploymentsClient.Client, auth)
 	c.deploymentsClient = deploymentsClient
@@ -216,8 +208,4 @@ func (c *ArmClient) registerResourcesClients(endpoint, subscriptionID string, au
 	providersClient := resources.NewProvidersClientWithBaseURI(endpoint, subscriptionID)
 	c.configureClient(&providersClient.Client, auth)
 	c.providersClient = providersClient
-
-	subscriptionsClient := subscriptions.NewClientWithBaseURI(endpoint)
-	c.configureClient(&subscriptionsClient.Client, auth)
-	c.subscriptionsClient = subscriptionsClient
 }

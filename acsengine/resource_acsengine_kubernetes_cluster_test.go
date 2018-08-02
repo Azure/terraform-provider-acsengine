@@ -369,6 +369,7 @@ func TestAccACSEngineK8sCluster_createBasic(t *testing.T) {
 	location := testLocation()
 	keyData := testSSHPublicKey()
 	config := testAccACSEngineK8sClusterBasic(ri, clientID, clientSecret, location, keyData)
+	tfResourceName := "acsengine_kubernetes_cluster.test" + strconv.Itoa(ri)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -378,15 +379,15 @@ func TestAccACSEngineK8sCluster_createBasic(t *testing.T) {
 			{
 				Config: config,
 				Check: resource.ComposeTestCheckFunc(
-					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "resource_group", "acctestRG-"+strconv.Itoa(ri)),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "location", location),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "service_principal.0.client_id", clientID),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "service_principal.0.client_secret", clientSecret),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "linux_profile.0.admin_username", "acctestuser"+strconv.Itoa(ri)),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "master_profile.0.dns_name_prefix", "acctestmaster"+strconv.Itoa(ri)),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "master_profile.0.fqdn", "acctestmaster"+strconv.Itoa(ri)+"."+location+".cloudapp.azure.com"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "agent_pool_profiles.0.name", "agentpool1"),
+					testCheckACSEngineClusterExists(tfResourceName),
+					resource.TestCheckResourceAttr(tfResourceName, "resource_group", "acctestRG-"+strconv.Itoa(ri)),
+					resource.TestCheckResourceAttr(tfResourceName, "location", location),
+					resource.TestCheckResourceAttr(tfResourceName, "service_principal.0.client_id", clientID),
+					resource.TestCheckResourceAttr(tfResourceName, "service_principal.0.client_secret", clientSecret),
+					resource.TestCheckResourceAttr(tfResourceName, "linux_profile.0.admin_username", "acctestuser"+strconv.Itoa(ri)),
+					resource.TestCheckResourceAttr(tfResourceName, "master_profile.0.dns_name_prefix", "acctestmaster"+strconv.Itoa(ri)),
+					resource.TestCheckResourceAttr(tfResourceName, "master_profile.0.fqdn", "acctestmaster"+strconv.Itoa(ri)+"."+location+".cloudapp.azure.com"),
+					resource.TestCheckResourceAttr(tfResourceName, "agent_pool_profiles.0.name", "agentpool1"),
 				),
 			},
 		},
@@ -400,6 +401,7 @@ func TestAccACSEngineK8sCluster_createMultipleAgentPools(t *testing.T) {
 	location := testLocation()
 	keyData := testSSHPublicKey()
 	config := testAccACSEngineK8sClusterMultipleAgentPools(ri, clientID, clientSecret, location, keyData)
+	tfResourceName := "acsengine_kubernetes_cluster.test" + strconv.Itoa(ri)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -409,16 +411,16 @@ func TestAccACSEngineK8sCluster_createMultipleAgentPools(t *testing.T) {
 			{
 				Config: config,
 				Check: resource.ComposeTestCheckFunc(
-					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "resource_group", "acctestRG-"+strconv.Itoa(ri)),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "location", location),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "service_principal.0.client_id", clientID),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "service_principal.0.client_secret", clientSecret),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "linux_profile.0.admin_username", "acctestuser"+strconv.Itoa(ri)),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "master_profile.0.dns_name_prefix", "acctestmaster"+strconv.Itoa(ri)),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "master_profile.0.fqdn", "acctestmaster"+strconv.Itoa(ri)+"."+location+".cloudapp.azure.com"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "agent_pool_profiles.0.name", "agentpool1"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "agent_pool_profiles.1.name", "agentpool2"),
+					testCheckACSEngineClusterExists(tfResourceName),
+					resource.TestCheckResourceAttr(tfResourceName, "resource_group", "acctestRG-"+strconv.Itoa(ri)),
+					resource.TestCheckResourceAttr(tfResourceName, "location", location),
+					resource.TestCheckResourceAttr(tfResourceName, "service_principal.0.client_id", clientID),
+					resource.TestCheckResourceAttr(tfResourceName, "service_principal.0.client_secret", clientSecret),
+					resource.TestCheckResourceAttr(tfResourceName, "linux_profile.0.admin_username", "acctestuser"+strconv.Itoa(ri)),
+					resource.TestCheckResourceAttr(tfResourceName, "master_profile.0.dns_name_prefix", "acctestmaster"+strconv.Itoa(ri)),
+					resource.TestCheckResourceAttr(tfResourceName, "master_profile.0.fqdn", "acctestmaster"+strconv.Itoa(ri)+"."+location+".cloudapp.azure.com"),
+					resource.TestCheckResourceAttr(tfResourceName, "agent_pool_profiles.0.name", "agentpool1"),
+					resource.TestCheckResourceAttr(tfResourceName, "agent_pool_profiles.1.name", "agentpool2"),
 				),
 			},
 		},
@@ -436,6 +438,7 @@ func TestAccACSEngineK8sCluster_createCustomized(t *testing.T) {
 	agentCount := 1
 	osDiskSizeGB := 40
 	config := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, version, agentCount, vmSize, osDiskSizeGB)
+	tfResourceName := "acsengine_kubernetes_cluster.test" + strconv.Itoa(ri)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -445,18 +448,18 @@ func TestAccACSEngineK8sCluster_createCustomized(t *testing.T) {
 			{
 				Config: config,
 				Check: resource.ComposeTestCheckFunc(
-					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "resource_group", "acctestRG-"+strconv.Itoa(ri)),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "location", location),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "service_principal.0.client_id", clientID),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "service_principal.0.client_secret", clientSecret),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "linux_profile.0.admin_username", "acctestuser"+strconv.Itoa(ri)),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "master_profile.0.dns_name_prefix", "acctestmaster"+strconv.Itoa(ri)),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "master_profile.0.vm_size", vmSize),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "kubernetes_version", version),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "agent_pool_profiles.0.name", "agentpool1"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "agent_pool_profiles.0.count", "1"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "agent_pool_profiles.0.vm_size", vmSize),
+					testCheckACSEngineClusterExists(tfResourceName),
+					resource.TestCheckResourceAttr(tfResourceName, "resource_group", "acctestRG-"+strconv.Itoa(ri)),
+					resource.TestCheckResourceAttr(tfResourceName, "location", location),
+					resource.TestCheckResourceAttr(tfResourceName, "service_principal.0.client_id", clientID),
+					resource.TestCheckResourceAttr(tfResourceName, "service_principal.0.client_secret", clientSecret),
+					resource.TestCheckResourceAttr(tfResourceName, "linux_profile.0.admin_username", "acctestuser"+strconv.Itoa(ri)),
+					resource.TestCheckResourceAttr(tfResourceName, "master_profile.0.dns_name_prefix", "acctestmaster"+strconv.Itoa(ri)),
+					resource.TestCheckResourceAttr(tfResourceName, "master_profile.0.vm_size", vmSize),
+					resource.TestCheckResourceAttr(tfResourceName, "kubernetes_version", version),
+					resource.TestCheckResourceAttr(tfResourceName, "agent_pool_profiles.0.name", "agentpool1"),
+					resource.TestCheckResourceAttr(tfResourceName, "agent_pool_profiles.0.count", "1"),
+					resource.TestCheckResourceAttr(tfResourceName, "agent_pool_profiles.0.vm_size", vmSize),
 				),
 			},
 		},
@@ -474,6 +477,7 @@ func TestAccACSEngineK8sCluster_createVersion10AndAbove(t *testing.T) {
 	agentCount := 1
 	osDiskSizeGB := 30
 	config := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, version, agentCount, vmSize, osDiskSizeGB)
+	tfResourceName := "acsengine_kubernetes_cluster.test" + strconv.Itoa(ri)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -483,18 +487,18 @@ func TestAccACSEngineK8sCluster_createVersion10AndAbove(t *testing.T) {
 			{
 				Config: config,
 				Check: resource.ComposeTestCheckFunc(
-					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "resource_group", "acctestRG-"+strconv.Itoa(ri)),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "location", location),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "service_principal.0.client_id", clientID),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "service_principal.0.client_secret", clientSecret),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "linux_profile.0.admin_username", "acctestuser"+strconv.Itoa(ri)),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "master_profile.0.dns_name_prefix", "acctestmaster"+strconv.Itoa(ri)),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "master_profile.0.vm_size", vmSize),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "kubernetes_version", version),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "agent_pool_profiles.0.name", "agentpool1"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "agent_pool_profiles.0.count", "1"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "agent_pool_profiles.0.vm_size", vmSize),
+					testCheckACSEngineClusterExists(tfResourceName),
+					resource.TestCheckResourceAttr(tfResourceName, "resource_group", "acctestRG-"+strconv.Itoa(ri)),
+					resource.TestCheckResourceAttr(tfResourceName, "location", location),
+					resource.TestCheckResourceAttr(tfResourceName, "service_principal.0.client_id", clientID),
+					resource.TestCheckResourceAttr(tfResourceName, "service_principal.0.client_secret", clientSecret),
+					resource.TestCheckResourceAttr(tfResourceName, "linux_profile.0.admin_username", "acctestuser"+strconv.Itoa(ri)),
+					resource.TestCheckResourceAttr(tfResourceName, "master_profile.0.dns_name_prefix", "acctestmaster"+strconv.Itoa(ri)),
+					resource.TestCheckResourceAttr(tfResourceName, "master_profile.0.vm_size", vmSize),
+					resource.TestCheckResourceAttr(tfResourceName, "kubernetes_version", version),
+					resource.TestCheckResourceAttr(tfResourceName, "agent_pool_profiles.0.name", "agentpool1"),
+					resource.TestCheckResourceAttr(tfResourceName, "agent_pool_profiles.0.count", "1"),
+					resource.TestCheckResourceAttr(tfResourceName, "agent_pool_profiles.0.vm_size", vmSize),
 				),
 			},
 		},
@@ -509,6 +513,7 @@ func TestAccACSEngineK8sCluster_scaleUp(t *testing.T) {
 	keyData := testSSHPublicKey()
 	config := testAccACSEngineK8sClusterScale(ri, clientID, clientSecret, location, keyData, 1)
 	updatedConfig := testAccACSEngineK8sClusterScale(ri, clientID, clientSecret, location, keyData, 2)
+	tfResourceName := "acsengine_kubernetes_cluster.test" + strconv.Itoa(ri)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -518,15 +523,15 @@ func TestAccACSEngineK8sCluster_scaleUp(t *testing.T) {
 			{
 				Config: config,
 				Check: resource.ComposeTestCheckFunc(
-					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "agent_pool_profiles.0.count", "1"),
+					testCheckACSEngineClusterExists(tfResourceName),
+					resource.TestCheckResourceAttr(tfResourceName, "agent_pool_profiles.0.count", "1"),
 				),
 			},
 			{
 				Config: updatedConfig,
 				Check: resource.ComposeTestCheckFunc(
-					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "agent_pool_profiles.0.count", "2"),
+					testCheckACSEngineClusterExists(tfResourceName),
+					resource.TestCheckResourceAttr(tfResourceName, "agent_pool_profiles.0.count", "2"),
 				),
 			},
 		},
@@ -542,6 +547,7 @@ func TestAccACSEngineK8sCluster_scaleDown(t *testing.T) {
 	keyData := testSSHPublicKey()
 	config := testAccACSEngineK8sClusterScale(ri, clientID, clientSecret, location, keyData, 2)
 	updatedConfig := testAccACSEngineK8sClusterScale(ri, clientID, clientSecret, location, keyData, 1)
+	tfResourceName := "acsengine_kubernetes_cluster.test" + strconv.Itoa(ri)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -551,15 +557,15 @@ func TestAccACSEngineK8sCluster_scaleDown(t *testing.T) {
 			{
 				Config: config,
 				Check: resource.ComposeTestCheckFunc(
-					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "agent_pool_profiles.0.count", "2"),
+					testCheckACSEngineClusterExists(tfResourceName),
+					resource.TestCheckResourceAttr(tfResourceName, "agent_pool_profiles.0.count", "2"),
 				),
 			},
 			{
 				Config: updatedConfig,
 				Check: resource.ComposeTestCheckFunc(
-					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "agent_pool_profiles.0.count", "1"),
+					testCheckACSEngineClusterExists(tfResourceName),
+					resource.TestCheckResourceAttr(tfResourceName, "agent_pool_profiles.0.count", "1"),
 				),
 			},
 		},
@@ -574,6 +580,7 @@ func TestAccACSEngineK8sCluster_scaleUpDown(t *testing.T) {
 	keyData := testSSHPublicKey()
 	config := testAccACSEngineK8sClusterScale(ri, clientID, clientSecret, location, keyData, 1)
 	scaledUpConfig := testAccACSEngineK8sClusterScale(ri, clientID, clientSecret, location, keyData, 2)
+	tfResourceName := "acsengine_kubernetes_cluster.test" + strconv.Itoa(ri)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -583,22 +590,22 @@ func TestAccACSEngineK8sCluster_scaleUpDown(t *testing.T) {
 			{
 				Config: config,
 				Check: resource.ComposeTestCheckFunc(
-					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "agent_pool_profiles.0.count", "1"),
+					testCheckACSEngineClusterExists(tfResourceName),
+					resource.TestCheckResourceAttr(tfResourceName, "agent_pool_profiles.0.count", "1"),
 				),
 			},
 			{
 				Config: scaledUpConfig,
 				Check: resource.ComposeTestCheckFunc(
-					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "agent_pool_profiles.0.count", "2"),
+					testCheckACSEngineClusterExists(tfResourceName),
+					resource.TestCheckResourceAttr(tfResourceName, "agent_pool_profiles.0.count", "2"),
 				),
 			},
 			{
 				Config: config,
 				Check: resource.ComposeTestCheckFunc(
-					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "agent_pool_profiles.0.count", "1"),
+					testCheckACSEngineClusterExists(tfResourceName),
+					resource.TestCheckResourceAttr(tfResourceName, "agent_pool_profiles.0.count", "1"),
 				),
 			},
 		},
@@ -613,6 +620,7 @@ func TestAccACSEngineK8sCluster_scaleDownUp(t *testing.T) {
 	keyData := testSSHPublicKey()
 	config := testAccACSEngineK8sClusterScale(ri, clientID, clientSecret, location, keyData, 2)
 	scaledDownConfig := testAccACSEngineK8sClusterScale(ri, clientID, clientSecret, location, keyData, 1)
+	tfResourceName := "acsengine_kubernetes_cluster.test" + strconv.Itoa(ri)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -622,22 +630,22 @@ func TestAccACSEngineK8sCluster_scaleDownUp(t *testing.T) {
 			{
 				Config: config,
 				Check: resource.ComposeTestCheckFunc(
-					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "agent_pool_profiles.0.count", "2"),
+					testCheckACSEngineClusterExists(tfResourceName),
+					resource.TestCheckResourceAttr(tfResourceName, "agent_pool_profiles.0.count", "2"),
 				),
 			},
 			{
 				Config: scaledDownConfig,
 				Check: resource.ComposeTestCheckFunc(
-					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "agent_pool_profiles.0.count", "1"),
+					testCheckACSEngineClusterExists(tfResourceName),
+					resource.TestCheckResourceAttr(tfResourceName, "agent_pool_profiles.0.count", "1"),
 				),
 			},
 			{
 				Config: config,
 				Check: resource.ComposeTestCheckFunc(
-					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "agent_pool_profiles.0.count", "2"),
+					testCheckACSEngineClusterExists(tfResourceName),
+					resource.TestCheckResourceAttr(tfResourceName, "agent_pool_profiles.0.count", "2"),
 				),
 			},
 		},
@@ -655,6 +663,7 @@ func TestAccACSEngineK8sCluster_upgradeOnce(t *testing.T) {
 	osDiskSizeGB := 30
 	config := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.8.13", 1, vmSize, osDiskSizeGB)
 	upgradedConfig := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.9.8", 1, vmSize, osDiskSizeGB)
+	tfResourceName := "acsengine_kubernetes_cluster.test" + strconv.Itoa(ri)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -664,15 +673,15 @@ func TestAccACSEngineK8sCluster_upgradeOnce(t *testing.T) {
 			{
 				Config: config,
 				Check: resource.ComposeTestCheckFunc(
-					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "kubernetes_version", "1.8.13"),
+					testCheckACSEngineClusterExists(tfResourceName),
+					resource.TestCheckResourceAttr(tfResourceName, "kubernetes_version", "1.8.13"),
 				),
 			},
 			{
 				Config: upgradedConfig,
 				Check: resource.ComposeTestCheckFunc(
-					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "kubernetes_version", "1.9.8"),
+					testCheckACSEngineClusterExists(tfResourceName),
+					resource.TestCheckResourceAttr(tfResourceName, "kubernetes_version", "1.9.8"),
 				),
 			},
 		},
@@ -690,6 +699,7 @@ func TestAccACSEngineK8sCluster_upgradeMultiple(t *testing.T) {
 	config := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.8.13", 1, vmSize, osDiskSizeGB)
 	upgradedConfig1 := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.9.8", 1, vmSize, osDiskSizeGB)
 	upgradedConfig2 := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.10.0", 1, vmSize, osDiskSizeGB)
+	tfResourceName := "acsengine_kubernetes_cluster.test" + strconv.Itoa(ri)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -699,22 +709,22 @@ func TestAccACSEngineK8sCluster_upgradeMultiple(t *testing.T) {
 			{
 				Config: config,
 				Check: resource.ComposeTestCheckFunc(
-					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "kubernetes_version", "1.8.13"),
+					testCheckACSEngineClusterExists(tfResourceName),
+					resource.TestCheckResourceAttr(tfResourceName, "kubernetes_version", "1.8.13"),
 				),
 			},
 			{
 				Config: upgradedConfig1,
 				Check: resource.ComposeTestCheckFunc(
-					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "kubernetes_version", "1.9.8"),
+					testCheckACSEngineClusterExists(tfResourceName),
+					resource.TestCheckResourceAttr(tfResourceName, "kubernetes_version", "1.9.8"),
 				),
 			},
 			{
 				Config: upgradedConfig2,
 				Check: resource.ComposeTestCheckFunc(
-					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "kubernetes_version", "1.10.0"),
+					testCheckACSEngineClusterExists(tfResourceName),
+					resource.TestCheckResourceAttr(tfResourceName, "kubernetes_version", "1.10.0"),
 				),
 			},
 		},
@@ -733,6 +743,7 @@ func TestAccACSEngineK8sCluster_upgradeVersion10AndAbove(t *testing.T) {
 	osDiskSizeGB := 30
 	config := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.10.0", 1, vmSize, osDiskSizeGB)
 	upgradedConfig := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.10.1", 1, vmSize, osDiskSizeGB)
+	tfResourceName := "acsengine_kubernetes_cluster.test" + strconv.Itoa(ri)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -742,17 +753,17 @@ func TestAccACSEngineK8sCluster_upgradeVersion10AndAbove(t *testing.T) {
 			{
 				Config: config,
 				Check: resource.ComposeTestCheckFunc(
-					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "kubernetes_version", "1.10.0"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "agent_pool_profiles.0.count", "1"),
+					testCheckACSEngineClusterExists(tfResourceName),
+					resource.TestCheckResourceAttr(tfResourceName, "kubernetes_version", "1.10.0"),
+					resource.TestCheckResourceAttr(tfResourceName, "agent_pool_profiles.0.count", "1"),
 				),
 			},
 			{
 				Config: upgradedConfig,
 				Check: resource.ComposeTestCheckFunc(
-					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "kubernetes_version", "1.10.1"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "agent_pool_profiles.0.count", "1"),
+					testCheckACSEngineClusterExists(tfResourceName),
+					resource.TestCheckResourceAttr(tfResourceName, "kubernetes_version", "1.10.1"),
+					resource.TestCheckResourceAttr(tfResourceName, "agent_pool_profiles.0.count", "1"),
 				),
 			},
 		},
@@ -770,6 +781,7 @@ func TestAccACSEngineK8sCluster_updateUpgradeScaleUp(t *testing.T) {
 	config := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.8.13", 1, vmSize, osDiskSizeGB)
 	upgradedConfig := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.9.8", 1, vmSize, osDiskSizeGB)
 	scaledConfig := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.9.8", 2, vmSize, osDiskSizeGB)
+	tfResourceName := "acsengine_kubernetes_cluster.test" + strconv.Itoa(ri)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -779,25 +791,25 @@ func TestAccACSEngineK8sCluster_updateUpgradeScaleUp(t *testing.T) {
 			{
 				Config: config,
 				Check: resource.ComposeTestCheckFunc(
-					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "kubernetes_version", "1.8.13"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "agent_pool_profiles.0.count", "1"),
+					testCheckACSEngineClusterExists(tfResourceName),
+					resource.TestCheckResourceAttr(tfResourceName, "kubernetes_version", "1.8.13"),
+					resource.TestCheckResourceAttr(tfResourceName, "agent_pool_profiles.0.count", "1"),
 				),
 			},
 			{
 				Config: upgradedConfig,
 				Check: resource.ComposeTestCheckFunc(
-					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "kubernetes_version", "1.9.8"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "agent_pool_profiles.0.count", "1"),
+					testCheckACSEngineClusterExists(tfResourceName),
+					resource.TestCheckResourceAttr(tfResourceName, "kubernetes_version", "1.9.8"),
+					resource.TestCheckResourceAttr(tfResourceName, "agent_pool_profiles.0.count", "1"),
 				),
 			},
 			{
 				Config: scaledConfig,
 				Check: resource.ComposeTestCheckFunc(
-					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "kubernetes_version", "1.9.8"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "agent_pool_profiles.0.count", "2"),
+					testCheckACSEngineClusterExists(tfResourceName),
+					resource.TestCheckResourceAttr(tfResourceName, "kubernetes_version", "1.9.8"),
+					resource.TestCheckResourceAttr(tfResourceName, "agent_pool_profiles.0.count", "2"),
 				),
 			},
 		},
@@ -815,6 +827,7 @@ func TestAccACSEngineK8sCluster_updateScaleUpUpgrade(t *testing.T) {
 	config := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.8.13", 1, vmSize, osDiskSizeGB)
 	scaledConfig := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.8.13", 2, vmSize, osDiskSizeGB)
 	upgradedConfig := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.9.8", 2, vmSize, osDiskSizeGB)
+	tfResourceName := "acsengine_kubernetes_cluster.test" + strconv.Itoa(ri)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -824,25 +837,25 @@ func TestAccACSEngineK8sCluster_updateScaleUpUpgrade(t *testing.T) {
 			{
 				Config: config,
 				Check: resource.ComposeTestCheckFunc(
-					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "kubernetes_version", "1.8.13"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "agent_pool_profiles.0.count", "1"),
+					testCheckACSEngineClusterExists(tfResourceName),
+					resource.TestCheckResourceAttr(tfResourceName, "kubernetes_version", "1.8.13"),
+					resource.TestCheckResourceAttr(tfResourceName, "agent_pool_profiles.0.count", "1"),
 				),
 			},
 			{
 				Config: scaledConfig,
 				Check: resource.ComposeTestCheckFunc(
-					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "kubernetes_version", "1.8.13"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "agent_pool_profiles.0.count", "2"),
+					testCheckACSEngineClusterExists(tfResourceName),
+					resource.TestCheckResourceAttr(tfResourceName, "kubernetes_version", "1.8.13"),
+					resource.TestCheckResourceAttr(tfResourceName, "agent_pool_profiles.0.count", "2"),
 				),
 			},
 			{
 				Config: upgradedConfig,
 				Check: resource.ComposeTestCheckFunc(
-					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "kubernetes_version", "1.9.8"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "agent_pool_profiles.0.count", "2"),
+					testCheckACSEngineClusterExists(tfResourceName),
+					resource.TestCheckResourceAttr(tfResourceName, "kubernetes_version", "1.9.8"),
+					resource.TestCheckResourceAttr(tfResourceName, "agent_pool_profiles.0.count", "2"),
 				),
 			},
 		},
@@ -860,6 +873,7 @@ func TestAccACSEngineK8sCluster_updateUpgradeScaleDown(t *testing.T) {
 	config := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.8.13", 2, vmSize, osDiskSizeGB)
 	upgradedConfig := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.9.8", 2, vmSize, osDiskSizeGB)
 	scaledConfig := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.9.8", 1, vmSize, osDiskSizeGB)
+	tfResourceName := "acsengine_kubernetes_cluster.test" + strconv.Itoa(ri)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -869,25 +883,25 @@ func TestAccACSEngineK8sCluster_updateUpgradeScaleDown(t *testing.T) {
 			{
 				Config: config,
 				Check: resource.ComposeTestCheckFunc(
-					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "kubernetes_version", "1.8.13"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "agent_pool_profiles.0.count", "2"),
+					testCheckACSEngineClusterExists(tfResourceName),
+					resource.TestCheckResourceAttr(tfResourceName, "kubernetes_version", "1.8.13"),
+					resource.TestCheckResourceAttr(tfResourceName, "agent_pool_profiles.0.count", "2"),
 				),
 			},
 			{
 				Config: upgradedConfig,
 				Check: resource.ComposeTestCheckFunc(
-					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "kubernetes_version", "1.9.8"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "agent_pool_profiles.0.count", "2"),
+					testCheckACSEngineClusterExists(tfResourceName),
+					resource.TestCheckResourceAttr(tfResourceName, "kubernetes_version", "1.9.8"),
+					resource.TestCheckResourceAttr(tfResourceName, "agent_pool_profiles.0.count", "2"),
 				),
 			},
 			{
 				Config: scaledConfig,
 				Check: resource.ComposeTestCheckFunc(
-					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "kubernetes_version", "1.9.8"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "agent_pool_profiles.0.count", "1"),
+					testCheckACSEngineClusterExists(tfResourceName),
+					resource.TestCheckResourceAttr(tfResourceName, "kubernetes_version", "1.9.8"),
+					resource.TestCheckResourceAttr(tfResourceName, "agent_pool_profiles.0.count", "1"),
 				),
 			},
 		},
@@ -905,6 +919,7 @@ func TestAccACSEngineK8sCluster_updateScaleDownUpgrade(t *testing.T) {
 	config := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.8.13", 2, vmSize, osDiskSizeGB)
 	scaledConfig := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.8.13", 1, vmSize, osDiskSizeGB)
 	upgradedConfig := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.9.8", 1, vmSize, osDiskSizeGB)
+	tfResourceName := "acsengine_kubernetes_cluster.test" + strconv.Itoa(ri)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -914,25 +929,25 @@ func TestAccACSEngineK8sCluster_updateScaleDownUpgrade(t *testing.T) {
 			{
 				Config: config,
 				Check: resource.ComposeTestCheckFunc(
-					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "kubernetes_version", "1.8.13"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "agent_pool_profiles.0.count", "2"),
+					testCheckACSEngineClusterExists(tfResourceName),
+					resource.TestCheckResourceAttr(tfResourceName, "kubernetes_version", "1.8.13"),
+					resource.TestCheckResourceAttr(tfResourceName, "agent_pool_profiles.0.count", "2"),
 				),
 			},
 			{
 				Config: scaledConfig,
 				Check: resource.ComposeTestCheckFunc(
-					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "kubernetes_version", "1.8.13"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "agent_pool_profiles.0.count", "1"),
+					testCheckACSEngineClusterExists(tfResourceName),
+					resource.TestCheckResourceAttr(tfResourceName, "kubernetes_version", "1.8.13"),
+					resource.TestCheckResourceAttr(tfResourceName, "agent_pool_profiles.0.count", "1"),
 				),
 			},
 			{
 				Config: upgradedConfig,
 				Check: resource.ComposeTestCheckFunc(
-					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "kubernetes_version", "1.9.8"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "agent_pool_profiles.0.count", "1"),
+					testCheckACSEngineClusterExists(tfResourceName),
+					resource.TestCheckResourceAttr(tfResourceName, "kubernetes_version", "1.9.8"),
+					resource.TestCheckResourceAttr(tfResourceName, "agent_pool_profiles.0.count", "1"),
 				),
 			},
 		},
@@ -949,6 +964,7 @@ func TestAccACSEngineK8sCluster_updateScaleUpgradeInOne(t *testing.T) {
 	osDiskSizeGB := 30
 	config := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.8.13", 1, vmSize, osDiskSizeGB)
 	updatedConfig := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.9.8", 2, vmSize, osDiskSizeGB)
+	tfResourceName := "acsengine_kubernetes_cluster.test" + strconv.Itoa(ri)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -958,17 +974,17 @@ func TestAccACSEngineK8sCluster_updateScaleUpgradeInOne(t *testing.T) {
 			{
 				Config: config,
 				Check: resource.ComposeTestCheckFunc(
-					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "kubernetes_version", "1.8.13"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "agent_pool_profiles.0.count", "1"),
+					testCheckACSEngineClusterExists(tfResourceName),
+					resource.TestCheckResourceAttr(tfResourceName, "kubernetes_version", "1.8.13"),
+					resource.TestCheckResourceAttr(tfResourceName, "agent_pool_profiles.0.count", "1"),
 				),
 			},
 			{
 				Config: updatedConfig,
 				Check: resource.ComposeTestCheckFunc(
-					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "kubernetes_version", "1.9.8"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "agent_pool_profiles.0.count", "2"),
+					testCheckACSEngineClusterExists(tfResourceName),
+					resource.TestCheckResourceAttr(tfResourceName, "kubernetes_version", "1.9.8"),
+					resource.TestCheckResourceAttr(tfResourceName, "agent_pool_profiles.0.count", "2"),
 				),
 			},
 		},
@@ -985,6 +1001,7 @@ func TestAccACSEngineK8sCluster_updateTags(t *testing.T) {
 	keyData := testSSHPublicKey()
 	config := testAccACSEngineK8sClusterBasic(ri, clientID, clientSecret, location, keyData)
 	newTagsConfig := testAccACSEngineK8sClusterTags(ri, clientID, clientSecret, location, keyData, "Prod", "IT")
+	tfResourceName := "acsengine_kubernetes_cluster.test" + strconv.Itoa(ri)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -994,16 +1011,16 @@ func TestAccACSEngineK8sCluster_updateTags(t *testing.T) {
 			{
 				Config: config,
 				Check: resource.ComposeTestCheckFunc(
-					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "tags.Environment", "Production"),
+					testCheckACSEngineClusterExists(tfResourceName),
+					resource.TestCheckResourceAttr(tfResourceName, "tags.Environment", "Production"),
 				),
 			},
 			{
 				Config: newTagsConfig,
 				Check: resource.ComposeTestCheckFunc(
-					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "tags.Environment", "Prod"),
-					resource.TestCheckResourceAttr("acsengine_kubernetes_cluster.test", "tags.Department", "IT"),
+					testCheckACSEngineClusterExists(tfResourceName),
+					resource.TestCheckResourceAttr(tfResourceName, "tags.Environment", "Prod"),
+					resource.TestCheckResourceAttr(tfResourceName, "tags.Department", "IT"),
 				),
 			},
 		},
@@ -1087,7 +1104,7 @@ func TestAccACSEngineK8sCluster_updateTags(t *testing.T) {
 // can I get rid of some of these? There's so many
 
 func testAccACSEngineK8sClusterBasic(rInt int, clientID string, clientSecret string, location string, keyData string) string {
-	return fmt.Sprintf(`resource "acsengine_kubernetes_cluster" "test" {
+	return fmt.Sprintf(`resource "acsengine_kubernetes_cluster" "test%d" {
 		name               = "acctest"
 		resource_group     = "acctestRG-%d"
 		location           = "%s"
@@ -1119,11 +1136,11 @@ func testAccACSEngineK8sClusterBasic(rInt int, clientID string, clientSecret str
 		tags {
 			Environment = "Production"
 		}
-	}`, rInt, location, rInt, rInt, keyData, clientID, clientSecret)
+	}`, rInt, rInt, location, rInt, rInt, keyData, clientID, clientSecret)
 }
 
 func testAccACSEngineK8sClusterMultipleAgentPools(rInt int, clientID string, clientSecret string, location string, keyData string) string {
-	return fmt.Sprintf(`resource "acsengine_kubernetes_cluster" "test" {
+	return fmt.Sprintf(`resource "acsengine_kubernetes_cluster" "test%d" {
 		name               = "acctest"
 		resource_group     = "acctestRG-%d"
 		location           = "%s"
@@ -1157,12 +1174,12 @@ func testAccACSEngineK8sClusterMultipleAgentPools(rInt int, clientID string, cli
 			client_id     = "%s"
 			client_secret = "%s"
 		}
-	}`, rInt, location, rInt, rInt, keyData, clientID, clientSecret)
+	}`, rInt, rInt, location, rInt, rInt, keyData, clientID, clientSecret)
 }
 
 // add more customization like os_type
 func testAccACSEngineK8sClusterCustomized(rInt int, clientID string, clientSecret string, location string, keyData string, k8sVersion string, agentCount int, vmSize string, osDiskSize int) string {
-	return fmt.Sprintf(`resource "acsengine_kubernetes_cluster" "test" {
+	return fmt.Sprintf(`resource "acsengine_kubernetes_cluster" "test%d" {
 		name               = "acctest"
 		resource_group     = "acctestRG-%d"
 		location           = "%s"
@@ -1197,11 +1214,11 @@ func testAccACSEngineK8sClusterCustomized(rInt int, clientID string, clientSecre
 		tags {
 			Environment = "Production"
 		}
-	}`, rInt, location, k8sVersion, rInt, vmSize, osDiskSize, agentCount, vmSize, osDiskSize, rInt, keyData, clientID, clientSecret)
+	}`, rInt, rInt, location, k8sVersion, rInt, vmSize, osDiskSize, agentCount, vmSize, osDiskSize, rInt, keyData, clientID, clientSecret)
 }
 
 func testAccACSEngineK8sClusterScale(rInt int, clientID string, clientSecret string, location string, keyData string, agentCount int) string {
-	return fmt.Sprintf(`resource "acsengine_kubernetes_cluster" "test" {
+	return fmt.Sprintf(`resource "acsengine_kubernetes_cluster" "test%d" {
 		name               = "acctest"
 		resource_group     = "acctestRG-%d"
 		location           = "%s"
@@ -1233,11 +1250,11 @@ func testAccACSEngineK8sClusterScale(rInt int, clientID string, clientSecret str
 		tags {
 			Environment = "Production"
 		}
-	}`, rInt, location, rInt, agentCount, rInt, keyData, clientID, clientSecret)
+	}`, rInt, rInt, location, rInt, agentCount, rInt, keyData, clientID, clientSecret)
 }
 
 func testAccACSEngineK8sClusterTags(rInt int, clientID string, clientSecret string, location string, keyData string, tag1 string, tag2 string) string {
-	return fmt.Sprintf(`resource "acsengine_kubernetes_cluster" "test" {
+	return fmt.Sprintf(`resource "acsengine_kubernetes_cluster" "test%d" {
 		name               = "acctest"
 		resource_group     = "acctestRG-%d"
 		location           = "%s"
@@ -1270,11 +1287,11 @@ func testAccACSEngineK8sClusterTags(rInt int, clientID string, clientSecret stri
 			Environment = "%s"
 			Department  = "%s"
 		}
-	}`, rInt, location, rInt, rInt, keyData, clientID, clientSecret, tag1, tag2)
+	}`, rInt, rInt, location, rInt, rInt, keyData, clientID, clientSecret, tag1, tag2)
 }
 
 func testAccACSEngineK8sClusterOSType(rInt int, clientID string, clientSecret string, location string, keyData string, kubernetesVersion string, agentCount int) string {
-	return fmt.Sprintf(`resource "acsengine_kubernetes_cluster" "test" {
+	return fmt.Sprintf(`resource "acsengine_kubernetes_cluster" "test%d" {
 		name               = "acctest"
 		resource_group     = "acctestRG-%d"
 		location           = "%s"
@@ -1308,7 +1325,7 @@ func testAccACSEngineK8sClusterOSType(rInt int, clientID string, clientSecret st
 		tags {
 			Environment = "Production"
 		}
-	}`, rInt, location, kubernetesVersion, rInt, agentCount, rInt, keyData, clientID, clientSecret)
+	}`, rInt, rInt, location, kubernetesVersion, rInt, agentCount, rInt, keyData, clientID, clientSecret)
 }
 
 func testCheckACSEngineClusterExists(name string) resource.TestCheckFunc {
