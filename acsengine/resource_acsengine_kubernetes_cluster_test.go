@@ -78,6 +78,29 @@ func TestACSEngineK8sCluster_loadContainerServiceFromApimodel(t *testing.T) {
 	}
 }
 
+func TestACSEngineK8sCluster_parseImportID(t *testing.T) {
+	azureIDInput := "/subscriptions/1234/resourceGroups/testrg/providers/Microsoft.Resources/deployments/deploymentName"
+	deploymentDirectoryInput := "_output/dnsPrefix"
+	id := fmt.Sprintf("%s %s", azureIDInput, deploymentDirectoryInput)
+
+	azureID, deploymentDirectory, err := parseImportID(id)
+	if err != nil {
+		t.Fatalf("parseImportID failed: %+v", err)
+	}
+
+	if azureID != azureIDInput {
+		t.Fatalf("parseImportID failed: azureID was %s but expected %s", azureID, azureIDInput)
+	}
+	if deploymentDirectory != deploymentDirectoryInput {
+		t.Fatalf("parseImportID failed: deploymentDirectory was %s but expected %s", deploymentDirectory, deploymentDirectoryInput)
+	}
+
+	_, err = parseAzureResourceID(azureID)
+	if err != nil {
+		t.Fatalf("failed to parse azureID: %+v", err)
+	}
+}
+
 /* ACCEPTANCE TESTS */
 
 // made it an acceptance test more because of the time it takes

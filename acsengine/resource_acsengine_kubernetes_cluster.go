@@ -15,9 +15,12 @@ package acsengine
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
+	"os"
 	"path"
 	"strconv"
+	"strings"
 
 	"github.com/Azure/acs-engine/pkg/api"
 	"github.com/Azure/acs-engine/pkg/api/common"
@@ -36,7 +39,8 @@ func resourceArmAcsEngineKubernetesCluster() *schema.Resource {
 		// Is importing possible when state is just stored in the state file?
 		// Can I define my own function that will set things correctly?
 		Importer: &schema.ResourceImporter{
-			State: schema.ImportStatePassthrough,
+			// State: schema.ImportStatePassthrough,
+			State: resourceACSEngineK8sClusterImport,
 		},
 
 		Schema: map[string]*schema.Schema{
@@ -582,4 +586,77 @@ func saveTemplates(d *schema.ResourceData, cluster *api.ContainerService, deploy
 	}
 
 	return nil
+}
+
+// the ID passed will be a string of format "AZURE_RESOURCE_ID*space*APIMODEL_DIRECTORY"
+func resourceACSEngineK8sClusterImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+	client := m.(*ArmClient)
+	deployClient := client.deploymentsClient
+	ctx := client.StopContext
+
+	azureID, deploymentDirectory, err := parseImportID(d.Id())
+	if err != nil {
+		return nil, err
+	}
+
+	id, err := parseAzureResourceID(azureID)
+	if err != nil {
+		return nil, err
+	}
+	name := id.Path["deployments"]
+	if name == "" {
+		name = id.Path["Deployments"]
+	}
+	resourceGroup := id.ResourceGroup
+
+	read, err := deployClient.Get(ctx, resourceGroup, name)
+	if err != nil {
+		return nil, fmt.Errorf("error getting deployment: %+v", err)
+	}
+	if read.ID == nil {
+		return nil, fmt.Errorf("Cannot read ACS Engine Kubernetes cluster deployment %s (resource group %s) ID", name, resourceGroup)
+	}
+	log.Printf("[INFO] cluster %q ID: %q", name, *read.ID)
+
+	d.SetId(*read.ID)
+
+	apimodel, err := getAPIModelFromFile(deploymentDirectory)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get apimodel.json: %+v", err)
+	}
+	d.Set("api_model", apimodel)
+
+	return []*schema.ResourceData{d}, nil
+}
+
+func parseImportID(dID string) (string, string, error) {
+	input := strings.Split(dID, " ")
+	if len(input) != 2 {
+		return "", "", fmt.Errorf("")
+	}
+
+	azureID := input[0]
+	deploymentDirectory := input[1]
+
+	return azureID, deploymentDirectory, nil
+}
+
+func getAPIModelFromFile(deploymentDirectory string) (string, error) {
+	APIModelPath := path.Join(deploymentDirectory, "apimodel.json")
+	if _, err := os.Stat(APIModelPath); os.IsNotExist(err) {
+		return "", fmt.Errorf("specified api model does not exist (%s)", APIModelPath)
+	}
+	f, err := os.Open(APIModelPath)
+	if err != nil {
+		return "", fmt.Errorf("")
+	}
+	defer f.Close()
+
+	b, err := ioutil.ReadAll(f)
+	if err != nil {
+		return "", fmt.Errorf("failed to read file: %+v", err)
+	}
+	apimodel := base64Encode(string(b))
+
+	return apimodel, nil
 }
