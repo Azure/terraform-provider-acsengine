@@ -111,3 +111,13 @@ The following attributes are exported:
     * `client_key` - Base64 encoded private key used by clients to authenticate to the Kubernetes cluster.
     * `cluster_ca_certificate` - Base64 encoded public CA certificate used as the root of trust for the Kubernetes cluster.
 * `api_model` - Base64 encoded JSON model used for creating and updating the Kubernetes cluster.
+
+## Import
+
+ACS Engine clusters can be imported using the deployment resource ID and the directory containing their apimodel.json file delimited by a space.
+
+For example, if the resource ID of your cluster deployment is "/subscriptions/1234/resourceGroups/testrg/providers/Microsoft.Resources/deployments/deploymentName" and the directory containing `apimodel.json` is "_output/dnsPrefix", then the import command will be:
+
+```terraform import acsengine_kubernetes_cluster.example "/subscriptions/1234/resourceGroups/testrg/providers/Microsoft.Resources/deployments/deploymentName _output/dnsPrefix"```
+
+Remember to surround the ID string by quotes since there is a space. Also, do not forget to add properties to `apimodel.json` that you specified on the command line when deploying acs-engine templates. For instance, add `location` and `name` (i.e. deployment name). You can add these to your cluster definition and run `acs-engine generate` to get the updated `apimodel.json`.
