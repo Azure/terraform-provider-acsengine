@@ -93,7 +93,7 @@ test-compile:
 ###############################################################################
 
 cluster-create:
-	TF_ACC=1 go test ./acsengine -v -run create -timeout 2h
+	TF_ACC=1 go test ./acsengine -v -run create -timeout 3h
 
 cluster-scale:
 	TF_ACC=1 go test ./acsengine -v -run scale -timeout 5h

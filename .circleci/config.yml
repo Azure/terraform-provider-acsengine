@@ -32,16 +32,16 @@ jobs:
       - run:
           name: Cluster creation acceptance tests
           command: make cluster-create
-          no_output_timeout: 15m
+          no_output_timeout: 20m
       - run:
           name: Cluster scale acceptance tests
           command: make cluster-scale
-          no_output_timeout: 15m
+          no_output_timeout: 20m
       - run:
           name: Cluster upgrade acceptance tests
           command: make cluster-upgrade
-          no_output_timeout: 15m
+          no_output_timeout: 20m
       - run:
           name: Cluster acceptance tests with combined update operations
           command: make cluster-update
-          no_output_timeout: 15m
+          no_output_timeout: 20m
