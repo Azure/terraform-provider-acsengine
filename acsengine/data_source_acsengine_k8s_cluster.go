@@ -22,10 +22,7 @@ func dataSourceAcsEngineKubernetesCluster() *schema.Resource {
 
 			"location": locationForDataSourceSchema(),
 
-			"kubernetes_version": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
+			"kubernetes_version": kubernetesVersionForDataSourceSchema(),
 
 			"linux_profile": {
 				Type:     schema.TypeList,
@@ -37,7 +34,7 @@ func dataSourceAcsEngineKubernetesCluster() *schema.Resource {
 							Computed: true,
 						},
 						"ssh": {
-							Type:     schema.TypeSet,
+							Type:     schema.TypeList,
 							Computed: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
@@ -169,8 +166,9 @@ func dataSourceAcsEngineKubernetesCluster() *schema.Resource {
 			// I can't think of what else to do right now than make this required, maybe make it a path to file??
 			// Can I get this info some other way?
 			"api_model": {
-				Type:      schema.TypeString,
-				Computed:  true,
+				Type: schema.TypeString,
+				// Computed:  true,
+				Required:  true,
 				Sensitive: true,
 			},
 		},
@@ -182,7 +180,7 @@ func dataSourceACSEngineK8sClusterRead(d *schema.ResourceData, m interface{}) er
 	deployClient := client.deploymentsClient
 	ctx := client.StopContext
 
-	var name, resourceGroup string
+	var name, resourceGroup, apimodel string
 	if v, ok := d.GetOk("name"); ok {
 		name = v.(string)
 	}
@@ -207,9 +205,6 @@ func dataSourceACSEngineK8sClusterRead(d *schema.ResourceData, m interface{}) er
 		return fmt.Errorf("Error setting resource group: %+v", err)
 	}
 
-	// how am I supposed to get this from the state? Do I open state file??
-	apimodel := ""
-
 	// so this knows what resource to get this from?
 	cluster, err := loadContainerServiceFromApimodel(d, true, false)
 	if err != nil {
@@ -228,7 +223,7 @@ func dataSourceACSEngineK8sClusterRead(d *schema.ResourceData, m interface{}) er
 		return err
 	}
 
-	if err := setTags(d, cluster); err != nil {
+	if err := setTags(d, cluster.Tags); err != nil {
 		return err
 	}
 
@@ -236,6 +231,7 @@ func dataSourceACSEngineK8sClusterRead(d *schema.ResourceData, m interface{}) er
 		return err
 	}
 
+	// I don't need to do this but it's nice that base64Encode checks if it's encoded yet
 	apimodelBase64 := base64Encode(apimodel)
 	if err := d.Set("api_model", apimodelBase64); err != nil {
 		return fmt.Errorf("Error setting `api_model`: %+v", err)
@@ -280,20 +276,4 @@ func setDataSourceProfiles(d *schema.ResourceData, cluster *api.ContainerService
 	}
 
 	return nil
-}
-
-func flattenDataSourceServicePrincipal(profile api.ServicePrincipalProfile) ([]interface{}, error) {
-	clientID := profile.ClientID
-	if clientID == "" {
-		return nil, fmt.Errorf("Service principal not set correctly")
-	}
-
-	profiles := []interface{}{}
-
-	values := map[string]interface{}{}
-	values["client_id"] = clientID
-
-	profiles = append(profiles, values)
-
-	return profiles, nil
 }

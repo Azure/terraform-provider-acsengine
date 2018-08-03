@@ -5,8 +5,26 @@ import (
 
 	"github.com/Azure/acs-engine/pkg/acsengine"
 	"github.com/Azure/acs-engine/pkg/api"
+	"github.com/Azure/acs-engine/pkg/api/common"
 	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/kubernetes"
+	"github.com/hashicorp/terraform/helper/schema"
 )
+
+func kubernetesVersionSchema() *schema.Schema {
+	return &schema.Schema{
+		Type:         schema.TypeString,
+		Optional:     true,
+		Default:      common.GetDefaultKubernetesVersion(), // default is 1.8.13
+		ValidateFunc: validateKubernetesVersion,
+	}
+}
+
+func kubernetesVersionForDataSourceSchema() *schema.Schema {
+	return &schema.Schema{
+		Type:     schema.TypeString,
+		Computed: true,
+	}
+}
 
 func getKubeConfig(cluster *api.ContainerService) (string, error) {
 	kubeConfig, err := acsengine.GenerateKubeConfig(cluster.Properties, cluster.Location)
@@ -40,4 +58,23 @@ func flattenKubeConfig(kubeConfigFile string) (string, []interface{}, error) {
 	kubeConfig = append(kubeConfig, values)
 
 	return rawKubeConfig, kubeConfig, nil
+}
+
+func setKubeConfig(d *schema.ResourceData, cluster *api.ContainerService) error {
+	kubeConfigFile, err := getKubeConfig(cluster)
+	if err != nil {
+		return fmt.Errorf("Error getting kube config: %+v", err)
+	}
+	kubeConfigRaw, kubeConfig, err := flattenKubeConfig(kubeConfigFile)
+	if err != nil {
+		return fmt.Errorf("Error flattening kube config: %+v", err)
+	}
+	if err = d.Set("kube_config_raw", kubeConfigRaw); err != nil {
+		return fmt.Errorf("Error setting `kube_config_raw`: %+v", err)
+	}
+	if err = d.Set("kube_config", kubeConfig); err != nil {
+		return fmt.Errorf("Error setting `kube_config`: %+v", err)
+	}
+
+	return nil
 }

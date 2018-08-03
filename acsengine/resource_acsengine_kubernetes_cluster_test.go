@@ -392,7 +392,7 @@ func TestAccACSEngineK8sCluster_createBasic(t *testing.T) {
 	location := testLocation()
 	keyData := testSSHPublicKey()
 	config := testAccACSEngineK8sClusterBasic(ri, clientID, clientSecret, location, keyData)
-	tfResourceName := "acsengine_kubernetes_cluster.test" + strconv.Itoa(ri)
+	tfResourceName := resourceName(ri)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -424,7 +424,7 @@ func TestAccACSEngineK8sCluster_createMultipleAgentPools(t *testing.T) {
 	location := testLocation()
 	keyData := testSSHPublicKey()
 	config := testAccACSEngineK8sClusterMultipleAgentPools(ri, clientID, clientSecret, location, keyData)
-	tfResourceName := "acsengine_kubernetes_cluster.test" + strconv.Itoa(ri)
+	tfResourceName := resourceName(ri)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -461,7 +461,7 @@ func TestAccACSEngineK8sCluster_createCustomized(t *testing.T) {
 	agentCount := 1
 	osDiskSizeGB := 40
 	config := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, version, agentCount, vmSize, osDiskSizeGB)
-	tfResourceName := "acsengine_kubernetes_cluster.test" + strconv.Itoa(ri)
+	tfResourceName := resourceName(ri)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -500,7 +500,7 @@ func TestAccACSEngineK8sCluster_createVersion10AndAbove(t *testing.T) {
 	agentCount := 1
 	osDiskSizeGB := 30
 	config := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, version, agentCount, vmSize, osDiskSizeGB)
-	tfResourceName := "acsengine_kubernetes_cluster.test" + strconv.Itoa(ri)
+	tfResourceName := resourceName(ri)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -536,7 +536,7 @@ func TestAccACSEngineK8sCluster_scaleUp(t *testing.T) {
 	keyData := testSSHPublicKey()
 	config := testAccACSEngineK8sClusterScale(ri, clientID, clientSecret, location, keyData, 1)
 	updatedConfig := testAccACSEngineK8sClusterScale(ri, clientID, clientSecret, location, keyData, 2)
-	tfResourceName := "acsengine_kubernetes_cluster.test" + strconv.Itoa(ri)
+	tfResourceName := resourceName(ri)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -570,7 +570,7 @@ func TestAccACSEngineK8sCluster_scaleDown(t *testing.T) {
 	keyData := testSSHPublicKey()
 	config := testAccACSEngineK8sClusterScale(ri, clientID, clientSecret, location, keyData, 2)
 	updatedConfig := testAccACSEngineK8sClusterScale(ri, clientID, clientSecret, location, keyData, 1)
-	tfResourceName := "acsengine_kubernetes_cluster.test" + strconv.Itoa(ri)
+	tfResourceName := resourceName(ri)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -603,7 +603,7 @@ func TestAccACSEngineK8sCluster_scaleUpDown(t *testing.T) {
 	keyData := testSSHPublicKey()
 	config := testAccACSEngineK8sClusterScale(ri, clientID, clientSecret, location, keyData, 1)
 	scaledUpConfig := testAccACSEngineK8sClusterScale(ri, clientID, clientSecret, location, keyData, 2)
-	tfResourceName := "acsengine_kubernetes_cluster.test" + strconv.Itoa(ri)
+	tfResourceName := resourceName(ri)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -643,7 +643,7 @@ func TestAccACSEngineK8sCluster_scaleDownUp(t *testing.T) {
 	keyData := testSSHPublicKey()
 	config := testAccACSEngineK8sClusterScale(ri, clientID, clientSecret, location, keyData, 2)
 	scaledDownConfig := testAccACSEngineK8sClusterScale(ri, clientID, clientSecret, location, keyData, 1)
-	tfResourceName := "acsengine_kubernetes_cluster.test" + strconv.Itoa(ri)
+	tfResourceName := resourceName(ri)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -686,7 +686,7 @@ func TestAccACSEngineK8sCluster_upgradeOnce(t *testing.T) {
 	osDiskSizeGB := 30
 	config := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.8.13", 1, vmSize, osDiskSizeGB)
 	upgradedConfig := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.9.8", 1, vmSize, osDiskSizeGB)
-	tfResourceName := "acsengine_kubernetes_cluster.test" + strconv.Itoa(ri)
+	tfResourceName := resourceName(ri)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -722,7 +722,7 @@ func TestAccACSEngineK8sCluster_upgradeMultiple(t *testing.T) {
 	config := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.8.13", 1, vmSize, osDiskSizeGB)
 	upgradedConfig1 := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.9.8", 1, vmSize, osDiskSizeGB)
 	upgradedConfig2 := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.10.0", 1, vmSize, osDiskSizeGB)
-	tfResourceName := "acsengine_kubernetes_cluster.test" + strconv.Itoa(ri)
+	tfResourceName := resourceName(ri)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -766,7 +766,7 @@ func TestAccACSEngineK8sCluster_upgradeVersion10AndAbove(t *testing.T) {
 	osDiskSizeGB := 30
 	config := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.10.0", 1, vmSize, osDiskSizeGB)
 	upgradedConfig := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.10.1", 1, vmSize, osDiskSizeGB)
-	tfResourceName := "acsengine_kubernetes_cluster.test" + strconv.Itoa(ri)
+	tfResourceName := resourceName(ri)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -804,7 +804,7 @@ func TestAccACSEngineK8sCluster_updateUpgradeScaleUp(t *testing.T) {
 	config := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.8.13", 1, vmSize, osDiskSizeGB)
 	upgradedConfig := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.9.8", 1, vmSize, osDiskSizeGB)
 	scaledConfig := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.9.8", 2, vmSize, osDiskSizeGB)
-	tfResourceName := "acsengine_kubernetes_cluster.test" + strconv.Itoa(ri)
+	tfResourceName := resourceName(ri)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -850,7 +850,7 @@ func TestAccACSEngineK8sCluster_updateScaleUpUpgrade(t *testing.T) {
 	config := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.8.13", 1, vmSize, osDiskSizeGB)
 	scaledConfig := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.8.13", 2, vmSize, osDiskSizeGB)
 	upgradedConfig := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.9.8", 2, vmSize, osDiskSizeGB)
-	tfResourceName := "acsengine_kubernetes_cluster.test" + strconv.Itoa(ri)
+	tfResourceName := resourceName(ri)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -896,7 +896,7 @@ func TestAccACSEngineK8sCluster_updateUpgradeScaleDown(t *testing.T) {
 	config := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.8.13", 2, vmSize, osDiskSizeGB)
 	upgradedConfig := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.9.8", 2, vmSize, osDiskSizeGB)
 	scaledConfig := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.9.8", 1, vmSize, osDiskSizeGB)
-	tfResourceName := "acsengine_kubernetes_cluster.test" + strconv.Itoa(ri)
+	tfResourceName := resourceName(ri)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -942,7 +942,7 @@ func TestAccACSEngineK8sCluster_updateScaleDownUpgrade(t *testing.T) {
 	config := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.8.13", 2, vmSize, osDiskSizeGB)
 	scaledConfig := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.8.13", 1, vmSize, osDiskSizeGB)
 	upgradedConfig := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.9.8", 1, vmSize, osDiskSizeGB)
-	tfResourceName := "acsengine_kubernetes_cluster.test" + strconv.Itoa(ri)
+	tfResourceName := resourceName(ri)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -987,7 +987,7 @@ func TestAccACSEngineK8sCluster_updateScaleUpgradeInOne(t *testing.T) {
 	osDiskSizeGB := 30
 	config := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.8.13", 1, vmSize, osDiskSizeGB)
 	updatedConfig := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.9.8", 2, vmSize, osDiskSizeGB)
-	tfResourceName := "acsengine_kubernetes_cluster.test" + strconv.Itoa(ri)
+	tfResourceName := resourceName(ri)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -1024,7 +1024,7 @@ func TestAccACSEngineK8sCluster_updateTags(t *testing.T) {
 	keyData := testSSHPublicKey()
 	config := testAccACSEngineK8sClusterBasic(ri, clientID, clientSecret, location, keyData)
 	newTagsConfig := testAccACSEngineK8sClusterTags(ri, clientID, clientSecret, location, keyData, "Prod", "IT")
-	tfResourceName := "acsengine_kubernetes_cluster.test" + strconv.Itoa(ri)
+	tfResourceName := resourceName(ri)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -1558,8 +1558,12 @@ func mockClusterResourceData(name string, location string, resourceGroup string,
 
 	d.Set("tags", map[string]interface{}{})
 
-	apimodel := utils.ACSEngineK8sClusterAPIModel(name, location)
+	apimodel := utils.ACSEngineK8sClusterAPIModel(name, location, dnsPrefix)
 	d.Set("api_model", base64Encode(apimodel))
 
 	return d
+}
+
+func resourceName(rInt int) string {
+	return fmt.Sprintf("acsengine_kubernetes_cluster.test%d", rInt)
 }

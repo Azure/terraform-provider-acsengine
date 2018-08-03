@@ -65,6 +65,35 @@ func TestACSEngineK8sCluster_flattenServicePrincipal(t *testing.T) {
 	}
 }
 
+func TestACSEngineK8sCluster_flattenDataSourceServicePrincipal(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("flattenServicePrincipal failed")
+		}
+	}()
+
+	clientID := "client id"
+	clientSecret := "secret"
+	profile := testExpandServicePrincipal(clientID, clientSecret)
+
+	servicePrincipal, err := flattenDataSourceServicePrincipal(profile)
+	if err != nil {
+		t.Fatalf("flattenServicePrincipal failed: %v", err)
+	}
+
+	if len(servicePrincipal) != 1 {
+		t.Fatalf("flattenServicePrincipal failed: did not find one master profile")
+	}
+	spPf := servicePrincipal[0].(map[string]interface{})
+	if val, ok := spPf["client_id"]; ok {
+		if val != clientID {
+			t.Fatalf("flattenServicePrincipal failed: Master count is innaccurate")
+		}
+	} else {
+		t.Fatalf("flattenServicePrincipal failed: Master count does not exist")
+	}
+}
+
 func TestACSEngineK8sCluster_flattenMasterProfile(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {

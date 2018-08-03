@@ -2,10 +2,33 @@ package acsengine
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/Azure/terraform-provider-acsengine/acsengine/utils"
 )
+
+func TestACSEngineK8sCluster_getKubeConfig(t *testing.T) {
+	// I should have mockContainerService
+	name := "cluster"
+	location := "southcentralus"
+	resourceGroup := "rg"
+	prefix := "masterDNSPrefix"
+	d := mockClusterResourceData(name, location, resourceGroup, prefix)
+	cluster, err := loadContainerServiceFromApimodel(d, true, false)
+	if err != nil {
+		t.Fatalf("failed to load cluster: %+v", err)
+	}
+
+	kubeconfig, err := getKubeConfig(cluster)
+	if err != nil {
+		t.Fatalf("failed to get kube config: %+v", err)
+	}
+
+	if !strings.Contains(kubeconfig, fmt.Sprintf(`"cluster": "%s"`, prefix)) {
+		t.Fatalf(fmt.Sprintf(`kubeconfig was not set correctly: does not contain string '"cluster": "%s"'`, prefix))
+	}
+}
 
 func TestACSEngineK8sCluster_flattenKubeConfig(t *testing.T) {
 	defer func() {
@@ -45,5 +68,19 @@ func TestACSEngineK8sCluster_flattenKubeConfig(t *testing.T) {
 		if user != expected {
 			t.Fatalf("Username is not set correctly: %s != %s", user, expected)
 		}
+	}
+}
+
+func TestACSEngineK8sCluster_setKubeConfig(t *testing.T) {
+	d := mockClusterResourceData("cluster", "southcentralus", "rg", "prefix")
+	// I need a mock container service
+	cluster, err := loadContainerServiceFromApimodel(d, true, false)
+	if err != nil {
+		t.Fatalf("failed to load cluster: %+v", err)
+	}
+
+	err = setKubeConfig(d, cluster)
+	if err != nil {
+		t.Fatalf("failed to set kube config: %+v", err)
 	}
 }

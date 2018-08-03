@@ -106,6 +106,22 @@ func flattenAgentPoolProfiles(profiles []*api.AgentPoolProfile) ([]interface{}, 
 	return agentPoolProfiles, nil
 }
 
+func flattenDataSourceServicePrincipal(profile api.ServicePrincipalProfile) ([]interface{}, error) {
+	clientID := profile.ClientID
+	if clientID == "" {
+		return nil, fmt.Errorf("Service principal not set correctly")
+	}
+
+	profiles := []interface{}{}
+
+	values := map[string]interface{}{}
+	values["client_id"] = clientID
+
+	profiles = append(profiles, values)
+
+	return profiles, nil
+}
+
 func expandLinuxProfile(d *schema.ResourceData) (api.LinuxProfile, error) {
 	var profiles []interface{}
 	if v, ok := d.GetOk("linux_profile"); ok {
