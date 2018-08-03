@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
-	"strconv"
 	"strings"
 	"time"
 
@@ -20,7 +19,7 @@ import (
 )
 
 // Creates ScaleClient, loads ACS Engine templates, finds relevant node VM info, calls appropriate function for scaling up or down
-func scaleCluster(d *schema.ResourceData, m interface{}, agentIndex int, agentCount int) error {
+func scaleCluster(d *schema.ResourceData, m interface{}, agentIndex, agentCount int) error {
 	sc, err := initializeScaleClient(d, m, agentIndex, agentCount)
 	if err != nil {
 		return fmt.Errorf("failed to initialize scale client: %+v", err)
@@ -64,11 +63,11 @@ func initializeScaleClient(d *schema.ResourceData, m interface{}, agentIndex int
 		sc.MasterFQDN = v.(string)
 	}
 	sc.AgentPoolIndex = agentIndex
-	if v, ok := d.GetOk("agent_pool_profiles." + strconv.Itoa(agentIndex) + ".name"); ok {
-		sc.AgentPoolToScale = v.(string)
-	} else {
+	v, ok := d.GetOk(fmt.Sprintf("agent_pool_profiles.%d.name", agentIndex))
+	if !ok {
 		return sc, fmt.Errorf("agent pool profile name not found")
 	}
+	sc.AgentPoolToScale = v.(string)
 	if err := sc.Validate(); err != nil {
 		return sc, fmt.Errorf("error validating scale client: %+v", err)
 	}
@@ -195,7 +194,7 @@ func scaleDownCluster(sc *client.ScaleClient, currentNodeCount int, indexToVM []
 }
 
 // Scales up clusters by creating new nodes within an agent pool
-func scaleUpCluster(sc *client.ScaleClient, highestUsedIndex int, currentNodeCount int, windowsIndex int, d *schema.ResourceData) error {
+func scaleUpCluster(sc *client.ScaleClient, highestUsedIndex, currentNodeCount, windowsIndex int, d *schema.ResourceData) error {
 	ctx := acsengine.Context{
 		Translator: &i18n.Translator{
 			Locale: sc.Locale,

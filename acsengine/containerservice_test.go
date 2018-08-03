@@ -26,14 +26,13 @@ func TestACSEngineK8sCluster_flattenLinuxProfile(t *testing.T) {
 		t.Fatalf("flattenLinuxProfile failed: did not find one linux profile")
 	}
 	linuxPf := linuxProfile[0].(map[string]interface{})
-	if val, ok := linuxPf["admin_username"]; ok {
-		if val != adminUsername {
-			t.Fatalf("flattenLinuxProfile failed: Master count is innaccurate")
-		}
-	} else {
+	val, ok := linuxPf["admin_username"]
+	if !ok {
 		t.Fatalf("flattenLinuxProfile failed: Master count does not exist")
 	}
-
+	if val != adminUsername {
+		t.Fatalf("flattenLinuxProfile failed: Master count is innaccurate")
+	}
 }
 
 func TestACSEngineK8sCluster_flattenServicePrincipal(t *testing.T) {
@@ -56,12 +55,12 @@ func TestACSEngineK8sCluster_flattenServicePrincipal(t *testing.T) {
 		t.Fatalf("flattenServicePrincipal failed: did not find one master profile")
 	}
 	spPf := servicePrincipal[0].(map[string]interface{})
-	if val, ok := spPf["client_id"]; ok {
-		if val != clientID {
-			t.Fatalf("flattenServicePrincipal failed: Master count is innaccurate")
-		}
-	} else {
+	val, ok := spPf["client_id"]
+	if !ok {
 		t.Fatalf("flattenServicePrincipal failed: Master count does not exist")
+	}
+	if val != clientID {
+		t.Fatalf("flattenServicePrincipal failed: Master count is innaccurate")
 	}
 }
 
@@ -85,12 +84,12 @@ func TestACSEngineK8sCluster_flattenDataSourceServicePrincipal(t *testing.T) {
 		t.Fatalf("flattenServicePrincipal failed: did not find one master profile")
 	}
 	spPf := servicePrincipal[0].(map[string]interface{})
-	if val, ok := spPf["client_id"]; ok {
-		if val != clientID {
-			t.Fatalf("flattenServicePrincipal failed: Master count is innaccurate")
-		}
-	} else {
+	val, ok := spPf["client_id"]
+	if !ok {
 		t.Fatalf("flattenServicePrincipal failed: Master count does not exist")
+	}
+	if val != clientID {
+		t.Fatalf("flattenServicePrincipal failed: Master count is innaccurate")
 	}
 }
 
@@ -116,12 +115,12 @@ func TestACSEngineK8sCluster_flattenMasterProfile(t *testing.T) {
 		t.Fatalf("flattenMasterProfile failed: did not find one master profile")
 	}
 	masterPf := masterProfile[0].(map[string]interface{})
-	if val, ok := masterPf["count"]; ok {
-		if val != int(count) {
-			t.Fatalf("flattenMasterProfile failed: Master count is innaccurate")
-		}
-	} else {
+	val, ok := masterPf["count"]
+	if !ok {
 		t.Fatalf("flattenMasterProfile failed: Master count does not exist")
+	}
+	if val != int(count) {
+		t.Fatalf("flattenMasterProfile failed: Master count is innaccurate")
 	}
 	if val, ok := masterPf["os_disk_size"]; ok {
 		t.Fatalf("OS disk size should not be set but value is %d", val.(int))
@@ -138,13 +137,12 @@ func TestACSEngineK8sCluster_flattenAgentPoolProfiles(t *testing.T) {
 	name := "agentpool1"
 	count := 1
 	vmSize := "Standard_D2_v2"
-	fqdn := "abcdefg"
 	osDiskSize := 200
 
-	profile1 := testExpandAgentPoolProfile(name, count, vmSize, fqdn, 0)
+	profile1 := testExpandAgentPoolProfile(name, count, vmSize, 0)
 
 	name = "agentpool2"
-	profile2 := testExpandAgentPoolProfile(name, count, vmSize, fqdn, osDiskSize)
+	profile2 := testExpandAgentPoolProfile(name, count, vmSize, osDiskSize)
 
 	profiles := []*api.AgentPoolProfile{profile1, profile2}
 	agentPoolProfiles, err := flattenAgentPoolProfiles(profiles)
@@ -156,30 +154,30 @@ func TestACSEngineK8sCluster_flattenAgentPoolProfiles(t *testing.T) {
 		t.Fatalf("flattenAgentPoolProfile failed: did not find any agent pool profiles")
 	}
 	agentPf0 := agentPoolProfiles[0].(map[string]interface{})
-	if val, ok := agentPf0["count"]; ok {
-		if val.(int) != count {
-			t.Fatalf("agent pool count is inaccurate. %d != %d", val.(int), count)
-		}
-	} else {
+	val, ok := agentPf0["count"]
+	if !ok {
 		t.Fatalf("agent pool count does not exist")
+	}
+	if val.(int) != count {
+		t.Fatalf("agent pool count is inaccurate. %d != %d", val.(int), count)
 	}
 	if val, ok := agentPf0["os_disk_size"]; ok {
 		t.Fatalf("agent pool OS disk size should not be set, but is %d", val.(int))
 	}
 	agentPf1 := agentPoolProfiles[1].(map[string]interface{})
-	if val, ok := agentPf1["name"]; ok {
-		if val.(string) != name {
-			t.Fatalf("flattenAgentPoolProfile failed: agent pool name is innaccurate. %s != %s.", val, name)
-		}
-	} else {
+	val, ok = agentPf1["name"]
+	if !ok {
 		t.Fatalf("flattenAgentPoolProfile failed: agent pool count does not exist")
 	}
-	if val, ok := agentPf1["os_disk_size"]; ok {
-		if val.(int) != osDiskSize {
-			t.Fatalf("agent pool os disk size is %d when it should be %d", val.(int), osDiskSize)
-		}
-	} else {
+	if val.(string) != name {
+		t.Fatalf("flattenAgentPoolProfile failed: agent pool name is innaccurate. %s != %s.", val, name)
+	}
+	val, ok = agentPf1["os_disk_size"]
+	if !ok {
 		t.Fatalf("agent pool os disk size is not set when it should be")
+	}
+	if val.(int) != osDiskSize {
+		t.Fatalf("agent pool os disk size is %d when it should be %d", val.(int), osDiskSize)
 	}
 }
 
@@ -387,12 +385,11 @@ func testExpandMasterProfile(count int, dnsPrefix string, vmSize string, fqdn st
 	return profile
 }
 
-func testExpandAgentPoolProfile(name string, count int, vmSize string, fqdn string, osDiskSizeGB int) *api.AgentPoolProfile {
+func testExpandAgentPoolProfile(name string, count int, vmSize string, osDiskSizeGB int) *api.AgentPoolProfile {
 	profile := &api.AgentPoolProfile{
 		Name:   name,
 		Count:  count,
 		VMSize: vmSize,
-		FQDN:   fqdn,
 	}
 
 	if osDiskSizeGB > 0 {
@@ -414,8 +411,8 @@ func mockACSEngineContainerService() *api.ContainerService {
 	servicePrincipal := testExpandServicePrincipal("clientid", "clientsecret")
 	masterProfile := testExpandMasterProfile(3, "creativeDNSPrefix", "Standard_D2_v2", "fqdn.com")
 
-	agentPoolProfile1 := testExpandAgentPoolProfile("agentpool1", 5, "Standard_DS_v2", "fqdn", 40)
-	agentPoolProfile2 := testExpandAgentPoolProfile("agentpool1", 2, "Standard_DS_v2", "fqdn", 40)
+	agentPoolProfile1 := testExpandAgentPoolProfile("agentpool1", 5, "Standard_DS_v2", 40)
+	agentPoolProfile2 := testExpandAgentPoolProfile("agentpool1", 2, "Standard_DS_v2", 40)
 	agentPoolProfiles := []*api.AgentPoolProfile{
 		agentPoolProfile1,
 		agentPoolProfile2,

@@ -10,12 +10,13 @@ import (
 	"github.com/Azure/acs-engine/pkg/api"
 	"github.com/Azure/acs-engine/pkg/i18n"
 	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/client"
+	"github.com/Azure/terraform-provider-acsengine/acsengine/utils"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
 func addAuthArgs(d *schema.ResourceData, a *client.AuthArgs) error {
 	client.AddAuthArgs(a)
-	id, err := parseAzureResourceID(d.Id())
+	id, err := utils.ParseAzureResourceID(d.Id())
 	if err != nil {
 		return fmt.Errorf("error parsing resource ID: %+v", err)
 	}

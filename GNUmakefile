@@ -46,6 +46,18 @@ generate-all: generate-templates generate-translations
 .PHONY: generate-templates generate-translations
 
 ###############################################################################
+# vendor
+###############################################################################
+
+vendor:
+	@dep ensure
+
+vendor-status:
+	@dep status
+
+.PHONY: vendor vendor-status
+
+###############################################################################
 # testing
 ###############################################################################
 
@@ -93,10 +105,14 @@ test-compile:
 ###############################################################################
 
 cluster-create:
-	TF_ACC=1 go test ./acsengine -v -run create -timeout 3h
+	# TF_ACC=1 go test ./acsengine -v -run create -timeout 3h
+	TF_ACC=1 go test ./acsengine -v -run createBasic -timeout 3h
+	TF_ACC=1 go test ./acsengine -v -run createVersion10AndAbove -timeout 3h
 
 cluster-scale:
 	TF_ACC=1 go test ./acsengine -v -run scale -timeout 5h
+	TF_ACC=1 go test ./acsengine -v -run updateScaleUpDown -timeout 5h
+	TF_ACC=1 go test ./acsengine -v -run updateScaleDownUp -timeout 5h
 
 cluster-upgrade:
 	# TF_ACC=1 go test ./acsengine -v -run upgrade -timeout 8h
@@ -104,7 +120,9 @@ cluster-upgrade:
 	TF_ACC=1 go test ./acsengine -v -run upgradeVersion10AndAbove -timeout 5h
 
 cluster-update-scale:
-	TF_ACC=1 go test ./acsengine -v -run updateScale -timeout 5h
+	# TF_ACC=1 go test ./acsengine -v -run updateScale -timeout 5h
+	TF_ACC=1 go test ./acsengine -v -run updateScaleUpUpgrade -timeout 5h
+	TF_ACC=1 go test ./acsengine -v -run updateScaleDownUpgrade -timeout 5h
 
 cluster-update-upgrade:
 	TF_ACC=1 go test ./acsengine -v -run updateUpgrade -timeout 5h
@@ -116,14 +134,3 @@ cluster-data:
 	TF_ACC=1 go test ./acsengine -v -run DataSource -timeout 5h
 
 .PHONY: cluster-create cluster-scale cluster-upgrade cluster-update-scale cluster-update-upgrade cluster-update-tags cluster-data
-###############################################################################
-# vendor
-###############################################################################
-
-vendor:
-	@dep ensure
-
-vendor-status:
-	@dep status
-
-.PHONY: vendor vendor-status

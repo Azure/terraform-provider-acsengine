@@ -28,43 +28,43 @@ type AuthArgs struct {
 }
 
 // AddAuthArgs initializes all string fields in an AuthArgs struct
-func AddAuthArgs(authArgs *AuthArgs) {
-	authArgs.RawAzureEnvironment = "AzurePublicCloud"
-	authArgs.RawSubscriptionID = ""
-	authArgs.AuthMethod = "device"
-	authArgs.RawClientID = ""
-	authArgs.CertificatePath = ""
-	authArgs.PrivateKeyPath = ""
-	authArgs.language = "en-us"
+func AddAuthArgs(a *AuthArgs) {
+	a.RawAzureEnvironment = "AzurePublicCloud"
+	a.RawSubscriptionID = ""
+	a.AuthMethod = "device"
+	a.RawClientID = ""
+	a.CertificatePath = ""
+	a.PrivateKeyPath = ""
+	a.language = "en-us"
 }
 
 // ValidateAuthArgs handles error checking for auth args
-func (authArgs *AuthArgs) ValidateAuthArgs() error {
+func (a *AuthArgs) ValidateAuthArgs() error {
 	var err error
-	authArgs.ClientID, err = uuid.FromString(authArgs.RawClientID)
+	a.ClientID, err = uuid.FromString(a.RawClientID)
 	if err != nil {
 		return err
 	}
-	authArgs.SubscriptionID, err = uuid.FromString(authArgs.RawSubscriptionID)
+	a.SubscriptionID, err = uuid.FromString(a.RawSubscriptionID)
 	if err != nil {
 		return err
 	}
 
-	if authArgs.AuthMethod == "client_secret" {
-		if authArgs.ClientID.String() == emptyID || authArgs.ClientSecret == "" {
+	if a.AuthMethod == "client_secret" {
+		if a.ClientID.String() == emptyID || a.ClientSecret == "" {
 			return fmt.Errorf("Client ID and client secret must be specified")
 		}
-	} else if authArgs.AuthMethod == "client_certificate" {
-		if authArgs.ClientID.String() == emptyID || authArgs.CertificatePath == "" || authArgs.PrivateKeyPath == "" {
+	} else if a.AuthMethod == "client_certificate" {
+		if a.ClientID.String() == emptyID || a.CertificatePath == "" || a.PrivateKeyPath == "" {
 			return fmt.Errorf("Client ID, certificate path, and private key path must be specified")
 		}
 	}
 
-	if authArgs.SubscriptionID.String() == emptyID {
+	if a.SubscriptionID.String() == emptyID {
 		return fmt.Errorf("subscription ID is required (and must be valid UUID)")
 	}
 
-	_, err = azure.EnvironmentFromName(authArgs.RawAzureEnvironment)
+	_, err = azure.EnvironmentFromName(a.RawAzureEnvironment)
 	if err != nil {
 		return fmt.Errorf("failed to parse a valid Azure cloud environment")
 	}
@@ -72,29 +72,29 @@ func (authArgs *AuthArgs) ValidateAuthArgs() error {
 }
 
 // GetClient returns an Azure client using the auth args and auth method provided
-func (authArgs *AuthArgs) GetClient() (*armhelpers.AzureClient, error) {
-	var client *armhelpers.AzureClient
-	env, err := azure.EnvironmentFromName(authArgs.RawAzureEnvironment)
+func (a *AuthArgs) GetClient() (*armhelpers.AzureClient, error) {
+	var c *armhelpers.AzureClient
+	env, err := azure.EnvironmentFromName(a.RawAzureEnvironment)
 	if err != nil {
 		return nil, err
 	}
-	switch authArgs.AuthMethod {
+	switch a.AuthMethod {
 	case "device":
-		client, err = armhelpers.NewAzureClientWithDeviceAuth(env, authArgs.SubscriptionID.String())
+		c, err = armhelpers.NewAzureClientWithDeviceAuth(env, a.SubscriptionID.String())
 	case "client_secret":
-		client, err = armhelpers.NewAzureClientWithClientSecret(env, authArgs.SubscriptionID.String(), authArgs.ClientID.String(), authArgs.ClientSecret)
+		c, err = armhelpers.NewAzureClientWithClientSecret(env, a.SubscriptionID.String(), a.ClientID.String(), a.ClientSecret)
 	case "client_certificate":
-		client, err = armhelpers.NewAzureClientWithClientCertificateFile(env, authArgs.SubscriptionID.String(), authArgs.ClientID.String(), authArgs.CertificatePath, authArgs.PrivateKeyPath)
+		c, err = armhelpers.NewAzureClientWithClientCertificateFile(env, a.SubscriptionID.String(), a.ClientID.String(), a.CertificatePath, a.PrivateKeyPath)
 	default:
-		return nil, fmt.Errorf("ERROR: auth method unsupported. method=%q", authArgs.AuthMethod)
+		return nil, fmt.Errorf("ERROR: auth method unsupported. method=%q", a.AuthMethod)
 	}
 	if err != nil {
 		return nil, err
 	}
-	err = client.EnsureProvidersRegistered(authArgs.SubscriptionID.String())
+	err = c.EnsureProvidersRegistered(a.SubscriptionID.String())
 	if err != nil {
 		return nil, err
 	}
-	client.AddAcceptLanguages([]string{authArgs.language})
-	return client, nil
+	c.AddAcceptLanguages([]string{a.language})
+	return c, nil
 }

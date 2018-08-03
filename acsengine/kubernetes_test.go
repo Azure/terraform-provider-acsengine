@@ -8,6 +8,29 @@ import (
 	"github.com/Azure/terraform-provider-acsengine/acsengine/utils"
 )
 
+func TestACSEngineK8sCluster_validateKubernetesVersion(t *testing.T) {
+	cases := []struct {
+		Version     string
+		ExpectError bool
+	}{
+		{Version: "1.8.2", ExpectError: false},
+		{Version: "3.0.0", ExpectError: true},
+		{Version: "1.7.12", ExpectError: false},
+		{Version: "181", ExpectError: true},
+		{Version: "2.18.3", ExpectError: true},
+	}
+
+	for _, tc := range cases {
+		_, errors := validateKubernetesVersion(tc.Version, "")
+		if !tc.ExpectError && len(errors) > 0 {
+			t.Fatalf("Version %s should not have failed", tc.Version)
+		}
+		if tc.ExpectError && len(errors) == 0 {
+			t.Fatalf("Version %s should have failed", tc.Version)
+		}
+	}
+}
+
 func TestACSEngineK8sCluster_getKubeConfig(t *testing.T) {
 	// I should have mockContainerService
 	name := "cluster"
@@ -47,13 +70,13 @@ func TestACSEngineK8sCluster_flattenKubeConfig(t *testing.T) {
 		t.Fatalf("Incorrect number of kube configs: there are %d kube configs", len(kubeConfigs))
 	}
 	kubeConfig := kubeConfigs[0].(map[string]interface{})
-	if v, ok := kubeConfig["cluster_ca_certificate"]; ok {
-		caCert := v.(string)
-		if caCert != base64Encode("0123") {
-			t.Fatalf("'cluster_ca_certificate' not set correctly: set to %s", caCert)
-		}
-	} else {
+	v, ok := kubeConfig["cluster_ca_certificate"]
+	if !ok {
 		t.Fatalf("'cluster_ca_certificate' not found")
+	}
+	caCert := v.(string)
+	if caCert != base64Encode("0123") {
+		t.Fatalf("'cluster_ca_certificate' not set correctly: set to %s", caCert)
 	}
 	if v, ok := kubeConfig["host"]; ok {
 		server := v.(string)

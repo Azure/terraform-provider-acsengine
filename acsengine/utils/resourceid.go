@@ -1,4 +1,4 @@
-package acsengine
+package utils
 
 import (
 	"fmt"
@@ -17,11 +17,11 @@ type ResourceID struct {
 	Path           map[string]string
 }
 
-// parseAzureResourceID converts a long-form Azure Resource Manager ID
+// ParseAzureResourceID converts a long-form Azure Resource Manager ID
 // into a ResourceID. We make assumptions about the structure of URLs,
 // which is obviously not good, but the best thing available given the
 // SDK.
-func parseAzureResourceID(id string) (*ResourceID, error) {
+func ParseAzureResourceID(id string) (*ResourceID, error) {
 	idURL, err := url.ParseRequestURI(id)
 	if err != nil {
 		return nil, fmt.Errorf("Cannot parse Azure Id: %+v", err)
@@ -71,11 +71,10 @@ func parseAzureResourceID(id string) (*ResourceID, error) {
 	idObj := &ResourceID{}
 	idObj.Path = componentMap
 
-	if subscriptionID != "" {
-		idObj.SubscriptionID = subscriptionID
-	} else {
+	if subscriptionID == "" {
 		return nil, fmt.Errorf("No subscription ID found in: %q", path)
 	}
+	idObj.SubscriptionID = subscriptionID
 
 	if resourceGroup, ok := componentMap["resourceGroups"]; ok {
 		idObj.ResourceGroup = resourceGroup
@@ -84,12 +83,12 @@ func parseAzureResourceID(id string) (*ResourceID, error) {
 		// Some Azure APIs are weird and provide things in lower case...
 		// However it's not clear whether the casing of other elements in the URI
 		// matter, so we explicitly look for that case here.
-		if resourceGroup, ok := componentMap["resourcegroups"]; ok {
-			idObj.ResourceGroup = resourceGroup
-			delete(componentMap, "resourcegroups")
-		} else {
+		resourceGroup, ok := componentMap["resourcegroups"]
+		if !ok {
 			return nil, fmt.Errorf("No resource group name found in: %q", path)
 		}
+		idObj.ResourceGroup = resourceGroup
+		delete(componentMap, "resourcegroups")
 	}
 
 	// It is OK not to have a provider in the case of a resource group
