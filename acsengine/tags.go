@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/Azure/acs-engine/pkg/api"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -106,8 +105,8 @@ func getTags(d *schema.ResourceData) map[string]interface{} {
 	return tags
 }
 
-func setTags(d *schema.ResourceData, cluster *api.ContainerService) error {
-	tags, err := flattenTags(cluster.Tags)
+func setTags(d *schema.ResourceData, tagMap map[string]string) error {
+	tags, err := flattenTags(tagMap)
 	if err != nil {
 		return fmt.Errorf("Error flattening `tags`: %+v", err)
 	}

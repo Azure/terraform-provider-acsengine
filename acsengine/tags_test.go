@@ -164,3 +164,18 @@ func TestACSEngineK8sCluster_flattenTagsEmpty(t *testing.T) {
 		t.Fatalf("len(output) != 0")
 	}
 }
+
+func TestACSEngineK8sCluster_setTags(t *testing.T) {
+	r := resourceArmAcsEngineKubernetesCluster()
+	d := r.TestResourceData()
+
+	tags := map[string]string{
+		"home": "1111111111",
+		"cell": "2222222222",
+	}
+
+	err := setTags(d, tags)
+	if err != nil {
+		t.Fatalf("failed to set tags: %+v", err)
+	}
+}

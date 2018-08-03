@@ -3,8 +3,6 @@ package acsengine
 import (
 	"fmt"
 
-	"github.com/Azure/acs-engine/pkg/acsengine"
-	"github.com/Azure/acs-engine/pkg/api"
 	"github.com/Azure/acs-engine/pkg/i18n"
 	"github.com/Azure/acs-engine/pkg/operations/kubernetesupgrade"
 	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/client"
@@ -16,23 +14,6 @@ func upgradeCluster(d *schema.ResourceData, m interface{}, upgradeVersion string
 	uc, err := initializeUpgradeClient(d, m, upgradeVersion)
 	if err != nil {
 		return fmt.Errorf("error initializing upgrade client: %+v", err)
-	}
-
-	// I already validated elsewhere, consider deleting
-	kubernetesInfo, err := api.GetOrchestratorVersionProfile(uc.Cluster.Properties.OrchestratorProfile)
-	if err != nil {
-		return fmt.Errorf("error getting a list of the available upgrades: %+v", err)
-	}
-	found := false
-	for _, up := range kubernetesInfo.Upgrades { // checking that version I want is within the allowed versions
-		if up.OrchestratorVersion == uc.UpgradeVersion {
-			uc.Cluster.Properties.OrchestratorProfile.OrchestratorVersion = uc.UpgradeVersion
-			found = true
-			break
-		}
-	}
-	if !found {
-		return fmt.Errorf("version %s is not supported", uc.UpgradeVersion)
 	}
 
 	uc.AgentPoolsToUpgrade = []string{}
@@ -49,7 +30,7 @@ func upgradeCluster(d *schema.ResourceData, m interface{}, upgradeVersion string
 		StepTimeout: uc.Timeout,
 	}
 
-	kubeconfig, err := acsengine.GenerateKubeConfig(uc.Cluster.Properties, uc.Location)
+	kubeconfig, err := getKubeConfig(uc.Cluster)
 	if err != nil {
 		return fmt.Errorf("failed to generate kube config: %+v", err)
 	}

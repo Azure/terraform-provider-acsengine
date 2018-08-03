@@ -36,7 +36,7 @@ func ACSEngineK8sClusterKubeConfig(dnsPrefix string, location string) string {
 }
 
 // ACSEngineK8sClusterAPIModel ...
-func ACSEngineK8sClusterAPIModel(name string, location string) string {
+func ACSEngineK8sClusterAPIModel(name string, location string, dnsPrefix string) string {
 	return fmt.Sprintf(`{
 		"apiVersion": "vlabs",
 		"location": "%s",
@@ -329,7 +329,7 @@ func ACSEngineK8sClusterAPIModel(name string, location string) string {
 		  },
 		  "masterProfile": {
 			"count": 1,
-			"dnsPrefix": "clustermaster",
+			"dnsPrefix": "%s",
 			"subjectAltNames": null,
 			"vmSize": "Standard_D2_v2",
 			"firstConsecutiveStaticIP": "10.240.255.5",
@@ -451,5 +451,5 @@ func ACSEngineK8sClusterAPIModel(name string, location string) string {
 			]
 		  }
 		}
-	  }`, location, name)
+	  }`, location, name, dnsPrefix)
 }

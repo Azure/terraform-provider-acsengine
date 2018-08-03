@@ -23,7 +23,6 @@ import (
 	"strings"
 
 	"github.com/Azure/acs-engine/pkg/api"
-	"github.com/Azure/acs-engine/pkg/api/common"
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
 	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/response"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -36,8 +35,6 @@ func resourceArmAcsEngineKubernetesCluster() *schema.Resource {
 		Read:   resourceAcsEngineK8sClusterRead,
 		Delete: resourceAcsEngineK8sClusterDelete,
 		Update: resourceAcsEngineK8sClusterUpdate,
-		// Is importing possible when state is just stored in the state file?
-		// Can I define my own function that will set things correctly?
 		Importer: &schema.ResourceImporter{
 			State: resourceACSEngineK8sClusterImport,
 		},
@@ -51,18 +48,13 @@ func resourceArmAcsEngineKubernetesCluster() *schema.Resource {
 
 			"resource_group": resourceGroupNameSchema(),
 
-			"kubernetes_version": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Default:      common.GetDefaultKubernetesVersion(), // default is 1.8.13
-				ValidateFunc: validateKubernetesVersion,
-			},
+			"kubernetes_version": kubernetesVersionSchema(),
 
 			"location": locationSchema(),
 
 			"linux_profile": {
 				Type:     schema.TypeList,
-				Required: true, // what about 'generate-ssh-keys' option?
+				Required: true,
 				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -131,9 +123,9 @@ func resourceArmAcsEngineKubernetesCluster() *schema.Resource {
 						"vm_size": {
 							Type:             schema.TypeString,
 							Optional:         true,
-							Default:          "Standard_DS1_v2",          // used by aks cli as default, I haven't looked into it
-							ForceNew:         true,                       // really?
-							DiffSuppressFunc: ignoreCaseDiffSuppressFunc, // found in provider.go
+							Default:          "Standard_DS1_v2",
+							ForceNew:         true, // really?
+							DiffSuppressFunc: ignoreCaseDiffSuppressFunc,
 						},
 						"os_disk_size": {
 							Type:     schema.TypeInt,
@@ -165,7 +157,7 @@ func resourceArmAcsEngineKubernetesCluster() *schema.Resource {
 							Optional:         true,
 							Default:          "Standard_DS1_v2",
 							ForceNew:         true,
-							DiffSuppressFunc: ignoreCaseDiffSuppressFunc, // found in provider.go
+							DiffSuppressFunc: ignoreCaseDiffSuppressFunc,
 						},
 						"os_disk_size": {
 							Type:     schema.TypeInt,
@@ -181,7 +173,7 @@ func resourceArmAcsEngineKubernetesCluster() *schema.Resource {
 								string(api.Linux),
 								string(api.Windows),
 							}, true),
-							DiffSuppressFunc: ignoreCaseDiffSuppressFunc, // I think this is from provider.go
+							DiffSuppressFunc: ignoreCaseDiffSuppressFunc,
 						},
 					},
 				},
@@ -229,13 +221,13 @@ func resourceArmAcsEngineKubernetesCluster() *schema.Resource {
 				Sensitive: true,
 			},
 
-			"tags": tagsSchema(),
-
 			"api_model": {
 				Type:      schema.TypeString,
 				Computed:  true,
 				Sensitive: true,
 			},
+
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -306,7 +298,7 @@ func resourceAcsEngineK8sClusterRead(d *schema.ResourceData, m interface{}) erro
 		return err
 	}
 
-	if err = setTags(d, cluster); err != nil {
+	if err = setTags(d, cluster.Tags); err != nil {
 		return err
 	}
 
@@ -521,25 +513,6 @@ func setProfiles(d *schema.ResourceData, cluster *api.ContainerService) error {
 	}
 	if err = d.Set("agent_pool_profiles", agentPoolProfiles); err != nil {
 		return fmt.Errorf("Error setting 'agent_pool_profiles': %+v", err)
-	}
-
-	return nil
-}
-
-func setKubeConfig(d *schema.ResourceData, cluster *api.ContainerService) error {
-	kubeConfigFile, err := getKubeConfig(cluster)
-	if err != nil {
-		return fmt.Errorf("Error getting kube config: %+v", err)
-	}
-	kubeConfigRaw, kubeConfig, err := flattenKubeConfig(kubeConfigFile)
-	if err != nil {
-		return fmt.Errorf("Error flattening kube config: %+v", err)
-	}
-	if err = d.Set("kube_config_raw", kubeConfigRaw); err != nil {
-		return fmt.Errorf("Error setting `kube_config_raw`: %+v", err)
-	}
-	if err = d.Set("kube_config", kubeConfig); err != nil {
-		return fmt.Errorf("Error setting `kube_config`: %+v", err)
 	}
 
 	return nil
