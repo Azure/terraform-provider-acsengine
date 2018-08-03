@@ -39,7 +39,6 @@ func resourceArmAcsEngineKubernetesCluster() *schema.Resource {
 		// Is importing possible when state is just stored in the state file?
 		// Can I define my own function that will set things correctly?
 		Importer: &schema.ResourceImporter{
-			// State: schema.ImportStatePassthrough,
 			State: resourceACSEngineK8sClusterImport,
 		},
 
