@@ -26,6 +26,16 @@ func kubernetesVersionForDataSourceSchema() *schema.Schema {
 	}
 }
 
+func validateKubernetesVersion(v interface{}, k string) (ws []string, errors []error) {
+	value := v.(string)
+	capacities := common.AllKubernetesSupportedVersions
+
+	if !capacities[value] {
+		errors = append(errors, fmt.Errorf("ACS Engine Kubernetes Cluster: Kubernetes version %s is invalid or not supported", value))
+	}
+	return
+}
+
 func getKubeConfig(cluster *api.ContainerService) (string, error) {
 	kubeConfig, err := acsengine.GenerateKubeConfig(cluster.Properties, cluster.Location)
 	if err != nil {

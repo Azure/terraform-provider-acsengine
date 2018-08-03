@@ -24,7 +24,9 @@ import (
 
 	"github.com/Azure/acs-engine/pkg/api"
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
+	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/kubernetes"
 	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/response"
+	"github.com/Azure/terraform-provider-acsengine/acsengine/utils"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
 )
@@ -237,22 +239,19 @@ const (
 	apiVersion       = "vlabs"
 )
 
-/* CRUD operations for resource */
+// CRUD operations for resource
 
 func resourceAcsEngineK8sClusterCreate(d *schema.ResourceData, m interface{}) error {
-	/* 1. Create resource group */
 	err := createClusterResourceGroup(d, m)
 	if err != nil {
 		return fmt.Errorf("Failed to create resource group: %+v", err)
 	}
 
-	/* 2. Generate template w/ acs-engine */
 	template, parameters, err := generateACSEngineTemplate(d, true)
 	if err != nil {
 		return fmt.Errorf("Failed to generate ACS Engine template: %+v", err)
 	}
 
-	/* 3. Deploy template using AzureRM */
 	id, err := deployTemplate(d, m, template, parameters)
 	if err != nil {
 		return fmt.Errorf("Failed to deploy template: %+v", err)
@@ -264,7 +263,7 @@ func resourceAcsEngineK8sClusterCreate(d *schema.ResourceData, m interface{}) er
 }
 
 func resourceAcsEngineK8sClusterRead(d *schema.ResourceData, m interface{}) error {
-	id, err := parseAzureResourceID(d.Id())
+	id, err := utils.ParseAzureResourceID(d.Id())
 	if err != nil {
 		d.SetId("")
 		return err
@@ -317,7 +316,7 @@ func resourceAcsEngineK8sClusterDelete(d *schema.ResourceData, m interface{}) er
 	rgClient := client.resourceGroupsClient
 	ctx := client.StopContext
 
-	id, err := parseAzureResourceID(d.Id())
+	id, err := utils.ParseAzureResourceID(d.Id())
 	if err != nil {
 		return fmt.Errorf("Error parsing Azure Resource ID %q: %+v", d.Id(), err)
 	}
@@ -346,7 +345,7 @@ func resourceAcsEngineK8sClusterDelete(d *schema.ResourceData, m interface{}) er
 }
 
 func resourceAcsEngineK8sClusterUpdate(d *schema.ResourceData, m interface{}) error {
-	_, err := parseAzureResourceID(d.Id())
+	_, err := utils.ParseAzureResourceID(d.Id())
 	if err != nil {
 		d.SetId("")
 		return err
@@ -354,10 +353,10 @@ func resourceAcsEngineK8sClusterUpdate(d *schema.ResourceData, m interface{}) er
 
 	d.Partial(true)
 
-	/* UPGRADE */
+	// UPGRADE
 	if d.HasChange("kubernetes_version") {
 		old, new := d.GetChange("kubernetes_version")
-		if err = validateKubernetesVersionUpgrade(new.(string), old.(string)); err != nil {
+		if err = kubernetes.ValidateKubernetesVersionUpgrade(new.(string), old.(string)); err != nil {
 			return fmt.Errorf("Error upgrading Kubernetes version: %+v", err)
 		}
 		if err = upgradeCluster(d, m, new.(string)); err != nil {
@@ -367,7 +366,7 @@ func resourceAcsEngineK8sClusterUpdate(d *schema.ResourceData, m interface{}) er
 		d.SetPartial("kubernetes_version")
 	}
 
-	/* SCALE */
+	// SCALE
 	agentPoolProfiles := d.Get("agent_pool_profiles").([]interface{})
 	for i := 0; i < len(agentPoolProfiles); i++ {
 		profileCount := "agent_pool_profiles." + strconv.Itoa(i) + ".count"
@@ -394,9 +393,9 @@ func resourceAcsEngineK8sClusterUpdate(d *schema.ResourceData, m interface{}) er
 	return resourceAcsEngineK8sClusterRead(d, m)
 }
 
-/* HELPER FUNCTIONS */
+// HELPER FUNCTIONS
 
-/* 'Create' Helper Functions */
+// 'Create' Helper Functions
 
 func generateACSEngineTemplate(d *schema.ResourceData, write bool) (template string, parameters string, err error) {
 	cluster, err := initializeContainerService(d)
@@ -422,7 +421,7 @@ func generateACSEngineTemplate(d *schema.ResourceData, write bool) (template str
 	return template, parameters, nil
 }
 
-func deployTemplate(d *schema.ResourceData, m interface{}, template string, parameters string) (id string, err error) {
+func deployTemplate(d *schema.ResourceData, m interface{}, template, parameters string) (id string, err error) {
 	client := m.(*ArmClient)
 	deployClient := client.deploymentsClient
 	ctx := client.StopContext
@@ -548,7 +547,6 @@ func saveTemplates(d *schema.ResourceData, cluster *api.ContainerService, deploy
 		return fmt.Errorf("failed to format templates: %+v", err)
 	}
 
-	// save templates and certificates
 	if err = writeTemplatesAndCerts(cluster, template, parameters, deploymentDirectory, certsGenerated); err != nil {
 		return fmt.Errorf("error writing templates and certificates: %+v", err)
 	}
@@ -570,7 +568,7 @@ func resourceACSEngineK8sClusterImport(d *schema.ResourceData, m interface{}) ([
 		return nil, err
 	}
 
-	id, err := parseAzureResourceID(azureID)
+	id, err := utils.ParseAzureResourceID(azureID)
 	if err != nil {
 		return nil, err
 	}

@@ -7,13 +7,13 @@ func TestACSEngineK8sCluster_addValue(t *testing.T) {
 
 	addValue(parameters, "key", "data")
 
-	if v, ok := parameters["key"]; ok {
-		val := v.(map[string]interface{})
-		if val["value"] != "data" {
-			t.Fatalf("value not set correctly")
-		}
-	} else {
+	v, ok := parameters["key"]
+	if !ok {
 		t.Fatalf("could not find key")
+	}
+	val := v.(map[string]interface{})
+	if val["value"] != "data" {
+		t.Fatalf("value not set correctly")
 	}
 }
 
@@ -30,38 +30,38 @@ func TestACSEngineK8sCluster_expandTemplateBodies(t *testing.T) {
 		t.Fatalf("")
 	}
 
-	if v, ok := parameters["groceries"]; ok {
-		groceries := v.(map[string]interface{})
-		if len(groceries) != 2 {
-			t.Fatalf("length of grocery list is not correct: expected 2 and found %d", len(groceries))
-		}
-		if v, ok := groceries["quinoa"]; ok {
-			item := v.(string)
-			if item != "5" {
-				t.Fatalf("Expected price of quinoa to be 5 but got %s", item)
-			}
-		} else {
-			t.Fatalf("could not find `quinoa`")
-		}
-	} else {
+	v, ok := parameters["groceries"]
+	if !ok {
 		t.Fatalf("could not find `groceries`")
 	}
+	paramsGroceries := v.(map[string]interface{})
+	if len(paramsGroceries) != 2 {
+		t.Fatalf("length of grocery list is not correct: expected 2 and found %d", len(paramsGroceries))
+	}
+	v, ok = paramsGroceries["quinoa"]
+	if !ok {
+		t.Fatalf("could not find `quinoa`")
+	}
+	item := v.(string)
+	if item != "5" {
+		t.Fatalf("Expected price of quinoa to be 5 but got %s", item)
+	}
 
-	if v, ok := template["groceries"]; ok {
-		groceries := v.(map[string]interface{})
-		if len(groceries) != 2 {
-			t.Fatalf("length of grocery list is not correct: expected 2 and found %d", len(groceries))
-		}
-		if v, ok := groceries["pasta"]; ok {
-			item := v.(string)
-			if item != "2" {
-				t.Fatalf("Expected price of pasta to be 2 but got %s", item)
-			}
-		} else {
-			t.Fatalf("could not find `pasta`")
-		}
-	} else {
+	v, ok = template["groceries"]
+	if !ok {
 		t.Fatalf("could not find `groceries`")
+	}
+	templateGroceries := v.(map[string]interface{})
+	if len(templateGroceries) != 2 {
+		t.Fatalf("length of grocery list is not correct: expected 2 and found %d", len(templateGroceries))
+	}
+	v, ok = templateGroceries["pasta"]
+	if !ok {
+		t.Fatalf("could not find `pasta`")
+	}
+	item = v.(string)
+	if item != "2" {
+		t.Fatalf("Expected price of pasta to be 2 but got %s", item)
 	}
 }
 
@@ -78,20 +78,20 @@ func TestACSEngineK8sCluster_expandBody(t *testing.T) {
 		t.Fatalf("%+v", err)
 	}
 
-	if v, ok := expandedBody["groceries"]; ok {
-		groceries := v.(map[string]interface{})
-		if len(groceries) != 2 {
-			t.Fatalf("length of grocery list is not correct: expected 2 and found %d", len(groceries))
-		}
-		if v, ok := groceries["bananas"]; ok {
-			item := v.(string)
-			if item != "5" {
-				t.Fatalf("Expected price of bananas to be 5 but got %s", item)
-			}
-		} else {
-			t.Fatalf("could not find `bananas`")
-		}
-	} else {
+	v, ok := expandedBody["groceries"]
+	if !ok {
 		t.Fatalf("could not find `groceries`")
+	}
+	groceries := v.(map[string]interface{})
+	if len(groceries) != 2 {
+		t.Fatalf("length of grocery list is not correct: expected 2 and found %d", len(groceries))
+	}
+	v, ok = groceries["bananas"]
+	if !ok {
+		t.Fatalf("could not find `bananas`")
+	}
+	item := v.(string)
+	if item != "5" {
+		t.Fatalf("Expected price of bananas to be 5 but got %s", item)
 	}
 }

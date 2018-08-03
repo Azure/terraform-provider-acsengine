@@ -124,11 +124,11 @@ func flattenDataSourceServicePrincipal(profile api.ServicePrincipalProfile) ([]i
 
 func expandLinuxProfile(d *schema.ResourceData) (api.LinuxProfile, error) {
 	var profiles []interface{}
-	if v, ok := d.GetOk("linux_profile"); ok {
-		profiles = v.([]interface{})
-	} else {
+	v, ok := d.GetOk("linux_profile")
+	if !ok {
 		return api.LinuxProfile{}, fmt.Errorf("cluster 'linux_profile' not found")
 	}
+	profiles = v.([]interface{})
 	config := profiles[0].(map[string]interface{})
 
 	adminUsername := config["admin_username"].(string)
@@ -159,11 +159,11 @@ func expandLinuxProfile(d *schema.ResourceData) (api.LinuxProfile, error) {
 
 func expandServicePrincipal(d *schema.ResourceData) (api.ServicePrincipalProfile, error) {
 	var configs []interface{}
-	if v, ok := d.GetOk("service_principal"); ok {
-		configs = v.([]interface{})
-	} else {
+	v, ok := d.GetOk("service_principal")
+	if !ok {
 		return api.ServicePrincipalProfile{}, fmt.Errorf("cluster 'service_principal' not found")
 	}
+	configs = v.([]interface{})
 	config := configs[0].(map[string]interface{})
 
 	clientID := config["client_id"].(string)
@@ -179,11 +179,11 @@ func expandServicePrincipal(d *schema.ResourceData) (api.ServicePrincipalProfile
 
 func expandMasterProfile(d *schema.ResourceData) (api.MasterProfile, error) {
 	var configs []interface{}
-	if v, ok := d.GetOk("master_profile"); ok {
-		configs = v.([]interface{})
-	} else {
+	v, ok := d.GetOk("master_profile")
+	if !ok {
 		return api.MasterProfile{}, fmt.Errorf("cluster 'master_profile' not found")
 	}
+	configs = v.([]interface{})
 	config := configs[0].(map[string]interface{})
 
 	count := config["count"].(int)
@@ -206,11 +206,11 @@ func expandMasterProfile(d *schema.ResourceData) (api.MasterProfile, error) {
 
 func expandAgentPoolProfiles(d *schema.ResourceData) ([]*api.AgentPoolProfile, error) {
 	var configs []interface{}
-	if v, ok := d.GetOk("agent_pool_profiles"); ok {
-		configs = v.([]interface{})
-	} else {
+	v, ok := d.GetOk("agent_pool_profiles")
+	if !ok {
 		return []*api.AgentPoolProfile{}, fmt.Errorf("cluster 'agent_pool_profiles' not found")
 	}
+	configs = v.([]interface{})
 	profiles := make([]*api.AgentPoolProfile, 0, len(configs))
 
 	for _, c := range configs {
@@ -306,7 +306,7 @@ func initializeContainerService(d *schema.ResourceData) (*api.ContainerService, 
 	return cluster, nil
 }
 
-func loadContainerServiceFromApimodel(d *schema.ResourceData, validate bool, isUpdate bool) (*api.ContainerService, error) {
+func loadContainerServiceFromApimodel(d *schema.ResourceData, validate, isUpdate bool) (*api.ContainerService, error) {
 	locale, err := i18n.LoadTranslations()
 	if err != nil {
 		return &api.ContainerService{}, fmt.Errorf("error loading translations: %+v", err)

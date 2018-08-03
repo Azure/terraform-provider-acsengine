@@ -11,6 +11,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Azure/acs-engine/pkg/api"
+	"github.com/Azure/acs-engine/pkg/api/common"
 	"github.com/Azure/terraform-provider-acsengine/acsengine/utils"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
@@ -95,7 +97,7 @@ func TestACSEngineK8sCluster_parseImportID(t *testing.T) {
 		t.Fatalf("parseImportID failed: deploymentDirectory was %s but expected %s", deploymentDirectory, deploymentDirectoryInput)
 	}
 
-	_, err = parseAzureResourceID(azureID)
+	_, err = utils.ParseAzureResourceID(azureID)
 	if err != nil {
 		t.Fatalf("failed to parse azureID: %+v", err)
 	}
@@ -1417,19 +1419,24 @@ func testCheckACSEngineClusterDestroy(s *terraform.State) error {
 	return nil
 }
 
+// func checkProperties(resp resources.DeploymentExtended, name string) error {
+// 	template := resp.Proper
+// 	return nil
+// }
+
 // clusterIsRunning is a helper function for testCheckACSEngineClusterExists
 func clusterIsRunning(is *terraform.InstanceState, name string) error {
 	// get kube config
 	key := "kube_config_raw"
 	var config []byte
 	var err error
-	if v, ok := is.Attributes[key]; ok {
-		config, err = base64.StdEncoding.DecodeString(v)
-		if err != nil {
-			return fmt.Errorf("kube config could not be decoded from base64: %+v", err)
-		}
-	} else {
+	v, ok := is.Attributes[key]
+	if !ok {
 		return fmt.Errorf("%s: Attribute '%s' not found", name, key)
+	}
+	config, err = base64.StdEncoding.DecodeString(v)
+	if err != nil {
+		return fmt.Errorf("kube config could not be decoded from base64: %+v", err)
 	}
 
 	// get kubernetes client
@@ -1522,6 +1529,10 @@ func checkTags(resourceGroup string, tags map[string]string) error {
 	return nil
 }
 
+func resourceName(rInt int) string {
+	return fmt.Sprintf("acsengine_kubernetes_cluster.test%d", rInt)
+}
+
 func mockClusterResourceData(name string, location string, resourceGroup string, dnsPrefix string) *schema.ResourceData {
 	r := resourceArmAcsEngineKubernetesCluster()
 	d := r.TestResourceData()
@@ -1563,6 +1574,36 @@ func mockClusterResourceData(name string, location string, resourceGroup string,
 	return d
 }
 
-func resourceName(rInt int) string {
-	return fmt.Sprintf("acsengine_kubernetes_cluster.test%d", rInt)
+// not using yet
+func mockContainerService(name string, location string, dnsPrefix string) *api.ContainerService {
+	linuxProfile := testExpandLinuxProfile("azureuser", "public key")
+	servicePrincipal := testExpandServicePrincipal("client id", "client secret")
+	masterProfile := testExpandMasterProfile(1, "dnsPrefix", "Standard_D2_v2", "fqdn")
+
+	agentPoolProfile1 := testExpandAgentPoolProfile("agentpool1", 1, "Standard_D2_v2", 0)
+	agentPoolProfile2 := testExpandAgentPoolProfile("agentpool2", 2, "Standard_D2_v2", 30)
+	agentPoolProfiles := []*api.AgentPoolProfile{agentPoolProfile1, agentPoolProfile2}
+
+	orchestratorProfile := api.OrchestratorProfile{
+		OrchestratorType:    "Kubernetes",
+		OrchestratorVersion: common.GetDefaultKubernetesVersion(),
+	}
+
+	properties := api.Properties{
+		LinuxProfile:            &linuxProfile,
+		ServicePrincipalProfile: &servicePrincipal,
+		MasterProfile:           &masterProfile,
+		AgentPoolProfiles:       agentPoolProfiles,
+		OrchestratorProfile:     &orchestratorProfile,
+		// CertificateProfile:      nil,
+	}
+
+	cluster := &api.ContainerService{
+		Name:       name,
+		Location:   location,
+		Properties: &properties,
+		Tags:       map[string]string{},
+	}
+
+	return cluster
 }

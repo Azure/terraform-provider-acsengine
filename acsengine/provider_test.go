@@ -1,6 +1,7 @@
 package acsengine
 
 import (
+	"encoding/base64"
 	"fmt"
 	"os"
 	"testing"
@@ -29,6 +30,54 @@ func TestProvider(t *testing.T) {
 
 func TestProvider_impl(t *testing.T) {
 	var _ terraform.ResourceProvider = Provider()
+}
+
+func TestBase64Encode(t *testing.T) {
+	cases := []struct {
+		Input  string
+		Output string
+	}{
+		{
+			Input:  "hello",
+			Output: base64.StdEncoding.EncodeToString([]byte("hello")),
+		},
+		{
+			Input:  base64.StdEncoding.EncodeToString([]byte("hello")),
+			Output: base64.StdEncoding.EncodeToString([]byte("hello")),
+		},
+	}
+
+	for _, tc := range cases {
+		output := base64Encode(tc.Input)
+
+		if output != tc.Output {
+			t.Fatalf("expected %s but got %s", output, tc.Output)
+		}
+	}
+}
+
+func TestIsBase64Encoded(t *testing.T) {
+	cases := []struct {
+		Input  string
+		Output bool
+	}{
+		{
+			Input:  "hello",
+			Output: false,
+		},
+		{
+			Input:  base64.StdEncoding.EncodeToString([]byte("hello")),
+			Output: true,
+		},
+	}
+
+	for _, tc := range cases {
+		output := isBase64Encoded(tc.Input)
+
+		if output != tc.Output {
+			t.Fatalf("expected %t but got %t", output, tc.Output)
+		}
+	}
 }
 
 func testAccPreCheck(t *testing.T) {

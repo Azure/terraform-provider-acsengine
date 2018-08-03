@@ -29,6 +29,8 @@ jobs:
       - run:
           name: Run linting rules
           command: make lint
+      - run: |
+            echo `TF_ACC=1` >> $BASH_ENV
       - run:
           name: Cluster creation acceptance tests
           command: make cluster-create

@@ -61,18 +61,22 @@ func createClusterResourceGroup(d *schema.ResourceData, m interface{}) error {
 	rgClient := client.resourceGroupsClient
 	ctx := client.StopContext
 
-	var name string
-	if v, ok := d.GetOk("resource_group"); ok {
-		name = v.(string)
-	} else {
+	var v interface{}
+	var ok bool
+	var name, location string
+
+	v, ok = d.GetOk("resource_group")
+	if !ok {
 		return fmt.Errorf("cluster 'resource_group' not found")
 	}
-	var location string
-	if v, ok := d.GetOk("location"); ok {
-		location = azureRMNormalizeLocation(v.(string))
-	} else {
+	name = v.(string)
+
+	v, ok = d.GetOk("location")
+	if !ok {
 		return fmt.Errorf("cluster 'location' not found")
 	}
+	location = azureRMNormalizeLocation(v.(string))
+
 	var tags map[string]interface{}
 	if v, ok := d.GetOk("tags"); ok {
 		tags = v.(map[string]interface{})
