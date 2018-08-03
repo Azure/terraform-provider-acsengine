@@ -42,6 +42,18 @@ jobs:
           command: make cluster-upgrade
           no_output_timeout: 20m
       - run:
-          name: Cluster acceptance tests with combined update operations
-          command: make cluster-update
+          name: Cluster acceptance tests with combined update operations, starting with scale
+          command: make cluster-update-scale
+          no_output_timeout: 20m
+      - run:
+          name: Cluster acceptance tests with combined update operations, starting with upgrade
+          command: make cluster-update-upgrade
+          no_output_timeout: 20m
+      - run:
+          name: Cluster update tags acceptance test
+          command: make cluster-update-tags
+          no_output_timeout: 20m
+      - run:
+          name: Cluster data source acceptance test
+          command: make cluster-data
           no_output_timeout: 20m

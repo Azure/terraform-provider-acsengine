@@ -52,7 +52,7 @@ generate-all: generate-templates generate-translations
 test: fmtcheck
 	go test -i $(TEST) || exit 1
 	echo $(TEST) | \
-		xargs -t -n4 go test $(TESTARGS) -cover -timeout=2m -parallel=4
+		xargs -t -n4 go test $(TESTARGS) -coverprofile=coverage.out -timeout=2m -parallel=4
 
 testacc: fmtcheck
 	TF_ACC=1 go test ./acsengine -v -run TestAccACSEngine -timeout 15h
@@ -99,13 +99,23 @@ cluster-scale:
 	TF_ACC=1 go test ./acsengine -v -run scale -timeout 5h
 
 cluster-upgrade:
-	TF_ACC=1 go test ./acsengine -v -run upgrade -timeout 8h
+	# TF_ACC=1 go test ./acsengine -v -run upgrade -timeout 8h
+	TF_ACC=1 go test ./acsengine -v -run upgradeMultiple -timeout 5h
+	TF_ACC=1 go test ./acsengine -v -run upgradeVersion10AndAbove -timeout 5h
 
-cluster-update:
-	TF_ACC=1 go test ./acsengine -v -run update -timeout 10h
+cluster-update-scale:
+	TF_ACC=1 go test ./acsengine -v -run updateScale -timeout 5h
 
-.PHONY: cluster-create cluster-scale cluster-upgrade cluster-update
+cluster-update-upgrade:
+	TF_ACC=1 go test ./acsengine -v -run updateUpgrade -timeout 5h
 
+cluster-update-tags:
+	TF_ACC=1 go test ./acsengine -v -run updateTags -timeout 5h
+
+cluster-data:
+	TF_ACC=1 go test ./acsengine -v -run DataSource -timeout 5h
+
+.PHONY: cluster-create cluster-scale cluster-upgrade cluster-update-scale cluster-update-upgrade cluster-update-tags cluster-data
 ###############################################################################
 # vendor
 ###############################################################################
