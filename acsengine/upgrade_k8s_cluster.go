@@ -16,6 +16,8 @@ func upgradeCluster(d *schema.ResourceData, m interface{}, upgradeVersion string
 		return fmt.Errorf("error initializing upgrade client: %+v", err)
 	}
 
+	uc.Cluster.Properties.OrchestratorProfile.OrchestratorVersion = uc.UpgradeVersion
+
 	uc.AgentPoolsToUpgrade = []string{}
 	for _, agentPool := range uc.Cluster.Properties.AgentPoolProfiles {
 		uc.AgentPoolsToUpgrade = append(uc.AgentPoolsToUpgrade, agentPool.Name)
