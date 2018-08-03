@@ -271,8 +271,7 @@ func resourceAcsEngineK8sClusterRead(d *schema.ResourceData, m interface{}) erro
 	}
 	resourceGroup := id.ResourceGroup
 
-	err = d.Set("resource_group", resourceGroup)
-	if err != nil {
+	if err = d.Set("resource_group", resourceGroup); err != nil {
 		return fmt.Errorf("Error setting `resource_group`: %+v", err)
 	}
 
@@ -596,7 +595,9 @@ func resourceACSEngineK8sClusterImport(d *schema.ResourceData, m interface{}) ([
 	if err != nil {
 		return nil, fmt.Errorf("failed to get apimodel.json: %+v", err)
 	}
-	d.Set("api_model", apimodel)
+	if err := d.Set("api_model", apimodel); err != nil {
+		return nil, fmt.Errorf("failed to set `api_model`: %+v", err)
+	}
 
 	return []*schema.ResourceData{d}, nil
 }
@@ -604,7 +605,7 @@ func resourceACSEngineK8sClusterImport(d *schema.ResourceData, m interface{}) ([
 func parseImportID(dID string) (string, string, error) {
 	input := strings.Split(dID, " ")
 	if len(input) != 2 {
-		return "", "", fmt.Errorf("")
+		return "", "", fmt.Errorf("split import ID is wrong length: expected 2 but got %d", len(input))
 	}
 
 	azureID := input[0]
@@ -620,9 +621,14 @@ func getAPIModelFromFile(deploymentDirectory string) (string, error) {
 	}
 	f, err := os.Open(APIModelPath)
 	if err != nil {
-		return "", fmt.Errorf("")
+		return "", fmt.Errorf("failed to open file: %+v", err)
 	}
-	defer f.Close()
+	defer func() { // weirdness is because I need to check return value for linter
+		err := f.Close()
+		if err != nil {
+			log.Fatalf("error closing file: %+v", err)
+		}
+	}()
 
 	b, err := ioutil.ReadAll(f)
 	if err != nil {
