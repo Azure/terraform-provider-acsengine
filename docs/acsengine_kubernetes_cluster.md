@@ -1,6 +1,6 @@
-# azurerm_acsengine_k8s_cluster
+# acsengine_kubernetes_cluster
 
-Manages AKS Cluster
+Manages ACS Engine Cluster
 
 **Note:** All arguments including the client secret will be stored in the raw state as plain-text.
 
@@ -101,15 +101,15 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The ACS Engine Kubernetes cluster resource ID
-* `master_profile.fqdn` - FQDN for the master.
+* `master_profile.0.fqdn` - FQDN for the master.
 * `kube_config_raw` - Base64 encoded Kubernetes configuration.
 * `kube_config` - Kubernetes configuration, sub-attributes defined below:
-    * `host` - The Kubernetes cluster server host.
-    * `username` - A username used to authenticate to the Kubernetes cluster.
-    * `password` - A password or token used to authenticate to the Kubernetes cluster.
-    * `client_certificate` - Base64 encoded public certificate used by clients to authenticate to the Kubernetes cluster.
-    * `client_key` - Base64 encoded private key used by clients to authenticate to the Kubernetes cluster.
-    * `cluster_ca_certificate` - Base64 encoded public CA certificate used as the root of trust for the Kubernetes cluster.
+  * `host` - The Kubernetes cluster server host.
+  * `username` - A username used to authenticate to the Kubernetes cluster.
+  * `password` - A password or token used to authenticate to the Kubernetes cluster.
+  * `client_certificate` - Base64 encoded public certificate used by clients to authenticate to the Kubernetes cluster.
+  * `client_key` - Base64 encoded private key used by clients to authenticate to the Kubernetes cluster.
+  * `cluster_ca_certificate` - Base64 encoded public CA certificate used as the root of trust for the Kubernetes cluster.
 * `api_model` - Base64 encoded JSON model used for creating and updating the Kubernetes cluster.
 
 ## Import
@@ -120,4 +120,4 @@ For example, if the resource ID of your cluster deployment is "/subscriptions/12
 
 ```terraform import acsengine_kubernetes_cluster.example "/subscriptions/1234/resourceGroups/testrg/providers/Microsoft.Resources/deployments/deploymentName _output/dnsPrefix"```
 
-Remember to surround the ID string by quotes since there is a space. Also, do not forget to add properties to `apimodel.json` that you specified on the command line when deploying acs-engine templates. For instance, add `location` and `name` (i.e. deployment name). You can add these to your cluster definition and run `acs-engine generate` to get the updated `apimodel.json`.
+Remember to surround the ID string by quotes since there is a space. Also, do not forget to add properties to `apimodel.json` that you specified on the command line when deploying acs-engine templates. For instance, add `location` and `name` (i.e. deployment name). You can add these to `apimodel.json`. Do not run `acs-engine generate` on your cluster definition again because that will generate new certificates and keys (I think).

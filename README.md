@@ -39,7 +39,7 @@ $ make build
 
 ## Using the provider
 
-```
+```hcl
 # Configure the Microsoft ACS Engine Provider
 provider "acsengine" {
   # NOTE: Environment Variables can also be used for Service Principal authentication
