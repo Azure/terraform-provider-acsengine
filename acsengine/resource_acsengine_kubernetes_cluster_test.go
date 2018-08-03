@@ -1538,7 +1538,6 @@ func mockClusterResourceData(name string, location string, resourceGroup string,
 	servicePrincipals := testFlattenServicePrincipal()
 	d.Set("service_principal", servicePrincipals)
 
-	// dnsPrefix := "masterDNSPrefix"
 	vmSize := "Standard_D2_v2"
 	masterProfiles := testFlattenMasterProfile(1, dnsPrefix, vmSize)
 	d.Set("master_profile", &masterProfiles)
