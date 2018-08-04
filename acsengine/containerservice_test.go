@@ -405,30 +405,50 @@ func testCertificateProfile() *api.CertificateProfile {
 	return profile
 }
 
-func mockACSEngineContainerService() *api.ContainerService {
-	// do I need test expandLinuxProfile and so on?
-	linuxProfile := testExpandLinuxProfile("azureuser", "public key data")
-	servicePrincipal := testExpandServicePrincipal("clientid", "clientsecret")
-	masterProfile := testExpandMasterProfile(3, "creativeDNSPrefix", "Standard_D2_v2", "fqdn.com")
+func TestACSEngineK8sCluster_initializeContainerService(t *testing.T) {
+	name := "testcluster"
+	location := "southcentralus"
+	resourceGroup := "testrg"
+	masterDNSPrefix := "creativeMasterDNSPrefix"
 
-	agentPoolProfile1 := testExpandAgentPoolProfile("agentpool1", 5, "Standard_DS_v2", 40)
-	agentPoolProfile2 := testExpandAgentPoolProfile("agentpool1", 2, "Standard_DS_v2", 40)
-	agentPoolProfiles := []*api.AgentPoolProfile{
-		agentPoolProfile1,
-		agentPoolProfile2,
+	d := mockClusterResourceData(name, location, resourceGroup, masterDNSPrefix)
+
+	cluster, err := initializeContainerService(d)
+	if err != nil {
+		t.Fatalf("initializeContainerService failed: %+v", err)
 	}
 
-	// certificates?
-
-	properties := &api.Properties{
-		LinuxProfile:            &linuxProfile,
-		ServicePrincipalProfile: &servicePrincipal,
-		MasterProfile:           &masterProfile,
-		AgentPoolProfiles:       agentPoolProfiles,
+	if cluster.Name != "testcluster" {
+		t.Fatalf("cluster name was not set correctly: was %s but should be testcluster", cluster.Name)
 	}
-	cluster := &api.ContainerService{
-		Properties: properties,
+	version := cluster.Properties.OrchestratorProfile.OrchestratorVersion
+	if version != "1.10.0" {
+		t.Fatalf("cluster Kubernetes version was not set correctly: was '%s' but it should be '1.10.0'", version)
+	}
+	dnsPrefix := cluster.Properties.MasterProfile.DNSPrefix
+	if dnsPrefix != masterDNSPrefix {
+		t.Fatalf("master DNS prefix was not set correctly: was %s but it should be 'masterDNSPrefix'", dnsPrefix)
+	}
+	if cluster.Properties.AgentPoolProfiles[0].Count != 1 {
+		t.Fatalf("agent pool profile is not set correctly")
+	}
+}
+
+func TestACSEngineK8sCluster_loadContainerServiceFromApimodel(t *testing.T) {
+	name := "testcluster"
+	location := "southcentralus"
+
+	d := mockClusterResourceData(name, location, "testrg", "creativeMasterDNSPrefix") // I need to add a test apimodel in here
+
+	apimodel, err := loadContainerServiceFromApimodel(d, true, false)
+	if err != nil {
+		t.Fatalf("failed to load container service from api model: %+v", err)
 	}
 
-	return cluster
+	if apimodel.Name != name {
+		t.Fatalf("cluster name '%s' not found", name)
+	}
+	if apimodel.Location != location {
+		t.Fatalf("cluster location '%s' not found", location)
+	}
 }

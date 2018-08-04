@@ -1,16 +1,15 @@
 package acsengine
 
-// This file may end up being deleted
-
 import (
-	"strconv"
+	"fmt"
+	"path"
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/hashicorp/terraform/terraform"
 )
 
-// Why is this failing??
 func TestAccImportACSEngineK8sCluster_importBasic(t *testing.T) {
 	ri := acctest.RandInt()
 	clientID := testClientID()
@@ -18,7 +17,7 @@ func TestAccImportACSEngineK8sCluster_importBasic(t *testing.T) {
 	location := testLocation()
 	keyData := testSSHPublicKey()
 	config := testAccACSEngineK8sClusterBasic(ri, clientID, clientSecret, location, keyData)
-	resourceName := "acsengine_kubernetes_cluster.test" + strconv.Itoa(ri)
+	resourceName := fmt.Sprintf("acsengine_kubernetes_cluster.test%d", ri)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -32,7 +31,35 @@ func TestAccImportACSEngineK8sCluster_importBasic(t *testing.T) {
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					return importStateID(s, ri)
+				},
 			},
 		},
 	})
+}
+
+func importStateID(s *terraform.State, ri int) (string, error) {
+	name := fmt.Sprintf("acsengine_kubernetes_cluster.test%d", ri)
+	ms := s.RootModule()
+	rs, ok := ms.Resources[name]
+	if !ok {
+		return "", fmt.Errorf("Not found: %s", name)
+	}
+	is := rs.Primary
+	if is == nil {
+		return "", fmt.Errorf("Bad: could not get primary instance state: %s in %s", name, ms.Path)
+	}
+
+	azureID := is.ID
+
+	dnsPrefix, ok := is.Attributes["master_profile.0.dns_name_prefix"]
+	if !ok {
+		return "", fmt.Errorf("%s: Attribute 'master_profile.0.dns_name_prefix' not found", name)
+	}
+	deploymentDirectory := path.Join("_output", dnsPrefix)
+
+	id := fmt.Sprintf("%s %s", azureID, deploymentDirectory)
+
+	return id, nil
 }

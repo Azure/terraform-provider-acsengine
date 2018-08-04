@@ -3,11 +3,16 @@ package acsengine
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"log"
+	"os"
+	"path"
 
 	"github.com/Azure/acs-engine/pkg/acsengine"
 	"github.com/Azure/acs-engine/pkg/acsengine/transform"
 	"github.com/Azure/acs-engine/pkg/api"
 	"github.com/Azure/acs-engine/pkg/i18n"
+	"github.com/hashicorp/terraform/helper/schema"
 )
 
 func addValue(params map[string]interface{}, k string, v interface{}) {
@@ -85,4 +90,45 @@ func formatTemplates(cluster *api.ContainerService) (string, string, bool, error
 	}
 
 	return template, parameters, certsGenerated, nil
+}
+
+func saveTemplates(d *schema.ResourceData, cluster *api.ContainerService, deploymentDirectory string) error {
+	template, parameters, certsGenerated, err := formatTemplates(cluster)
+	if err != nil {
+		return fmt.Errorf("failed to format templates: %+v", err)
+	}
+
+	if err = writeTemplatesAndCerts(cluster, template, parameters, deploymentDirectory, certsGenerated); err != nil {
+		return fmt.Errorf("error writing templates and certificates: %+v", err)
+	}
+	if err = setAPIModel(d, cluster); err != nil {
+		return fmt.Errorf("error setting API model: %+v", err)
+	}
+
+	return nil
+}
+
+func getAPIModelFromFile(deploymentDirectory string) (string, error) {
+	APIModelPath := path.Join(deploymentDirectory, "apimodel.json")
+	if _, err := os.Stat(APIModelPath); os.IsNotExist(err) {
+		return "", fmt.Errorf("specified api model does not exist (%s)", APIModelPath)
+	}
+	f, err := os.Open(APIModelPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to open file: %+v", err)
+	}
+	defer func() { // weirdness is because I need to check return value for linter
+		err := f.Close()
+		if err != nil {
+			log.Fatalf("error closing file: %+v", err)
+		}
+	}()
+
+	b, err := ioutil.ReadAll(f)
+	if err != nil {
+		return "", fmt.Errorf("failed to read file: %+v", err)
+	}
+	apimodel := base64Encode(string(b))
+
+	return apimodel, nil
 }
