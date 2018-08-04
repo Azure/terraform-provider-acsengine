@@ -110,9 +110,9 @@ cluster-create:
 	TF_ACC=1 go test ./acsengine -v -run createVersion10AndAbove -timeout 3h
 
 cluster-scale:
-	TF_ACC=1 go test ./acsengine -v -run scale -timeout 5h
-	TF_ACC=1 go test ./acsengine -v -run updateScaleUpDown -timeout 5h
-	TF_ACC=1 go test ./acsengine -v -run updateScaleDownUp -timeout 5h
+	# TF_ACC=1 go test ./acsengine -v -run scale -timeout 5h
+	TF_ACC=1 go test ./acsengine -v -run scaleUpDown -timeout 5h
+	TF_ACC=1 go test ./acsengine -v -run scaleDownUp -timeout 5h
 
 cluster-upgrade:
 	# TF_ACC=1 go test ./acsengine -v -run upgrade -timeout 8h
@@ -133,4 +133,7 @@ cluster-update-tags:
 cluster-data:
 	TF_ACC=1 go test ./acsengine -v -run DataSource -timeout 5h
 
-.PHONY: cluster-create cluster-scale cluster-upgrade cluster-update-scale cluster-update-upgrade cluster-update-tags cluster-data
+cluster-import:
+    TF_ACC=1 go test ./acsengine -v -run import -timeout 5h
+
+.PHONY: cluster-create cluster-scale cluster-upgrade cluster-update-scale cluster-update-upgrade cluster-update-tags cluster-data cluster-import

@@ -29,3 +29,27 @@ func TestIgnoreCaseDiffSuppressFunc(t *testing.T) {
 	}
 
 }
+
+func TestIgnoreCaseStateFunc(t *testing.T) {
+	cases := []struct {
+		Value    string
+		Expected string
+	}{
+		{
+			Value:    "VaLuE",
+			Expected: "value",
+		},
+		{
+			Value:    "testrg",
+			Expected: "testrg",
+		},
+	}
+
+	for _, tc := range cases {
+		output := IgnoreCaseStateFunc(tc.Value)
+
+		if output != tc.Expected {
+			t.Fatalf("")
+		}
+	}
+}

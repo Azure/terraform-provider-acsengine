@@ -1,11 +1,21 @@
 package acsengine
 
 import (
+	"encoding/base64"
 	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/Azure/terraform-provider-acsengine/acsengine/utils"
+	"github.com/hashicorp/terraform/terraform"
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/util/retry"
+	// nodeutil "k8s.io/kubernetes/pkg/api/v1/node"
 )
 
 func TestACSEngineK8sCluster_validateKubernetesVersion(t *testing.T) {
@@ -106,4 +116,90 @@ func TestACSEngineK8sCluster_setKubeConfig(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to set kube config: %+v", err)
 	}
+}
+
+// clusterIsRunning is a helper function for testCheckACSEngineClusterExists
+func clusterIsRunning(is *terraform.InstanceState, name string) error {
+	// get kube config
+	key := "kube_config_raw"
+	var config []byte
+	var err error
+	v, ok := is.Attributes[key]
+	if !ok {
+		return fmt.Errorf("%s: Attribute '%s' not found", name, key)
+	}
+	config, err = base64.StdEncoding.DecodeString(v)
+	if err != nil {
+		return fmt.Errorf("kube config could not be decoded from base64: %+v", err)
+	}
+
+	// get kubernetes client
+	kubeConfig, _ /*namespace*/, err := newClientConfigFromBytes(config)
+	if err != nil {
+		return err
+	}
+
+	clientset, err := kubernetes.NewForConfig(kubeConfig)
+	if err != nil {
+		return fmt.Errorf("Could not get Kubernetes client: %+v", err)
+	}
+
+	api := clientset.CoreV1()
+
+	if err := checkNodes(api); err != nil {
+		return fmt.Errorf("checking nodes failed: %+v", err)
+	}
+
+	return nil
+}
+
+func checkNodes(api corev1.CoreV1Interface) error {
+	retryErr := utils.RetryOnFailure(retry.DefaultRetry, func() error {
+		fmt.Println("trying to get nodes...")
+		nodes, err := api.Nodes().List(metav1.ListOptions{})
+		if err != nil {
+			fmt.Printf("Reason for error: %+v\n", errors.ReasonForError(err))
+			return fmt.Errorf("failed to get nodes: %+v", err)
+		}
+		if len(nodes.Items) < 2 {
+			return fmt.Errorf("not enough nodes found (there should be a at least one master and agent pool): only %d found", len(nodes.Items))
+		}
+		// do I need to wait some time to make sure nodes are ready?
+		for _, node := range nodes.Items {
+			fmt.Printf("Node: %s\n", node.Name)
+			// if !nodeutil.IsNodeReady(&node) { // default eviction time is 5m, so it would probably need to be 5m timeout?
+			// 	// return fmt.Errorf("node is not ready: %+v", node) // do I need to not return here? continue instead?
+			// }
+			// maybe I can check the node condition and at least see that it's running? That's not a condition that can be checked...
+			// fmt.Println("node condition: %+v", nodeutil.GetNodeCondition(&node))
+		}
+		return nil
+	})
+	if retryErr != nil {
+		return fmt.Errorf("Failed to get nodes: %+v", retryErr)
+	}
+
+	return nil
+}
+
+// Gets a client config and namespace, based on function in aks e2e tests
+func newClientConfigFromBytes(configBytes []byte) (*rest.Config, string, error) { // I need kubeconfig
+	config, err := clientcmd.Load(configBytes)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to load kube config from bytes: %+v", err)
+	}
+
+	conf := clientcmd.NewNonInteractiveClientConfig(*config, "", &clientcmd.ConfigOverrides{}, nil)
+
+	namespace, _, err := conf.Namespace()
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to get cluster namespace: %+v", err)
+	}
+
+	cc, err := conf.ClientConfig()
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to : %+v", err)
+	}
+
+	return cc, namespace, nil
 }

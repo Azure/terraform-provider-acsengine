@@ -4,9 +4,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
-// RetryOnFailedGet is based on k8s.io/client-go RetryOnConflict but for any error
+// RetryOnFailure is based on k8s.io/client-go RetryOnConflict but for any error
 // If I figure out common error(s) I can use it as case instead of having default retry
-func RetryOnFailedGet(backoff wait.Backoff, fn func() error) error {
+func RetryOnFailure(backoff wait.Backoff, fn func() error) error {
 	var lastConflictErr error
 	err := wait.ExponentialBackoff(backoff, func() (bool, error) {
 		err := fn()

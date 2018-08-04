@@ -20,7 +20,7 @@ import (
 
 // Creates ScaleClient, loads ACS Engine templates, finds relevant node VM info, calls appropriate function for scaling up or down
 func scaleCluster(d *schema.ResourceData, m interface{}, agentIndex, agentCount int) error {
-	sc, err := initializeScaleClient(d, m, agentIndex, agentCount)
+	sc, err := initializeScaleClient(d, agentIndex, agentCount)
 	if err != nil {
 		return fmt.Errorf("failed to initialize scale client: %+v", err)
 	}
@@ -49,11 +49,11 @@ func scaleCluster(d *schema.ResourceData, m interface{}, agentIndex, agentCount 
 }
 
 // Creates and initializes most fields in client.ScaleClient and returns it
-func initializeScaleClient(d *schema.ResourceData, m interface{}, agentIndex int, agentCount int) (client.ScaleClient, error) {
+func initializeScaleClient(d *schema.ResourceData, agentIndex int, agentCount int) (client.ScaleClient, error) {
 	sc := client.ScaleClient{}
 	var err error
 
-	err = initializeACSEngineClient(d, m, &sc.ACSEngineClient)
+	err = initializeACSEngineClient(d, &sc.ACSEngineClient)
 	if err != nil {
 		return sc, fmt.Errorf("failed to initialize ACSEngineClient: %+v", err)
 	}

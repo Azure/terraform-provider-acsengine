@@ -3,11 +3,9 @@ package acsengine
 import (
 	"context"
 	"fmt"
-	"os"
 	"path"
 
 	"github.com/Azure/acs-engine/pkg/acsengine"
-	"github.com/Azure/acs-engine/pkg/api"
 	"github.com/Azure/acs-engine/pkg/i18n"
 	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/client"
 	"github.com/Azure/terraform-provider-acsengine/acsengine/utils"
@@ -50,7 +48,7 @@ func addACSEngineClientAuthArgs(d *schema.ResourceData, c *client.ACSEngineClien
 	return nil
 }
 
-func initializeACSEngineClient(d *schema.ResourceData, m interface{}, c *client.ACSEngineClient) error {
+func initializeACSEngineClient(d *schema.ResourceData, c *client.ACSEngineClient) error {
 	var err error
 	if v, ok := d.GetOk("resource_group"); ok {
 		c.ResourceGroupName = v.(string)
@@ -69,26 +67,9 @@ func initializeACSEngineClient(d *schema.ResourceData, m interface{}, c *client.
 		return fmt.Errorf("failed to add ACSEngineClient auth args: %+v", err)
 	}
 
-	apiloader := &api.Apiloader{
-		Translator: &i18n.Translator{
-			Locale: c.Locale,
-		},
-	}
-	if m != nil { // for testing purposes
-		c.Cluster, err = loadContainerServiceFromApimodel(d, true, true)
-		if err != nil {
-			return fmt.Errorf("error parsing the api model: %+v", err)
-		}
-	} else { // this is only here for the test of this function, can I get rid of it?
-		c.APIModelPath = path.Join(c.DeploymentDirectory, "apimodel.json")
-		if _, err = os.Stat(c.APIModelPath); os.IsNotExist(err) {
-			return fmt.Errorf("specified api model does not exist (%s)", c.APIModelPath)
-		}
-		c.Cluster, c.APIVersion, err = apiloader.LoadContainerServiceFromFile(c.APIModelPath, true, true, nil)
-		if err != nil {
-			return fmt.Errorf("error parsing the api model: %+v", err)
-		}
-
+	c.Cluster, err = loadContainerServiceFromApimodel(d, true, true)
+	if err != nil {
+		return fmt.Errorf("error parsing the api model: %+v", err)
 	}
 	if c.Cluster.Location != c.Location {
 		return fmt.Errorf("location does not match api model location") // this should probably never happen?
