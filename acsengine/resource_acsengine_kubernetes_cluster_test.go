@@ -125,8 +125,9 @@ func TestAccACSEngineK8sCluster_scaleUp(t *testing.T) {
 	clientSecret := testClientSecret()
 	location := testLocation()
 	keyData := testSSHPublicKey()
-	config := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.8.13", 1, "Standard_DS_v2", 40)
-	updatedConfig := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.8.13", 2, "Standard_DS_v2", 40)
+	vmSize := "Standard_D2_v2"
+	config := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.8.13", 1, vmSize, 40)
+	updatedConfig := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.8.13", 2, vmSize, 40)
 	tfResourceName := resourceName(ri)
 
 	resource.Test(t, resource.TestCase{
@@ -159,8 +160,9 @@ func TestAccACSEngineK8sCluster_scaleDown(t *testing.T) {
 	clientSecret := testClientSecret()
 	location := testLocation()
 	keyData := testSSHPublicKey()
-	config := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.8.13", 2, "Standard_DS_v2", 40)
-	updatedConfig := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.8.13", 1, "Standard_DS_v2", 40)
+	vmSize := "Standard_D2_v2"
+	config := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.8.13", 2, vmSize, 40)
+	updatedConfig := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.8.13", 1, vmSize, 40)
 	tfResourceName := resourceName(ri)
 
 	resource.Test(t, resource.TestCase{
@@ -192,8 +194,10 @@ func TestAccACSEngineK8sCluster_scaleUpDown(t *testing.T) {
 	clientSecret := testClientSecret()
 	location := testLocation()
 	keyData := testSSHPublicKey()
-	config := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.8.13", 1, "Standard_DS_v2", 40)
-	scaledUpConfig := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.8.13", 2, "Standard_DS_v2", 40)
+	vmSize := "Standard_D2_v2"
+	osDiskSizeGB := 30
+	config := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.8.13", 1, vmSize, osDiskSizeGB)
+	scaledUpConfig := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.8.13", 2, vmSize, osDiskSizeGB)
 	tfResourceName := resourceName(ri)
 
 	resource.Test(t, resource.TestCase{
@@ -232,8 +236,10 @@ func TestAccACSEngineK8sCluster_scaleDownUp(t *testing.T) {
 	clientSecret := testClientSecret()
 	location := testLocation()
 	keyData := testSSHPublicKey()
-	config := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.8.13", 2, "Standard_DS_v2", 40)
-	scaledDownConfig := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.8.13", 1, "Standard_DS_v2", 40)
+	vmSize := "Standard_D2_v2"
+	osDiskSizeGB := 30
+	config := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.8.13", 2, vmSize, osDiskSizeGB)
+	scaledDownConfig := testAccACSEngineK8sClusterCustomized(ri, clientID, clientSecret, location, keyData, "1.8.13", 1, vmSize, osDiskSizeGB)
 	tfResourceName := resourceName(ri)
 
 	resource.Test(t, resource.TestCase{
