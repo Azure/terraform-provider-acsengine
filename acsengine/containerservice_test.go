@@ -452,3 +452,20 @@ func TestACSEngineK8sCluster_loadContainerServiceFromApimodel(t *testing.T) {
 		t.Fatalf("cluster location '%s' not found", location)
 	}
 }
+
+func TestACSEngineCluster_setProfiles(t *testing.T) {
+	dnsPrefix := "lessCreativeMasterDNSPrefix"
+	d := mockClusterResourceData("name1", "westus", "testrg", "creativeMasterDNSPrefix")
+	cluster := mockContainerService("name2", "southcentralus", dnsPrefix)
+
+	if err := setProfiles(d, cluster); err != nil {
+		t.Fatalf("setProfiles failed: %+v", err)
+	}
+	v, ok := d.GetOk("master_profile.0.dns_name_prefix")
+	if !ok {
+		t.Fatalf("failed to get 'master_profile.0.dns_name_prefix'")
+	}
+	if v.(string) != dnsPrefix {
+		t.Fatalf("'master_profile.0.dns_name_prefix' is not set correctly - actual: '%s', expected: '%s'", v.(string), dnsPrefix)
+	}
+}

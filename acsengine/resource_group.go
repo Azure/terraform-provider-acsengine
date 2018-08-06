@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
-	"github.com/Azure/terraform-provider-acsengine/acsengine/utils"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -84,7 +83,7 @@ func createClusterResourceGroup(d *schema.ResourceData, m interface{}) error {
 		tags = map[string]interface{}{}
 	}
 	parameters := resources.Group{
-		Location: utils.String(location),
+		Location: &location,
 		Tags:     expandTags(tags),
 	}
 	_, err := rgClient.CreateOrUpdate(ctx, name, parameters)

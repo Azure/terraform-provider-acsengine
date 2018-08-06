@@ -951,6 +951,14 @@
   revision = "23781f4d6632d88e869066eaebb743857aa1ef9b"
   version = "v7.0.0"
 
+[[projects]]
+  digest = "1:1bc79cfe3c20ecdde5abada0cf01df1fb4e8ca8efda023f01d51f6985fcb765e"
+  name = "k8s.io/kubernetes"
+  packages = ["pkg/api/v1/node"]
+  pruneopts = "UT"
+  revision = "b1b29978270dc22fecc592ac55d903350454310a"
+  version = "v1.11.1"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
@@ -991,6 +999,7 @@
     "k8s.io/client-go/rest",
     "k8s.io/client-go/tools/clientcmd",
     "k8s.io/client-go/util/retry",
+    "k8s.io/kubernetes/pkg/api/v1/node",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

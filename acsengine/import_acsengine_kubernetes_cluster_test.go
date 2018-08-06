@@ -41,20 +41,15 @@ func TestAccImportACSEngineK8sCluster_importBasic(t *testing.T) {
 
 func importStateID(s *terraform.State, ri int) (string, error) {
 	name := fmt.Sprintf("acsengine_kubernetes_cluster.test%d", ri)
-	ms := s.RootModule()
-	rs, ok := ms.Resources[name]
-	if !ok {
-		return "", fmt.Errorf("Not found: %s", name)
-	}
-	is := rs.Primary
-	if is == nil {
-		return "", fmt.Errorf("Bad: could not get primary instance state: %s in %s", name, ms.Path)
+	is, err := primaryInstanceState(s, name)
+	if err != nil {
+		return "", err
 	}
 
 	azureID := is.ID
 
-	dnsPrefix, ok := is.Attributes["master_profile.0.dns_name_prefix"]
-	if !ok {
+	dnsPrefix, hasDNSPrefix := is.Attributes["master_profile.0.dns_name_prefix"]
+	if !hasDNSPrefix {
 		return "", fmt.Errorf("%s: Attribute 'master_profile.0.dns_name_prefix' not found", name)
 	}
 	deploymentDirectory := path.Join("_output", dnsPrefix)

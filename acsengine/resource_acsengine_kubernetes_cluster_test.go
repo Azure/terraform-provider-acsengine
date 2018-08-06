@@ -1,12 +1,9 @@
 package acsengine
 
 import (
-	"context"
 	"fmt"
 	"net/http"
-	"os/exec"
 	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/resources/mgmt/resources"
@@ -912,18 +909,13 @@ func testAccACSEngineK8sClusterOSType(rInt int, clientID string, clientSecret st
 
 func testCheckACSEngineClusterExists(name string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		ms := s.RootModule()
-		rs, ok := ms.Resources[name]
-		if !ok {
-			return fmt.Errorf("Not found: %s", name)
-		}
-		is := rs.Primary // primary instance state
-		if is == nil {
-			return fmt.Errorf("Bad: could not get primary instance state: %s in %s", name, ms.Path)
+		is, err := primaryInstanceState(s, name)
+		if err != nil {
+			return err
 		}
 
 		name := is.Attributes["name"]
-		resourceGroup, hasResourceGroup := rs.Primary.Attributes["resource_group"]
+		resourceGroup, hasResourceGroup := is.Attributes["resource_group"]
 		if !hasResourceGroup {
 			return fmt.Errorf("Bad: no resource group found in state for Kubernetes cluster: %s", name)
 		}
@@ -976,6 +968,7 @@ func testCheckACSEngineClusterDestroy(s *terraform.State) error {
 	return nil
 }
 
+// I should probably be checking kubernetes version and node count...
 func checkProperties(resp resources.DeploymentExtended, name string) error {
 	// parametersMap := resp.Properties.Parameters.(map[string]interface{})
 	// parameters := parametersMap["parameters"]
@@ -983,55 +976,19 @@ func checkProperties(resp resources.DeploymentExtended, name string) error {
 	return nil
 }
 
-// not used yet
-func testCheckACSEngineClusterTagsExists(name string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		ms := s.RootModule()
-		rs, ok := ms.Resources[name]
-		if !ok {
-			return fmt.Errorf("Not found: %s", name)
-		}
-		is := rs.Primary
-		if is == nil {
-			return fmt.Errorf("Bad: could not get primary instance state: %s in %s", name, ms.Path)
-		}
-
-		name := is.Attributes["name"]
-		resourceGroup, hasResourceGroup := rs.Primary.Attributes["resource_group"]
-		if !hasResourceGroup {
-			return fmt.Errorf("Bad: no resource group found in state for Kubernetes cluster: %s", name)
-		}
-
-		// try to run az group show -g *rg* --query tags and check string contains tags?
-		ctx := context.Background()
-		cmd := exec.CommandContext(ctx, "az", "group", "show", "-g", resourceGroup, "--query", "tags")
-		by, err := cmd.CombinedOutput()
-		if err != nil {
-			return nil
-		}
-		results := string(by)
-		// for key, val := range tags {
-		// 	if !strings.Contains(results, key) || !strings.Contains(results, val) {
-		// 		return fmt.Errorf("key value pair (%s, %s) not found", key, val)
-		// 	}
-		// }
-		tag1, hasTag1 := is.Attributes["tags.Environment"]
-		if !hasTag1 {
-			return fmt.Errorf("Bad: no 'Environment' tag found in state for Kubernetes cluster: %s", name)
-		}
-		tag2, hasTag2 := is.Attributes["tags.Department"]
-		if !hasTag2 {
-			return fmt.Errorf("Bad: no 'Department' tag found in state for Kubernetes cluster: %s", name)
-		}
-
-		if !strings.Contains(results, tag1) || !strings.Contains(results, tag2) {
-			return fmt.Errorf("actual: '%s' - expected: 'Environment'='%s' and 'Department='%s'", results, tag1, tag2)
-		}
-
-		return nil
-	}
-}
-
 func resourceName(rInt int) string {
 	return fmt.Sprintf("acsengine_kubernetes_cluster.test%d", rInt)
+}
+
+func primaryInstanceState(s *terraform.State, name string) (*terraform.InstanceState, error) {
+	ms := s.RootModule()
+	rs, ok := ms.Resources[name]
+	if !ok {
+		return nil, fmt.Errorf("Not found: %s", name)
+	}
+	is := rs.Primary
+	if is == nil {
+		return nil, fmt.Errorf("Bad: could not get primary instance state: %s in %s", name, ms.Path)
+	}
+	return is, nil
 }

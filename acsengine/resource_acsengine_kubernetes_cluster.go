@@ -27,10 +27,10 @@ import (
 
 func resourceArmAcsEngineKubernetesCluster() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAcsEngineK8sClusterCreate,
-		Read:   resourceAcsEngineK8sClusterRead,
-		Delete: resourceAcsEngineK8sClusterDelete,
-		Update: resourceAcsEngineK8sClusterUpdate,
+		Create: resourceACSEngineK8sClusterCreate,
+		Read:   resourceACSEngineK8sClusterRead,
+		Delete: resourceACSEngineK8sClusterDelete,
+		Update: resourceACSEngineK8sClusterUpdate,
 		Importer: &schema.ResourceImporter{
 			State: resourceACSEngineK8sClusterImport,
 		},
@@ -211,11 +211,7 @@ func resourceArmAcsEngineKubernetesCluster() *schema.Resource {
 				},
 			},
 
-			"kube_config_raw": {
-				Type:      schema.TypeString,
-				Computed:  true,
-				Sensitive: true,
-			},
+			"kube_config_raw": kubeConfigRawSchema(),
 
 			"api_model": {
 				Type:      schema.TypeString,
@@ -233,9 +229,7 @@ const (
 	apiVersion       = "vlabs"
 )
 
-// CRUD operations for resource
-
-func resourceAcsEngineK8sClusterCreate(d *schema.ResourceData, m interface{}) error {
+func resourceACSEngineK8sClusterCreate(d *schema.ResourceData, m interface{}) error {
 	err := createClusterResourceGroup(d, m)
 	if err != nil {
 		return fmt.Errorf("Failed to create resource group: %+v", err)
@@ -253,10 +247,10 @@ func resourceAcsEngineK8sClusterCreate(d *schema.ResourceData, m interface{}) er
 
 	d.SetId(id)
 
-	return resourceAcsEngineK8sClusterRead(d, m)
+	return resourceACSEngineK8sClusterRead(d, m)
 }
 
-func resourceAcsEngineK8sClusterRead(d *schema.ResourceData, m interface{}) error {
+func resourceACSEngineK8sClusterRead(d *schema.ResourceData, m interface{}) error {
 	id, err := utils.ParseAzureResourceID(d.Id())
 	if err != nil {
 		d.SetId("")
@@ -286,7 +280,7 @@ func resourceAcsEngineK8sClusterRead(d *schema.ResourceData, m interface{}) erro
 		return fmt.Errorf("error setting `kubernetes_version`: %+v", err)
 	}
 
-	if err = setProfiles(d, cluster); err != nil {
+	if err = setResourceProfiles(d, cluster); err != nil {
 		return err
 	}
 
@@ -305,7 +299,7 @@ func resourceAcsEngineK8sClusterRead(d *schema.ResourceData, m interface{}) erro
 	return nil
 }
 
-func resourceAcsEngineK8sClusterDelete(d *schema.ResourceData, m interface{}) error {
+func resourceACSEngineK8sClusterDelete(d *schema.ResourceData, m interface{}) error {
 	client := m.(*ArmClient)
 	rgClient := client.resourceGroupsClient
 	ctx := client.StopContext
@@ -338,7 +332,7 @@ func resourceAcsEngineK8sClusterDelete(d *schema.ResourceData, m interface{}) er
 	return nil
 }
 
-func resourceAcsEngineK8sClusterUpdate(d *schema.ResourceData, m interface{}) error {
+func resourceACSEngineK8sClusterUpdate(d *schema.ResourceData, m interface{}) error {
 	_, err := utils.ParseAzureResourceID(d.Id())
 	if err != nil {
 		d.SetId("")
@@ -384,45 +378,5 @@ func resourceAcsEngineK8sClusterUpdate(d *schema.ResourceData, m interface{}) er
 
 	d.Partial(false)
 
-	return resourceAcsEngineK8sClusterRead(d, m)
-}
-
-// HELPER FUNCTIONS
-
-/* 'Read' Helper Functions */
-
-func setProfiles(d *schema.ResourceData, cluster *api.ContainerService) error {
-	linuxProfile, err := flattenLinuxProfile(*cluster.Properties.LinuxProfile)
-	if err != nil {
-		return fmt.Errorf("Error flattening `linux_profile`: %+v", err)
-	}
-	if err = d.Set("linux_profile", linuxProfile); err != nil {
-		return fmt.Errorf("Error setting 'linux_profile': %+v", err)
-	}
-
-	servicePrincipal, err := flattenServicePrincipal(*cluster.Properties.ServicePrincipalProfile)
-	if err != nil {
-		return fmt.Errorf("Error flattening `service_principal`: %+v", err)
-	}
-	if err = d.Set("service_principal", servicePrincipal); err != nil {
-		return fmt.Errorf("Error setting 'service_principal': %+v", err)
-	}
-
-	masterProfile, err := flattenMasterProfile(*cluster.Properties.MasterProfile, cluster.Location)
-	if err != nil {
-		return fmt.Errorf("Error flattening `master_profile`: %+v", err)
-	}
-	if err = d.Set("master_profile", masterProfile); err != nil {
-		return fmt.Errorf("Error setting 'master_profile': %+v", err)
-	}
-
-	agentPoolProfiles, err := flattenAgentPoolProfiles(cluster.Properties.AgentPoolProfiles)
-	if err != nil {
-		return fmt.Errorf("Error flattening `agent_pool_profiles`: %+v", err)
-	}
-	if err = d.Set("agent_pool_profiles", agentPoolProfiles); err != nil {
-		return fmt.Errorf("Error setting 'agent_pool_profiles': %+v", err)
-	}
-
-	return nil
+	return resourceACSEngineK8sClusterRead(d, m)
 }

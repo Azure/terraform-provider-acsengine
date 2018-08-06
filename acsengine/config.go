@@ -9,7 +9,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2017-09-30/containerservice"
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/adal"
@@ -29,10 +28,6 @@ type ArmClient struct {
 	skipProviderRegistration bool
 
 	StopContext context.Context // is this causing maligned error? Initialized to schema.StopContext() in provider.go
-
-	// Container Management
-	containerServicesClient  containerservice.ContainerServicesClient
-	kubernetesClustersClient containerservice.ManagedClustersClient
 
 	// Resources
 	deploymentsClient    resources.DeploymentsClient
@@ -173,22 +168,9 @@ func getArmClient(c *authentication.Config) (*ArmClient, error) {
 		return nil, err
 	}
 
-	client.registerContainerServicesClients(endpoint, c.SubscriptionID, auth)
 	client.registerResourcesClients(endpoint, c.SubscriptionID, auth)
 
 	return &client, nil
-}
-
-func (c *ArmClient) registerContainerServicesClients(endpoint, subscriptionID string, auth autorest.Authorizer) {
-	// ACS
-	containerServicesClient := containerservice.NewContainerServicesClientWithBaseURI(endpoint, subscriptionID)
-	c.configureClient(&containerServicesClient.Client, auth)
-	c.containerServicesClient = containerServicesClient
-
-	// AKS
-	kubernetesClustersClient := containerservice.NewManagedClustersClientWithBaseURI(endpoint, subscriptionID)
-	c.configureClient(&kubernetesClustersClient.Client, auth)
-	c.kubernetesClustersClient = kubernetesClustersClient
 }
 
 func (c *ArmClient) registerResourcesClients(endpoint, subscriptionID string, auth autorest.Authorizer) {

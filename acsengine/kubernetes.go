@@ -26,6 +26,14 @@ func kubernetesVersionForDataSourceSchema() *schema.Schema {
 	}
 }
 
+func kubeConfigRawSchema() *schema.Schema {
+	return &schema.Schema{
+		Type:      schema.TypeString,
+		Computed:  true,
+		Sensitive: true,
+	}
+}
+
 func validateKubernetesVersion(v interface{}, k string) (ws []string, errors []error) {
 	value := v.(string)
 	capacities := common.AllKubernetesSupportedVersions
