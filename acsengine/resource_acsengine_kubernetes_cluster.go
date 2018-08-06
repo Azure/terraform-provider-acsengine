@@ -229,7 +229,7 @@ func resourceArmAcsEngineKubernetesCluster() *schema.Resource {
 }
 
 const (
-	acsEngineVersion = "0.20.2" // is this completely separate from the package that calls this?
+	acsEngineVersion = "0.20.4" // is this completely separate from the package that calls this?
 	apiVersion       = "vlabs"
 )
 
