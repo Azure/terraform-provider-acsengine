@@ -11,7 +11,7 @@ import (
 )
 
 // type containerService struct {
-// 	api.ContainerService
+// 	*api.ContainerService
 // }
 
 // type resourceContainerService struct {

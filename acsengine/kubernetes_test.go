@@ -167,11 +167,6 @@ func checkNodes(api corev1.CoreV1Interface) error {
 		for _, node := range nodes.Items {
 			fmt.Printf("Node: %s\n", node.Name)
 			// can I use apimachinery package to get kubernetes version?
-			// if !nodeutil.IsNodeReady(&node) { // default eviction time is 5m, so it would probably need to be 5m timeout?
-			// 	return fmt.Errorf("node is not ready: %+v", node) // do I need to not return here? continue instead?
-			// }
-			// maybe I can check the node condition and at least see that it's running? That's not a condition that can be checked...
-			// fmt.Println("node condition: %+v", nodeutil.GetNodeCondition(&node))
 		}
 		return nil
 	})

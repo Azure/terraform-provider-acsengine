@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/Azure/acs-engine/pkg/api"
+	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/test"
 )
 
 func TestACSEngineK8sCluster_flattenLinuxProfile(t *testing.T) {
@@ -30,9 +31,7 @@ func TestACSEngineK8sCluster_flattenLinuxProfile(t *testing.T) {
 	if !ok {
 		t.Fatalf("flattenLinuxProfile failed: Master count does not exist")
 	}
-	if val != adminUsername {
-		t.Fatalf("flattenLinuxProfile failed: Master count is innaccurate")
-	}
+	test.Equals(t, val, adminUsername)
 }
 
 func TestACSEngineK8sCluster_flattenServicePrincipal(t *testing.T) {
@@ -59,9 +58,7 @@ func TestACSEngineK8sCluster_flattenServicePrincipal(t *testing.T) {
 	if !ok {
 		t.Fatalf("flattenServicePrincipal failed: Master count does not exist")
 	}
-	if val != clientID {
-		t.Fatalf("flattenServicePrincipal failed: Master count is innaccurate")
-	}
+	test.Equals(t, val, clientID)
 }
 
 func TestACSEngineK8sCluster_flattenDataSourceServicePrincipal(t *testing.T) {
@@ -88,9 +85,7 @@ func TestACSEngineK8sCluster_flattenDataSourceServicePrincipal(t *testing.T) {
 	if !ok {
 		t.Fatalf("flattenServicePrincipal failed: Master count does not exist")
 	}
-	if val != clientID {
-		t.Fatalf("flattenServicePrincipal failed: Master count is innaccurate")
-	}
+	test.Equals(t, val, clientID)
 }
 
 func TestACSEngineK8sCluster_flattenMasterProfile(t *testing.T) {
@@ -119,9 +114,7 @@ func TestACSEngineK8sCluster_flattenMasterProfile(t *testing.T) {
 	if !ok {
 		t.Fatalf("flattenMasterProfile failed: Master count does not exist")
 	}
-	if val != int(count) {
-		t.Fatalf("flattenMasterProfile failed: Master count is innaccurate")
-	}
+	test.Equals(t, val, int(count))
 	if val, ok := masterPf["os_disk_size"]; ok {
 		t.Fatalf("OS disk size should not be set but value is %d", val.(int))
 	}
@@ -158,9 +151,7 @@ func TestACSEngineK8sCluster_flattenAgentPoolProfiles(t *testing.T) {
 	if !ok {
 		t.Fatalf("agent pool count does not exist")
 	}
-	if val.(int) != count {
-		t.Fatalf("agent pool count is inaccurate. %d != %d", val.(int), count)
-	}
+	test.Equals(t, val.(int), count)
 	if val, ok := agentPf0["os_disk_size"]; ok {
 		t.Fatalf("agent pool OS disk size should not be set, but is %d", val.(int))
 	}
@@ -169,16 +160,12 @@ func TestACSEngineK8sCluster_flattenAgentPoolProfiles(t *testing.T) {
 	if !ok {
 		t.Fatalf("flattenAgentPoolProfile failed: agent pool count does not exist")
 	}
-	if val.(string) != name {
-		t.Fatalf("flattenAgentPoolProfile failed: agent pool name is innaccurate. %s != %s.", val, name)
-	}
+	test.Equals(t, val.(string), name)
 	val, ok = agentPf1["os_disk_size"]
 	if !ok {
 		t.Fatalf("agent pool os disk size is not set when it should be")
 	}
-	if val.(int) != osDiskSize {
-		t.Fatalf("agent pool os disk size is %d when it should be %d", val.(int), osDiskSize)
-	}
+	test.Equals(t, val.(int), osDiskSize)
 }
 
 func TestACSEngineK8sCluster_expandLinuxProfile(t *testing.T) {
@@ -194,9 +181,7 @@ func TestACSEngineK8sCluster_expandLinuxProfile(t *testing.T) {
 		t.Fatalf("expand linux profile failed: %v", err)
 	}
 
-	if linuxProfile.AdminUsername != "azureuser" {
-		t.Fatalf("linux profile admin username is not '%s' as expected", adminUsername)
-	}
+	test.Equals(t, linuxProfile.AdminUsername, "azureuser")
 }
 
 func TestACSEngineK8sCluster_expandServicePrincipal(t *testing.T) {
@@ -212,9 +197,7 @@ func TestACSEngineK8sCluster_expandServicePrincipal(t *testing.T) {
 		t.Fatalf("expand service principal failed: %v", err)
 	}
 
-	if servicePrincipal.ClientID != clientID {
-		t.Fatalf("service principal client ID is not '%s' as expected", clientID)
-	}
+	test.Equals(t, servicePrincipal.ClientID, clientID)
 }
 
 func TestACSEngineK8sCluster_expandMasterProfile(t *testing.T) {
@@ -231,12 +214,8 @@ func TestACSEngineK8sCluster_expandMasterProfile(t *testing.T) {
 		t.Fatalf("expand master profile failed: %v", err)
 	}
 
-	if masterProfile.DNSPrefix != dnsPrefix {
-		t.Fatalf("master profile dns prefix is not '%s' as expected", dnsPrefix)
-	}
-	if masterProfile.VMSize != vmSize {
-		t.Fatalf("master profile VM size is not '%s' as expected", vmSize)
-	}
+	test.Equals(t, masterProfile.DNSPrefix, dnsPrefix)
+	test.Equals(t, masterProfile.VMSize, vmSize)
 }
 
 func TestACSEngineK8sCluster_expandAgentPoolProfiles(t *testing.T) {
@@ -261,27 +240,15 @@ func TestACSEngineK8sCluster_expandAgentPoolProfiles(t *testing.T) {
 		t.Fatalf("expand agent pool profiles failed: %v", err)
 	}
 
-	if len(profiles) != 2 {
-		t.Fatalf("Length of agent pool profiles array is not %d as expected", 2)
-	}
-	if profiles[0].Name != agentPool1Name {
-		t.Fatalf("The first agent pool profile is not named '%s' as expected", agentPool1Name)
-	}
-	if profiles[0].Count != agentPool1Count {
-		t.Fatalf("%s does not have count = %d as expected", agentPool1Name, agentPool1Count)
-	}
-	if profiles[0].OSDiskSizeGB != 0 {
-		t.Fatalf("The first agent pool profile has OSDiskSizeGB = %d when it should not be set", profiles[1].OSDiskSizeGB)
-	}
+	test.Equals(t, len(profiles), 2)
+	test.Equals(t, profiles[0].Name, agentPool1Name)
+	test.Equals(t, profiles[0].Count, agentPool1Count)
+	test.Equals(t, profiles[0].OSDiskSizeGB, 0)
 	if profiles[0].OSType != api.Linux {
 		t.Fatalf("The first agent pool profile has OS type %s when it should be %s", profiles[0].OSType, api.Linux)
 	}
-	if profiles[1].Count != agentPool2Count {
-		t.Fatalf("%s does not have count = %d as expected", agentPool2Name, agentPool2Count)
-	}
-	if profiles[1].OSDiskSizeGB != agentPool2osDiskSize {
-		t.Fatalf("The second agent pool profile has OSDiskSizeGB = %d when it should not be %d", profiles[1].OSDiskSizeGB, agentPool2osDiskSize)
-	}
+	test.Equals(t, profiles[1].Count, agentPool2Count)
+	test.Equals(t, profiles[1].OSDiskSizeGB, agentPool2osDiskSize)
 	if profiles[1].OSType != api.Windows {
 		t.Fatalf("The first agent pool profile has OS type %s when it should be %s", profiles[0].OSType, api.Windows)
 	}
