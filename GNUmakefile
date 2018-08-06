@@ -96,9 +96,10 @@ test-compile:
 	go test -c $(TEST) $(TESTARGS)
 
 # figure out coverage
-# coverage:
+coverage:
+	@scripts/coverage.sh --codecov
  
-.PHONY: test testacc lint fmtcheck errcheck test-compile
+.PHONY: test testacc lint fmtcheck errcheck test-compile coverage
 
 ###############################################################################
 # CI tests

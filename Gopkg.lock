@@ -37,14 +37,13 @@
   revision = "a37ef2d8cdadaf899806250242f3f00a0c6ff588"
 
 [[projects]]
-  digest = "1:6649a6bbc11c30e426c17c07f13dbfcdbeec31b97a21f070d9f610b55256da3b"
+  digest = "1:572babf7a1b17f8910da18b1def43b490f7bc493961fa61c5af5ac297f519084"
   name = "github.com/Azure/azure-sdk-for-go"
   packages = [
     "profiles/latest/resources/mgmt/resources",
     "services/apimanagement/mgmt/2017-03-01/apimanagement",
     "services/authorization/mgmt/2015-07-01/authorization",
     "services/compute/mgmt/2018-04-01/compute",
-    "services/containerservice/mgmt/2017-09-30/containerservice",
     "services/graphrbac/1.6/graphrbac",
     "services/network/mgmt/2018-05-01/network",
     "services/resources/mgmt/2016-06-01/subscriptions",
@@ -951,14 +950,6 @@
   revision = "23781f4d6632d88e869066eaebb743857aa1ef9b"
   version = "v7.0.0"
 
-[[projects]]
-  digest = "1:1bc79cfe3c20ecdde5abada0cf01df1fb4e8ca8efda023f01d51f6985fcb765e"
-  name = "k8s.io/kubernetes"
-  packages = ["pkg/api/v1/node"]
-  pruneopts = "UT"
-  revision = "b1b29978270dc22fecc592ac55d903350454310a"
-  version = "v1.11.1"
-
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
@@ -974,7 +965,6 @@
     "github.com/Azure/acs-engine/pkg/operations",
     "github.com/Azure/acs-engine/pkg/operations/kubernetesupgrade",
     "github.com/Azure/azure-sdk-for-go/profiles/latest/resources/mgmt/resources",
-    "github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2017-09-30/containerservice",
     "github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources",
     "github.com/Azure/go-autorest/autorest",
     "github.com/Azure/go-autorest/autorest/adal",
@@ -999,7 +989,6 @@
     "k8s.io/client-go/rest",
     "k8s.io/client-go/tools/clientcmd",
     "k8s.io/client-go/util/retry",
-    "k8s.io/kubernetes/pkg/api/v1/node",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

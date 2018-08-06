@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/test"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
@@ -163,9 +164,7 @@ func TestACSEngineK8sCluster_flattenTagsEmpty(t *testing.T) {
 		t.Fatalf("flattenTags failed: %v", err)
 	}
 
-	if len(output) != 0 {
-		t.Fatalf("len(output) != 0")
-	}
+	test.Equals(t, len(output), 0)
 }
 
 func TestACSEngineK8sCluster_setTags(t *testing.T) {

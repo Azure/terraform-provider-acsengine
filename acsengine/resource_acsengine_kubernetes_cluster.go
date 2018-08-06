@@ -12,6 +12,8 @@ package acsengine
 // - OS type
 // - refactor: better organization of functions, get rid of code duplication, inheritance where it makes sense, better function/variable naming
 // - ask about additions to acs-engine: doesn't seem to allow tagging deployment, weird index problem
+// - create a new struct for api.ContainerService so I can write methods for it?
+// - write an equals helper function?
 
 import (
 	"fmt"

@@ -1,6 +1,10 @@
 package acsengine
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/test"
+)
 
 func TestACSEngineK8sCluster_addValue(t *testing.T) {
 	parameters := map[string]interface{}{}
@@ -27,7 +31,7 @@ func TestACSEngineK8sCluster_expandTemplateBodies(t *testing.T) {
 
 	template, parameters, err := expandTemplates(body, body)
 	if err != nil {
-		t.Fatalf("")
+		t.Fatalf("expand templates failed: %+v", err)
 	}
 
 	v, ok := parameters["groceries"]
@@ -38,14 +42,12 @@ func TestACSEngineK8sCluster_expandTemplateBodies(t *testing.T) {
 	if len(paramsGroceries) != 2 {
 		t.Fatalf("length of grocery list is not correct: expected 2 and found %d", len(paramsGroceries))
 	}
+	test.Equals(t, len(paramsGroceries), 2)
 	v, ok = paramsGroceries["quinoa"]
 	if !ok {
 		t.Fatalf("could not find `quinoa`")
 	}
-	item := v.(string)
-	if item != "5" {
-		t.Fatalf("Expected price of quinoa to be 5 but got %s", item)
-	}
+	test.Equals(t, v.(string), "5")
 
 	v, ok = template["groceries"]
 	if !ok {
@@ -55,14 +57,12 @@ func TestACSEngineK8sCluster_expandTemplateBodies(t *testing.T) {
 	if len(templateGroceries) != 2 {
 		t.Fatalf("length of grocery list is not correct: expected 2 and found %d", len(templateGroceries))
 	}
+	test.Equals(t, len(templateGroceries), 2)
 	v, ok = templateGroceries["pasta"]
 	if !ok {
 		t.Fatalf("could not find `pasta`")
 	}
-	item = v.(string)
-	if item != "2" {
-		t.Fatalf("Expected price of pasta to be 2 but got %s", item)
-	}
+	test.Equals(t, v.(string), "2")
 }
 
 func TestACSEngineK8sCluster_expandBody(t *testing.T) {
@@ -83,15 +83,10 @@ func TestACSEngineK8sCluster_expandBody(t *testing.T) {
 		t.Fatalf("could not find `groceries`")
 	}
 	groceries := v.(map[string]interface{})
-	if len(groceries) != 2 {
-		t.Fatalf("length of grocery list is not correct: expected 2 and found %d", len(groceries))
-	}
+	test.Equals(t, len(groceries), 2)
 	v, ok = groceries["bananas"]
 	if !ok {
 		t.Fatalf("could not find `bananas`")
 	}
-	item := v.(string)
-	if item != "5" {
-		t.Fatalf("Expected price of bananas to be 5 but got %s", item)
-	}
+	test.Equals(t, v.(string), "5")
 }
