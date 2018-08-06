@@ -641,6 +641,7 @@ func TestAccACSEngineK8sCluster_updateTags(t *testing.T) {
 					testCheckACSEngineClusterExists(tfResourceName),
 					resource.TestCheckResourceAttr(tfResourceName, "tags.Environment", "Prod"),
 					resource.TestCheckResourceAttr(tfResourceName, "tags.Department", "IT"),
+					testCheckACSEngineClusterTagsExists(tfResourceName),
 				),
 			},
 		},
@@ -983,22 +984,52 @@ func checkProperties(resp resources.DeploymentExtended, name string) error {
 }
 
 // not used yet
-func checkTags(resourceGroup string, tags map[string]string) error {
-	// try to run az group show -g *rg* --query tags and check string contains tags?
-	ctx := context.Background()
-	cmd := exec.CommandContext(ctx, "az", "group", "show", "-g", resourceGroup, "--query", "tags")
-	by, err := cmd.CombinedOutput()
-	if err != nil {
+func testCheckACSEngineClusterTagsExists(name string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		ms := s.RootModule()
+		rs, ok := ms.Resources[name]
+		if !ok {
+			return fmt.Errorf("Not found: %s", name)
+		}
+		is := rs.Primary
+		if is == nil {
+			return fmt.Errorf("Bad: could not get primary instance state: %s in %s", name, ms.Path)
+		}
+
+		name := is.Attributes["name"]
+		resourceGroup, hasResourceGroup := rs.Primary.Attributes["resource_group"]
+		if !hasResourceGroup {
+			return fmt.Errorf("Bad: no resource group found in state for Kubernetes cluster: %s", name)
+		}
+
+		// try to run az group show -g *rg* --query tags and check string contains tags?
+		ctx := context.Background()
+		cmd := exec.CommandContext(ctx, "az", "group", "show", "-g", resourceGroup, "--query", "tags")
+		by, err := cmd.CombinedOutput()
+		if err != nil {
+			return nil
+		}
+		results := string(by)
+		// for key, val := range tags {
+		// 	if !strings.Contains(results, key) || !strings.Contains(results, val) {
+		// 		return fmt.Errorf("key value pair (%s, %s) not found", key, val)
+		// 	}
+		// }
+		tag1, hasTag1 := is.Attributes["tags.Environment"]
+		if !hasTag1 {
+			return fmt.Errorf("Bad: no 'Environment' tag found in state for Kubernetes cluster: %s", name)
+		}
+		tag2, hasTag2 := is.Attributes["tags.Department"]
+		if !hasTag2 {
+			return fmt.Errorf("Bad: no 'Department' tag found in state for Kubernetes cluster: %s", name)
+		}
+
+		if !strings.Contains(results, tag1) || !strings.Contains(results, tag2) {
+			return fmt.Errorf("actual: '%s' - expected: 'Environment'='%s' and 'Department='%s'", results, tag1, tag2)
+		}
+
 		return nil
 	}
-	results := string(by)
-	for key, val := range tags {
-		if !strings.Contains(results, key) || !strings.Contains(results, val) {
-			return fmt.Errorf("key value pair (%s, %s) not found", key, val)
-		}
-	}
-
-	return nil
 }
 
 func resourceName(rInt int) string {

@@ -67,7 +67,7 @@ test: fmtcheck
 		xargs -t -n4 go test $(TESTARGS) -coverprofile=coverage.out -timeout=2m -parallel=4
 
 testacc: fmtcheck
-	TF_ACC=1 go test ./acsengine -v -run TestAccACSEngine -timeout 15h
+	TF_ACC=1 go test ./acsengine -v -timeout 15h
 
 lint:
 	gometalinter ./acsengine/... --disable-all \

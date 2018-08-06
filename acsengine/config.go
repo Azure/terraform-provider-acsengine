@@ -37,7 +37,6 @@ type ArmClient struct {
 	// Resources
 	deploymentsClient    resources.DeploymentsClient
 	providersClient      resources.ProvidersClient
-	resourcesClient      resources.Client
 	resourceGroupsClient resources.GroupsClient
 }
 
@@ -196,10 +195,6 @@ func (c *ArmClient) registerResourcesClients(endpoint, subscriptionID string, au
 	deploymentsClient := resources.NewDeploymentsClientWithBaseURI(endpoint, subscriptionID)
 	c.configureClient(&deploymentsClient.Client, auth)
 	c.deploymentsClient = deploymentsClient
-
-	resourcesClient := resources.NewClientWithBaseURI(endpoint, subscriptionID)
-	c.configureClient(&resourcesClient.Client, auth)
-	c.resourcesClient = resourcesClient
 
 	resourceGroupsClient := resources.NewGroupsClientWithBaseURI(endpoint, subscriptionID)
 	c.configureClient(&resourceGroupsClient.Client, auth)
