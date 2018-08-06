@@ -3,7 +3,6 @@ package acsengine
 import (
 	"fmt"
 
-	"github.com/Azure/acs-engine/pkg/api"
 	"github.com/Azure/terraform-provider-acsengine/acsengine/utils"
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -18,7 +17,7 @@ func dataSourceAcsEngineKubernetesCluster() *schema.Resource {
 				Required: true,
 			},
 
-			"resource_group": resourceGroupNameForDataSourceSchema(), // type string, required
+			"resource_group": resourceGroupNameForDataSourceSchema(),
 
 			"location": locationForDataSourceSchema(),
 
@@ -120,14 +119,12 @@ func dataSourceAcsEngineKubernetesCluster() *schema.Resource {
 				},
 			},
 
-			"tags": tagsForDataSourceSchema(), // probably from tags.go
-
 			"kube_config": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"host": { // I think this is what was meant by 'host'
+						"host": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -157,20 +154,17 @@ func dataSourceAcsEngineKubernetesCluster() *schema.Resource {
 				},
 			},
 
-			"kube_config_raw": { // do I need this?
-				Type:      schema.TypeString,
-				Computed:  true,
-				Sensitive: true,
-			},
+			"kube_config_raw": kubeConfigRawSchema(),
 
 			// I can't think of what else to do right now than make this required, maybe make it a path to file??
 			// Can I get this info some other way?
 			"api_model": {
-				Type: schema.TypeString,
-				// Computed:  true,
+				Type:      schema.TypeString,
 				Required:  true,
 				Sensitive: true,
 			},
+
+			"tags": tagsForDataSourceSchema(),
 		},
 	}
 }
@@ -238,42 +232,6 @@ func dataSourceACSEngineK8sClusterRead(d *schema.ResourceData, m interface{}) er
 	}
 
 	fmt.Println("finished reading")
-
-	return nil
-}
-
-func setDataSourceProfiles(d *schema.ResourceData, cluster *api.ContainerService) error {
-	linuxProfile, err := flattenLinuxProfile(*cluster.Properties.LinuxProfile)
-	if err != nil {
-		return fmt.Errorf("Error flattening `linux_profile`: %+v", err)
-	}
-	if err = d.Set("linux_profile", linuxProfile); err != nil {
-		return fmt.Errorf("Error setting 'linux_profile': %+v", err)
-	}
-
-	servicePrincipal, err := flattenDataSourceServicePrincipal(*cluster.Properties.ServicePrincipalProfile)
-	if err != nil {
-		return fmt.Errorf("Error flattening `service_principal`: %+v", err)
-	}
-	if err = d.Set("service_principal", servicePrincipal); err != nil {
-		return fmt.Errorf("Error setting 'service_principal': %+v", err)
-	}
-
-	masterProfile, err := flattenMasterProfile(*cluster.Properties.MasterProfile, cluster.Location)
-	if err != nil {
-		return fmt.Errorf("Error flattening `master_profile`: %+v", err)
-	}
-	if err = d.Set("master_profile", masterProfile); err != nil {
-		return fmt.Errorf("Error setting 'master_profile': %+v", err)
-	}
-
-	agentPoolProfiles, err := flattenAgentPoolProfiles(cluster.Properties.AgentPoolProfiles)
-	if err != nil {
-		return fmt.Errorf("Error flattening `agent_pool_profiles`: %+v", err)
-	}
-	if err = d.Set("agent_pool_profiles", agentPoolProfiles); err != nil {
-		return fmt.Errorf("Error setting 'agent_pool_profiles': %+v", err)
-	}
 
 	return nil
 }

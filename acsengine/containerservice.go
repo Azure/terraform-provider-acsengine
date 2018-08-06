@@ -10,6 +10,18 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
+// type containerService struct {
+// 	api.ContainerService
+// }
+
+// type resourceContainerService struct {
+// 	containerService
+// }
+
+// type dataContainerService struct {
+// 	containerService
+// }
+
 func flattenLinuxProfile(profile api.LinuxProfile) ([]interface{}, error) {
 	adminUsername := profile.AdminUsername
 	ssh := profile.SSH
@@ -349,6 +361,66 @@ func setAPIModel(d *schema.ResourceData, cluster *api.ContainerService) error {
 	}
 	if err = d.Set("api_model", base64.StdEncoding.EncodeToString(apimodel)); err != nil {
 		return fmt.Errorf("error setting API model: %+v", err)
+	}
+
+	return nil
+}
+
+func setProfiles(d *schema.ResourceData, cluster *api.ContainerService) error {
+	linuxProfile, err := flattenLinuxProfile(*cluster.Properties.LinuxProfile)
+	if err != nil {
+		return fmt.Errorf("Error flattening `linux_profile`: %+v", err)
+	}
+	if err = d.Set("linux_profile", linuxProfile); err != nil {
+		return fmt.Errorf("Error setting 'linux_profile': %+v", err)
+	}
+
+	masterProfile, err := flattenMasterProfile(*cluster.Properties.MasterProfile, cluster.Location)
+	if err != nil {
+		return fmt.Errorf("Error flattening `master_profile`: %+v", err)
+	}
+	if err = d.Set("master_profile", masterProfile); err != nil {
+		return fmt.Errorf("Error setting 'master_profile': %+v", err)
+	}
+
+	agentPoolProfiles, err := flattenAgentPoolProfiles(cluster.Properties.AgentPoolProfiles)
+	if err != nil {
+		return fmt.Errorf("Error flattening `agent_pool_profiles`: %+v", err)
+	}
+	if err = d.Set("agent_pool_profiles", agentPoolProfiles); err != nil {
+		return fmt.Errorf("Error setting 'agent_pool_profiles': %+v", err)
+	}
+
+	return nil
+}
+
+func setResourceProfiles(d *schema.ResourceData, cluster *api.ContainerService) error {
+	if err := setProfiles(d, cluster); err != nil {
+		return err
+	}
+
+	servicePrincipal, err := flattenServicePrincipal(*cluster.Properties.ServicePrincipalProfile)
+	if err != nil {
+		return fmt.Errorf("Error flattening `service_principal`: %+v", err)
+	}
+	if err = d.Set("service_principal", servicePrincipal); err != nil {
+		return fmt.Errorf("Error setting 'service_principal': %+v", err)
+	}
+
+	return nil
+}
+
+func setDataSourceProfiles(d *schema.ResourceData, cluster *api.ContainerService) error {
+	if err := setProfiles(d, cluster); err != nil {
+		return err
+	}
+
+	servicePrincipal, err := flattenDataSourceServicePrincipal(*cluster.Properties.ServicePrincipalProfile)
+	if err != nil {
+		return fmt.Errorf("Error flattening `service_principal`: %+v", err)
+	}
+	if err = d.Set("service_principal", servicePrincipal); err != nil {
+		return fmt.Errorf("Error setting 'service_principal': %+v", err)
 	}
 
 	return nil

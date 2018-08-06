@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/hashicorp/terraform/helper/resource"
+	"github.com/hashicorp/terraform/terraform"
 )
 
 func TestValidateMaximumNumberOfARMTags(t *testing.T) {
@@ -177,5 +180,61 @@ func TestACSEngineK8sCluster_setTags(t *testing.T) {
 	err := setTags(d, tags)
 	if err != nil {
 		t.Fatalf("failed to set tags: %+v", err)
+	}
+}
+
+func testCheckACSEngineClusterTagsExists(name string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		is, err := primaryInstanceState(s, name)
+		if err != nil {
+			return err
+		}
+
+		name := is.Attributes["name"]
+		resourceGroup, hasResourceGroup := is.Attributes["resource_group"]
+		if !hasResourceGroup {
+			return fmt.Errorf("Bad: no resource group found in state for Kubernetes cluster: %s", name)
+		}
+
+		client := testAccProvider.Meta().(*ArmClient)
+		rgClient := client.resourceGroupsClient
+		ctx := client.StopContext
+		resp, err := rgClient.Get(ctx, resourceGroup)
+		if err != nil {
+			return fmt.Errorf("Error retrieving resource group: %+v", err)
+		}
+		if *resp.ID == "" {
+			return fmt.Errorf("resource group ID is not set")
+		}
+
+		tag1, hasTag1 := is.Attributes["tags.Environment"]
+		if !hasTag1 {
+			return fmt.Errorf("Bad: no 'Environment' tag found in state for Kubernetes cluster: %s", name)
+		}
+		tag2, hasTag2 := is.Attributes["tags.Department"]
+		if !hasTag2 {
+			return fmt.Errorf("Bad: no 'Department' tag found in state for Kubernetes cluster: %s", name)
+		}
+
+		tagMap := resp.Tags
+		if len(tagMap) != 2 {
+			return fmt.Errorf("")
+		}
+		v, ok := tagMap["Environment"]
+		if !ok {
+			return fmt.Errorf("'Environment' tag not found not found in resource group %s", resourceGroup)
+		}
+		if *v != tag1 {
+			return fmt.Errorf("'Environment' tag - actual: '%s', expected: '%s'", *v, tag1)
+		}
+		v, ok = tagMap["Department"]
+		if !ok {
+			return fmt.Errorf("'Department' tag not found in resource group %s", resourceGroup)
+		}
+		if *v != tag2 {
+			return fmt.Errorf("'Department' tag - actual: '%s', expected: '%s'", *v, tag2)
+		}
+
+		return nil
 	}
 }
