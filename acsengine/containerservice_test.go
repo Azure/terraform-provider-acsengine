@@ -308,9 +308,9 @@ func testFlattenAgentPoolProfiles(name string, count int, vmSize string, osDiskS
 		agentPoolValues["os_disk_size"] = osDiskSizeGB
 	}
 	if windows {
-		agentPoolValues["os_type"] = api.Windows
+		agentPoolValues["os_type"] = string(api.Windows)
 	} else {
-		agentPoolValues["os_type"] = api.Linux
+		agentPoolValues["os_type"] = string(api.Linux)
 	}
 
 	return agentPoolValues
@@ -364,6 +364,22 @@ func testExpandAgentPoolProfile(name string, count int, vmSize string, osDiskSiz
 	}
 
 	return profile
+}
+
+func testExpandCertificateProfile() api.CertificateProfile {
+	certificateProfile := api.CertificateProfile{
+		CaCertificate:         "apple",
+		CaPrivateKey:          "banana",
+		APIServerCertificate:  "blueberry",
+		APIServerPrivateKey:   "grape",
+		ClientCertificate:     "blackberry",
+		ClientPrivateKey:      "pomegranate",
+		EtcdClientCertificate: "strawberry",
+		EtcdClientPrivateKey:  "plum",
+		EtcdPeerCertificates:  []string{"peach"},
+		EtcdPeerPrivateKeys:   []string{"pear"},
+	}
+	return certificateProfile
 }
 
 func testCertificateProfile() *api.CertificateProfile {
@@ -426,6 +442,41 @@ func TestACSEngineCluster_setProfiles(t *testing.T) {
 	cluster := mockContainerService("name2", "southcentralus", dnsPrefix)
 
 	if err := setProfiles(d, cluster); err != nil {
+		t.Fatalf("setProfiles failed: %+v", err)
+	}
+	v, ok := d.GetOk("master_profile.0.dns_name_prefix")
+	if !ok {
+		t.Fatalf("failed to get 'master_profile.0.dns_name_prefix'")
+	}
+	if v.(string) != dnsPrefix {
+		t.Fatalf("'master_profile.0.dns_name_prefix' is not set correctly - actual: '%s', expected: '%s'", v.(string), dnsPrefix)
+	}
+}
+
+// These need to test linux profile...
+func TestACSEngineCluster_setResourceProfiles(t *testing.T) {
+	dnsPrefix := "lessCreativeMasterDNSPrefix"
+	d := mockClusterResourceData("name1", "westus", "testrg", "creativeMasterDNSPrefix")
+	cluster := mockContainerService("name2", "southcentralus", dnsPrefix)
+
+	if err := setResourceProfiles(d, cluster); err != nil {
+		t.Fatalf("setProfiles failed: %+v", err)
+	}
+	v, ok := d.GetOk("master_profile.0.dns_name_prefix")
+	if !ok {
+		t.Fatalf("failed to get 'master_profile.0.dns_name_prefix'")
+	}
+	if v.(string) != dnsPrefix {
+		t.Fatalf("'master_profile.0.dns_name_prefix' is not set correctly - actual: '%s', expected: '%s'", v.(string), dnsPrefix)
+	}
+}
+
+func TestACSEngineCluster_setDataSourceProfiles(t *testing.T) {
+	dnsPrefix := "lessCreativeMasterDNSPrefix"
+	d := mockClusterResourceData("name1", "westus", "testrg", "creativeMasterDNSPrefix")
+	cluster := mockContainerService("name2", "southcentralus", dnsPrefix)
+
+	if err := setDataSourceProfiles(d, cluster); err != nil {
 		t.Fatalf("setProfiles failed: %+v", err)
 	}
 	v, ok := d.GetOk("master_profile.0.dns_name_prefix")

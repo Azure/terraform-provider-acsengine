@@ -27,7 +27,7 @@ import (
 	"github.com/hashicorp/terraform/helper/validation"
 )
 
-func resourceArmAcsEngineKubernetesCluster() *schema.Resource {
+func resourceArmACSEngineKubernetesCluster() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceACSEngineK8sClusterCreate,
 		Read:   resourceACSEngineK8sClusterRead,

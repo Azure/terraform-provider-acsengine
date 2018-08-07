@@ -6,6 +6,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
 	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/authentication"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -30,6 +31,29 @@ func TestProvider(t *testing.T) {
 
 func TestProvider_impl(t *testing.T) {
 	var _ terraform.ResourceProvider = Provider()
+}
+
+func TestDetermineAzureResourceProvidersToRegister(t *testing.T) {
+	namespace := "Microsoft.Compute"
+	namespace2 := "imaginary namespace"
+	registrationState := "registered"
+	provider := resources.Provider{
+		Namespace:         &namespace,
+		RegistrationState: &registrationState,
+	}
+	provider2 := resources.Provider{
+		Namespace:         &namespace2,
+		RegistrationState: &registrationState,
+	}
+	providerList := []resources.Provider{provider, provider2}
+
+	providerMap := determineAzureResourceProvidersToRegister(providerList)
+	if _, ok := providerMap[namespace]; ok {
+		t.Fatalf("%s should have been deleted", namespace)
+	}
+	if _, ok := providerMap["Microsoft.Authorization"]; !ok {
+		t.Fatalf("Microsoft.Authorization should be in provider map")
+	}
 }
 
 func TestBase64Encode(t *testing.T) {

@@ -48,8 +48,6 @@ func mockClusterResourceData(name string, location string, resourceGroup string,
 	return d
 }
 
-// this is the other one I started writing
-// not using yet
 func mockContainerService(name string, location string, dnsPrefix string) *api.ContainerService {
 	linuxProfile := testExpandLinuxProfile("azureuser", "public key")
 	servicePrincipal := testExpandServicePrincipal("client id", "client secret")
@@ -64,13 +62,15 @@ func mockContainerService(name string, location string, dnsPrefix string) *api.C
 		OrchestratorVersion: common.GetDefaultKubernetesVersion(),
 	}
 
+	certificateProfile := testExpandCertificateProfile()
+
 	properties := api.Properties{
 		LinuxProfile:            &linuxProfile,
 		ServicePrincipalProfile: &servicePrincipal,
 		MasterProfile:           &masterProfile,
 		AgentPoolProfiles:       agentPoolProfiles,
 		OrchestratorProfile:     &orchestratorProfile,
-		// CertificateProfile:      nil,
+		CertificateProfile:      &certificateProfile,
 	}
 
 	cluster := &api.ContainerService{

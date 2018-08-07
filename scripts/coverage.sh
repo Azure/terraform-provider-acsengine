@@ -13,6 +13,8 @@ generate_cover_data() {
         file="$coverdir/$(echo $pkg).cover"
         go test -covermode="$mode" -coverprofile="$file" "$pkg"
     done
+    # find . -type f -name "*.go" | while read -r file; do go test -covermode="$mode" -coverprofile="$file"; done
+    # find . -type f -name "*.go" | while read -r file; do echo $file; done
 
     echo "mode: $mode" >"$profile"
     grep -h -v "^mode:" "$coverdir"/*.cover >>"$profile"

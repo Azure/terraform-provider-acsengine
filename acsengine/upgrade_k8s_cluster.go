@@ -49,7 +49,7 @@ func upgradeCluster(d *schema.ResourceData, m interface{}, upgradeVersion string
 		return fmt.Errorf("failed to deploy upgraded cluster: %+v", err)
 	}
 
-	return saveUpgradedApimodel(&uc, d)
+	return saveTemplates(d, uc.Cluster, uc.DeploymentDirectory)
 }
 
 func initializeUpgradeClient(d *schema.ResourceData, upgradeVersion string) (client.UpgradeClient, error) {
@@ -68,8 +68,4 @@ func initializeUpgradeClient(d *schema.ResourceData, upgradeVersion string) (cli
 	}
 
 	return uc, nil
-}
-
-func saveUpgradedApimodel(uc *client.UpgradeClient, d *schema.ResourceData) error {
-	return saveTemplates(d, uc.Cluster, uc.DeploymentDirectory)
 }
