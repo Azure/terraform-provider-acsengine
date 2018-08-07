@@ -39,7 +39,7 @@ $ make build
 
 ## Using the provider
 
-```
+```hcl
 # Configure the Microsoft ACS Engine Provider
 provider "acsengine" {
   # NOTE: Environment Variables can also be used for Service Principal authentication
@@ -92,7 +92,9 @@ Further usage documentation can be found in the `docs` directory.
 
 ## Developing the Provider
 
-If you wish to work on the provider, you'll first need [Go](http://www.golang.org) installed on your machine (version 1.9+ is *required*). You'll also need to correctly setup a [GOPATH](http://golang.org/doc/code.html#GOPATH), as well as adding `$GOPATH/bin` to your `$PATH`.
+<!-- move more of this into developing.md -->
+
+If you wish to work on the provider, you'll first need [Go](http://www.golang.org) installed on your machine (version 1.10+ is *required*). You'll also need to correctly setup a [GOPATH](http://golang.org/doc/code.html#GOPATH), as well as adding `$GOPATH/bin` to your `$PATH`.
 
 To compile the provider, run `make build`. This will build the provider and put the provider binary in the `$GOPATH/bin` directory.
 
@@ -129,14 +131,6 @@ $ make testacc
 ## Contributing
 
 This project welcomes contributions and suggestions. Please follow the guidelines on our [contributing page](CONTRIBUTING.md) if you would like to help out.
-
-This project welcomes contributions and suggestions.  Most contributions require you to agree to a
-Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us
-the rights to use your contribution. For details, visit https://cla.microsoft.com.
-
-When you submit a pull request, a CLA-bot will automatically determine whether you need to provide
-a CLA and decorate the PR appropriately (e.g., label, comment). Simply follow the instructions
-provided by the bot. You will only need to do this once across all repos using our CLA.
 
 ## Code of Conduct
 

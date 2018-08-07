@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-02-01/resources"
+	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
 	"github.com/Azure/go-autorest/autorest"
 	log "github.com/sirupsen/logrus"
 )
@@ -26,10 +26,10 @@ func (az *AzureClient) DeployTemplate(ctx context.Context, resourceGroupName, de
 	}
 
 	outcomeText := "Succeeded"
-	defer log.Infof("Finished ARM Deployment (%s). %s", deploymentName, outcomeText)
 	err = future.WaitForCompletion(ctx, az.deploymentsClient.Client)
 	if err != nil {
 		outcomeText = fmt.Sprintf("Error: %v", err)
+		log.Infof("Finished ARM Deployment (%s). %s", deploymentName, outcomeText)
 		return de, err
 	}
 
@@ -38,6 +38,7 @@ func (az *AzureClient) DeployTemplate(ctx context.Context, resourceGroupName, de
 		outcomeText = fmt.Sprintf("Error: %v", err)
 	}
 
+	log.Infof("Finished ARM Deployment (%s). %s", deploymentName, outcomeText)
 	return de, err
 }
 

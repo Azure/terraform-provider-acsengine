@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"path"
 
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -92,4 +93,49 @@ func flattenTags(tags map[string]string) (map[string]interface{}, error) {
 	}
 
 	return output, nil
+}
+
+func getTags(d *schema.ResourceData) map[string]interface{} {
+	var tags map[string]interface{}
+	if v, ok := d.GetOk("tags"); ok {
+		tags = v.(map[string]interface{})
+	} else {
+		tags = map[string]interface{}{}
+	}
+
+	return tags
+}
+
+func setTags(d *schema.ResourceData, tagMap map[string]string) error {
+	tags, err := flattenTags(tagMap)
+	if err != nil {
+		return fmt.Errorf("Error flattening `tags`: %+v", err)
+	}
+	if err := d.Set("tags", tags); err != nil {
+		return fmt.Errorf("Error setting 'tags': %+v", err)
+	}
+
+	return nil
+}
+
+// only updates resource group tags
+// I don't like that this function depends on containerservice.go and that file depends on tags.go
+func updateResourceGroupTags(d *schema.ResourceData, m interface{}) error {
+	if err := createClusterResourceGroup(d, m); err != nil { // this should update... let's see if it works
+		return fmt.Errorf("failed to update resource group: %+v", err)
+	}
+
+	// do I want to tag deployment as well?
+
+	tags := getTags(d)
+
+	cluster, err := loadContainerServiceFromApimodel(d, true, false)
+	if err != nil {
+		return fmt.Errorf("error parsing API model: %+v", err)
+	}
+	cluster.Tags = expandClusterTags(tags)
+
+	deploymentDirectory := path.Join("_output", cluster.Properties.MasterProfile.DNSPrefix)
+
+	return saveTemplates(d, cluster, deploymentDirectory)
 }

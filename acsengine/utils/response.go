@@ -6,11 +6,6 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 )
 
-// ResponseWasConflict checks if HTTP response was status "conflict"
-func ResponseWasConflict(resp autorest.Response) bool {
-	return responseWasStatusCode(resp, http.StatusConflict)
-}
-
 // ResponseWasNotFound checks if HTTP response was a status "not found"
 func ResponseWasNotFound(resp autorest.Response) bool {
 	return responseWasStatusCode(resp, http.StatusNotFound)
