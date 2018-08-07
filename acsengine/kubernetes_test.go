@@ -45,13 +45,8 @@ func TestACSEngineK8sCluster_getKubeConfig(t *testing.T) {
 	// I should have mockContainerService
 	name := "cluster"
 	location := "southcentralus"
-	resourceGroup := "rg"
 	prefix := "masterDNSPrefix"
-	d := mockClusterResourceData(name, location, resourceGroup, prefix)
-	cluster, err := loadContainerServiceFromApimodel(d, true, false)
-	if err != nil {
-		t.Fatalf("failed to load cluster: %+v", err)
-	}
+	cluster := mockContainerService(name, location, prefix)
 
 	kubeconfig, err := getKubeConfig(cluster)
 	if err != nil {
@@ -120,7 +115,6 @@ func TestACSEngineK8sCluster_setKubeConfig(t *testing.T) {
 
 // clusterIsRunning is a helper function for testCheckACSEngineClusterExists
 func clusterIsRunning(is *terraform.InstanceState, name string) error {
-	// get kube config
 	key := "kube_config_raw"
 	var config []byte
 	var err error
@@ -133,7 +127,6 @@ func clusterIsRunning(is *terraform.InstanceState, name string) error {
 		return fmt.Errorf("kube config could not be decoded from base64: %+v", err)
 	}
 
-	// get kubernetes client
 	kubeConfig, _ /*namespace*/, err := newClientConfigFromBytes(config)
 	if err != nil {
 		return err
@@ -166,7 +159,6 @@ func checkNodes(api corev1.CoreV1Interface) error {
 		}
 		for _, node := range nodes.Items {
 			fmt.Printf("Node: %s\n", node.Name)
-			// can I use apimachinery package to get kubernetes version?
 		}
 		return nil
 	})
@@ -178,6 +170,7 @@ func checkNodes(api corev1.CoreV1Interface) error {
 }
 
 func checkVersion(api corev1.CoreV1Interface) error {
+	// can I use apimachinery package to get kubernetes version?
 	return nil
 }
 

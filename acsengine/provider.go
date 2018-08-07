@@ -74,11 +74,11 @@ func Provider() terraform.ResourceProvider {
 		},
 
 		DataSourcesMap: map[string]*schema.Resource{
-			"acsengine_kubernetes_cluster": dataSourceAcsEngineKubernetesCluster(),
+			"acsengine_kubernetes_cluster": dataSourceACSEngineKubernetesCluster(),
 		},
 
 		ResourcesMap: map[string]*schema.Resource{
-			"acsengine_kubernetes_cluster": resourceArmAcsEngineKubernetesCluster(),
+			"acsengine_kubernetes_cluster": resourceArmACSEngineKubernetesCluster(),
 		},
 	}
 

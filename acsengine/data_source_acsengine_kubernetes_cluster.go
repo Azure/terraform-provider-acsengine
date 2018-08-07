@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
-func dataSourceAcsEngineKubernetesCluster() *schema.Resource {
+func dataSourceACSEngineKubernetesCluster() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceACSEngineK8sClusterRead,
 

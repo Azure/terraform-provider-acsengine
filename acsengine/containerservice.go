@@ -109,7 +109,7 @@ func flattenAgentPoolProfiles(profiles []*api.AgentPoolProfile) ([]interface{}, 
 			values["os_disk_size"] = profile.OSDiskSizeGB
 		}
 		if profile.OSType != "" {
-			values["os_type"] = profile.OSType
+			values["os_type"] = string(profile.OSType)
 		}
 
 		agentPoolProfiles = append(agentPoolProfiles, values)
@@ -289,12 +289,9 @@ func initializeContainerService(d *schema.ResourceData) (*api.ContainerService, 
 	if err != nil {
 		return nil, fmt.Errorf("error expanding `agent_pool_profiles: %+v`", err)
 	}
-
-	// do I need to add a Windows profile is osType = Windows?
-	// adminUser = masterProfile.adminUser
-	// adminPassword = ?
-	if _, err := createWindowsProfile(); err != nil {
-		return nil, err
+	windowsProfile, err := createWindowsProfile(d)
+	if err != nil {
+		return nil, fmt.Errorf("error creating windows profile: %+v", err)
 	}
 
 	tags := getTags(d)
@@ -313,6 +310,10 @@ func initializeContainerService(d *schema.ResourceData) (*api.ContainerService, 
 			},
 		},
 		Tags: expandClusterTags(tags),
+	}
+
+	if windowsProfile != nil {
+		cluster.Properties.WindowsProfile = windowsProfile
 	}
 
 	return cluster, nil
@@ -426,7 +427,39 @@ func setDataSourceProfiles(d *schema.ResourceData, cluster *api.ContainerService
 	return nil
 }
 
-func createWindowsProfile() (api.WindowsProfile, error) {
-	// not implemented yet
-	return api.WindowsProfile{}, nil
+// kind of like expand windows profile
+func createWindowsProfile(d *schema.ResourceData) (*api.WindowsProfile, error) {
+	hasWindows := false
+	v, ok := d.GetOk("agent_pool_profiles")
+	if !ok {
+		return nil, fmt.Errorf("failed to get agent pool profiles")
+	}
+	configs := v.([]interface{})
+	for _, c := range configs {
+		config := c.(map[string]interface{})
+		osType, ok := config["os_type"]
+		if !ok {
+			return nil, fmt.Errorf("")
+		}
+		if osType == string(api.Windows) {
+			hasWindows = true
+		}
+	}
+	if !hasWindows {
+		return nil, nil
+	}
+
+	v, ok = d.GetOk("linux_profile.0.admin_username")
+	if !ok {
+		return nil, fmt.Errorf("failed to get linux profile admin username")
+	}
+	adminUsername := v.(string)
+	fmt.Println(adminUsername)
+
+	windowsProfile := &api.WindowsProfile{
+		AdminUsername: adminUsername,
+		AdminPassword: "replacepassword1234$",
+	}
+
+	return windowsProfile, nil
 }

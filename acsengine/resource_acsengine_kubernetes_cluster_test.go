@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/profiles/latest/resources/mgmt/resources"
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
@@ -646,73 +645,110 @@ func TestAccACSEngineK8sCluster_updateTags(t *testing.T) {
 }
 
 // failing because I haven't implemented yet
-// func TestAccACSEngineK8sCluster_createWindowsAgentCluster(t *testing.T) {
-// 	ri := acctest.RandInt()
-// 	clientID := testClientID()
-// 	clientSecret := testClientSecret()
-// 	location := testLocation()
-// 	keyData := testSSHPublicKey()
-// 	kubernetesVersion := "1.8.13"
-// 	count := 1
-// 	config := testAccACSEngineK8sClusterOSType(ri, clientID, clientSecret, location, keyData, kubernetesVersion, count)
+func TestAccACSEngineK8sCluster_windowsCreateWindowsAgentCluster(t *testing.T) {
+	ri := acctest.RandInt()
+	clientID := testClientID()
+	clientSecret := testClientSecret()
+	location := testLocation()
+	keyData := testSSHPublicKey()
+	kubernetesVersion := "1.9.0"
+	count := 1
+	config := testAccACSEngineK8sClusterOSType(ri, clientID, clientSecret, location, keyData, kubernetesVersion, count)
+	tfResourceName := resourceName(ri)
 
-// 	resource.Test(t, resource.TestCase{
-// 		PreCheck:     func() { testAccPreCheck(t) },
-// 		Providers:    testAccProviders,
-// 		CheckDestroy: testCheckACSEngineClusterDestroy,
-// 		Steps: []resource.TestStep{
-// 			{
-// 				Config: config,
-// 				Check: resource.ComposeTestCheckFunc(
-// 					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
-// 				),
-// 			},
-// 		},
-// 	})
-// }
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testCheckACSEngineClusterDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check: resource.ComposeTestCheckFunc(
+					testCheckACSEngineClusterExists(tfResourceName),
+				),
+			},
+		},
+	})
+}
 
 // failing because I haven't implemented yet
-// func TestAccACSEngineK8sCluster_scaleUpDownWindowsAgentCluster(t *testing.T) {
-// 	ri := acctest.RandInt()
-// 	clientID := testClientID()
-// 	clientSecret := testClientSecret()
-// 	location := testLocation()
-// 	keyData := testSSHPublicKey()
-// 	kubernetesVersion := "1.8.13"
-// 	config := testAccACSEngineK8sClusterOSType(ri, clientID, clientSecret, location, keyData, kubernetesVersion, 1)
-// 	scaledUpConfig := testAccACSEngineK8sClusterOSType(ri, clientID, clientSecret, location, keyData, kubernetesVersion, 2)
-// 	scaledDownConfig := testAccACSEngineK8sClusterOSType(ri, clientID, clientSecret, location, keyData, kubernetesVersion, 1)
+func TestAccACSEngineK8sCluster_windowsScaleUpDownWindowsAgentCluster(t *testing.T) {
+	ri := acctest.RandInt()
+	clientID := testClientID()
+	clientSecret := testClientSecret()
+	location := testLocation()
+	keyData := testSSHPublicKey()
+	kubernetesVersion := "1.9.0"
+	config := testAccACSEngineK8sClusterOSType(ri, clientID, clientSecret, location, keyData, kubernetesVersion, 1)
+	scaledUpConfig := testAccACSEngineK8sClusterOSType(ri, clientID, clientSecret, location, keyData, kubernetesVersion, 2)
+	scaledDownConfig := testAccACSEngineK8sClusterOSType(ri, clientID, clientSecret, location, keyData, kubernetesVersion, 1)
+	tfResourceName := resourceName(ri)
 
-// 	resource.Test(t, resource.TestCase{
-// 		PreCheck:     func() { testAccPreCheck(t) },
-// 		Providers:    testAccProviders,
-// 		CheckDestroy: testCheckACSEngineClusterDestroy,
-// 		Steps: []resource.TestStep{
-// 			{
-// 				Config: config,
-// 				Check: resource.ComposeTestCheckFunc(
-// 					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
-// 				),
-// 			},
-// 			{
-// 				Config: scaledUpConfig,
-// 				Check: resource.ComposeTestCheckFunc(
-// 					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
-// 				),
-// 			},
-// 			{
-// 				Config: scaledDownConfig,
-// 				Check: resource.ComposeTestCheckFunc(
-// 					testCheckACSEngineClusterExists("acsengine_kubernetes_cluster.test"),
-// 				),
-// 			},
-// 		},
-// 	})
-// }
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testCheckACSEngineClusterDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check: resource.ComposeTestCheckFunc(
+					testCheckACSEngineClusterExists(tfResourceName),
+				),
+			},
+			{
+				Config: scaledUpConfig,
+				Check: resource.ComposeTestCheckFunc(
+					testCheckACSEngineClusterExists(tfResourceName),
+				),
+			},
+			{
+				Config: scaledDownConfig,
+				Check: resource.ComposeTestCheckFunc(
+					testCheckACSEngineClusterExists(tfResourceName),
+				),
+			},
+		},
+	})
+}
 
-// scaleDownUpWindowsAgentCluster
-// updateUpgradeScaleUpWindowsAgentCluster
-// updateUpgradeScaleDownWindowsAgentCluster
+func TestAccACSEngineK8sCluster_windowsUpgradeScaleUpWindowsAgentCluster(t *testing.T) {
+	ri := acctest.RandInt()
+	clientID := testClientID()
+	clientSecret := testClientSecret()
+	location := testLocation()
+	keyData := testSSHPublicKey()
+	config := testAccACSEngineK8sClusterOSType(ri, clientID, clientSecret, location, keyData, "1.9.0", 1)
+	upgradeConfig := testAccACSEngineK8sClusterOSType(ri, clientID, clientSecret, location, keyData, "1.10.0", 1)
+	scaledConfig := testAccACSEngineK8sClusterOSType(ri, clientID, clientSecret, location, keyData, "1.10.0", 2)
+	tfResourceName := resourceName(ri)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testCheckACSEngineClusterDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check: resource.ComposeTestCheckFunc(
+					testCheckACSEngineClusterExists(tfResourceName),
+				),
+			},
+			{
+				Config: upgradeConfig,
+				Check: resource.ComposeTestCheckFunc(
+					testCheckACSEngineClusterExists(tfResourceName),
+				),
+			},
+			{
+				Config: scaledConfig,
+				Check: resource.ComposeTestCheckFunc(
+					testCheckACSEngineClusterExists(tfResourceName),
+				),
+			},
+		},
+	})
+}
+
 // createHybridAgentCluster
 
 // test validation (incorrect commands should not let you do 'apply')
@@ -870,6 +906,7 @@ func testAccACSEngineK8sClusterTags(rInt int, clientID string, clientSecret stri
 }
 
 func testAccACSEngineK8sClusterOSType(rInt int, clientID string, clientSecret string, location string, keyData string, kubernetesVersion string, agentCount int) string {
+	rStr := fmt.Sprintf("%d", rInt)[0:10]
 	return fmt.Sprintf(`resource "acsengine_kubernetes_cluster" "test%d" {
 		name               = "acctest"
 		resource_group     = "acctestRG-%d"
@@ -890,7 +927,7 @@ func testAccACSEngineK8sClusterOSType(rInt int, clientID string, clientSecret st
 		}
 	
 		linux_profile {
-			admin_username = "acctestuser%d"
+			admin_username = "acctstusr%s"
 			ssh {
 				key_data = "%s"
 			}
@@ -904,7 +941,7 @@ func testAccACSEngineK8sClusterOSType(rInt int, clientID string, clientSecret st
 		tags {
 			Environment = "Production"
 		}
-	}`, rInt, rInt, location, kubernetesVersion, rInt, agentCount, rInt, keyData, clientID, clientSecret)
+	}`, rInt, rInt, location, kubernetesVersion, rInt, agentCount, rStr, keyData, clientID, clientSecret)
 }
 
 func testCheckACSEngineClusterExists(name string) resource.TestCheckFunc {
@@ -965,14 +1002,6 @@ func testCheckACSEngineClusterDestroy(s *terraform.State) error {
 		}
 	}
 
-	return nil
-}
-
-// I should probably be checking kubernetes version and node count...
-func checkProperties(resp resources.DeploymentExtended, name string) error {
-	// parametersMap := resp.Properties.Parameters.(map[string]interface{})
-	// parameters := parametersMap["parameters"]
-	// orchestrator
 	return nil
 }
 

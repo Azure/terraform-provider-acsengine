@@ -27,7 +27,7 @@ type ArmClient struct {
 	environment              azure.Environment
 	skipProviderRegistration bool
 
-	StopContext context.Context // is this causing maligned error? Initialized to schema.StopContext() in provider.go
+	StopContext context.Context
 
 	// Resources
 	deploymentsClient    resources.DeploymentsClient
