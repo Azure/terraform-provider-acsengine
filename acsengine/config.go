@@ -9,9 +9,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2017-09-30/containerservice"
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2016-06-01/subscriptions"
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2016-09-01/locks"
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/adal"
@@ -30,19 +27,12 @@ type ArmClient struct {
 	environment              azure.Environment
 	skipProviderRegistration bool
 
-	StopContext context.Context // is this causing maligned error? Initialized to schema.StopContext() in provider.go
-
-	// Container Management
-	containerServicesClient  containerservice.ContainerServicesClient
-	kubernetesClustersClient containerservice.ManagedClustersClient
+	StopContext context.Context
 
 	// Resources
-	managementLocksClient locks.ManagementLocksClient
-	deploymentsClient     resources.DeploymentsClient
-	providersClient       resources.ProvidersClient
-	resourcesClient       resources.Client
-	resourceGroupsClient  resources.GroupsClient
-	subscriptionsClient   subscriptions.Client
+	deploymentsClient    resources.DeploymentsClient
+	providersClient      resources.ProvidersClient
+	resourceGroupsClient resources.GroupsClient
 }
 
 func (c *ArmClient) configureClient(client *autorest.Client, auth autorest.Authorizer) {
@@ -178,36 +168,15 @@ func getArmClient(c *authentication.Config) (*ArmClient, error) {
 		return nil, err
 	}
 
-	client.registerContainerServicesClients(endpoint, c.SubscriptionID, auth)
 	client.registerResourcesClients(endpoint, c.SubscriptionID, auth)
 
 	return &client, nil
 }
 
-func (c *ArmClient) registerContainerServicesClients(endpoint, subscriptionID string, auth autorest.Authorizer) {
-	// ACS
-	containerServicesClient := containerservice.NewContainerServicesClientWithBaseURI(endpoint, subscriptionID)
-	c.configureClient(&containerServicesClient.Client, auth)
-	c.containerServicesClient = containerServicesClient
-
-	// AKS
-	kubernetesClustersClient := containerservice.NewManagedClustersClientWithBaseURI(endpoint, subscriptionID)
-	c.configureClient(&kubernetesClustersClient.Client, auth)
-	c.kubernetesClustersClient = kubernetesClustersClient
-}
-
 func (c *ArmClient) registerResourcesClients(endpoint, subscriptionID string, auth autorest.Authorizer) {
-	locksClient := locks.NewManagementLocksClientWithBaseURI(endpoint, subscriptionID)
-	c.configureClient(&locksClient.Client, auth)
-	c.managementLocksClient = locksClient
-
 	deploymentsClient := resources.NewDeploymentsClientWithBaseURI(endpoint, subscriptionID)
 	c.configureClient(&deploymentsClient.Client, auth)
 	c.deploymentsClient = deploymentsClient
-
-	resourcesClient := resources.NewClientWithBaseURI(endpoint, subscriptionID)
-	c.configureClient(&resourcesClient.Client, auth)
-	c.resourcesClient = resourcesClient
 
 	resourceGroupsClient := resources.NewGroupsClientWithBaseURI(endpoint, subscriptionID)
 	c.configureClient(&resourceGroupsClient.Client, auth)
@@ -216,8 +185,4 @@ func (c *ArmClient) registerResourcesClients(endpoint, subscriptionID string, au
 	providersClient := resources.NewProvidersClientWithBaseURI(endpoint, subscriptionID)
 	c.configureClient(&providersClient.Client, auth)
 	c.providersClient = providersClient
-
-	subscriptionsClient := subscriptions.NewClientWithBaseURI(endpoint)
-	c.configureClient(&subscriptionsClient.Client, auth)
-	c.subscriptionsClient = subscriptionsClient
 }
