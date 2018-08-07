@@ -51,10 +51,10 @@ func mockClusterResourceData(name string, location string, resourceGroup string,
 func mockContainerService(name string, location string, dnsPrefix string) *api.ContainerService {
 	linuxProfile := testExpandLinuxProfile("azureuser", "public key")
 	servicePrincipal := testExpandServicePrincipal("client id", "client secret")
-	masterProfile := testExpandMasterProfile(1, dnsPrefix, "Standard_D2_v2", "fqdn")
+	masterProfile := testExpandMasterProfile(1, dnsPrefix, "Standard_D2_v2", "fqdn", 0)
 
-	agentPoolProfile1 := testExpandAgentPoolProfile("agentpool1", 1, "Standard_D2_v2", 0)
-	agentPoolProfile2 := testExpandAgentPoolProfile("agentpool2", 2, "Standard_D2_v2", 30)
+	agentPoolProfile1 := testExpandAgentPoolProfile("agentpool1", 1, "Standard_D2_v2", 0, false)
+	agentPoolProfile2 := testExpandAgentPoolProfile("agentpool2", 2, "Standard_D2_v2", 30, false)
 	agentPoolProfiles := []*api.AgentPoolProfile{agentPoolProfile1, agentPoolProfile2}
 
 	orchestratorProfile := api.OrchestratorProfile{

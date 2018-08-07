@@ -15,7 +15,7 @@ func generateACSEngineTemplate(d *schema.ResourceData, write bool) (template str
 		return "", "", err
 	}
 
-	template, parameters, certsGenerated, err := formatTemplates(cluster)
+	template, parameters, certsGenerated, err := formatTemplates(cluster, true)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to format templates using cluster: %+v", err)
 	}

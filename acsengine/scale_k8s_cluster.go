@@ -195,28 +195,15 @@ func scaleDownCluster(sc *client.ScaleClient, currentNodeCount int, indexToVM []
 
 // Scales up clusters by creating new nodes within an agent pool
 func scaleUpCluster(sc *client.ScaleClient, highestUsedIndex, currentNodeCount, windowsIndex int, d *schema.ResourceData) error {
+	sc.Cluster.Properties.AgentPoolProfiles = []*api.AgentPoolProfile{sc.AgentPool} // how does this work when there's multiple agent pools?
+
 	ctx := acsengine.Context{
 		Translator: &i18n.Translator{
 			Locale: sc.Locale,
 		},
 	}
-	templateGenerator, err := acsengine.InitializeTemplateGenerator(ctx, false) // original uses classic mode
-	if err != nil {
-		return fmt.Errorf("failed to initialize template generator: %+v", err)
-	}
-
-	sc.Cluster.Properties.AgentPoolProfiles = []*api.AgentPoolProfile{sc.AgentPool} // how does this work when there's multiple agent pools?
-
-	template, parameters, _, err := templateGenerator.GenerateTemplate(sc.Cluster, acsengine.DefaultGeneratorCode, false, true, acsEngineVersion)
-	if err != nil {
-		return fmt.Errorf("error generating template: %+v", err)
-	}
-
-	template, err = transform.PrettyPrintArmTemplate(template)
-	if err != nil {
-		return fmt.Errorf("error pretty printing template: %+v", err)
-	}
 	// don't format parameters! It messes things up
+	template, parameters, _, err := formatTemplates(sc.Cluster, false)
 
 	templateJSON, parametersJSON, err := expandTemplates(template, parameters)
 	if err != nil {
@@ -241,13 +228,10 @@ func scaleUpCluster(sc *client.ScaleClient, highestUsedIndex, currentNodeCount, 
 		addValue(parametersJSON, fmt.Sprintf("%sOffset", sc.AgentPoolToScale), highestUsedIndex+1)
 	}
 
-	random := rand.New(rand.NewSource(time.Now().UnixNano()))
-	deploymentSuffix := random.Int31()
-
 	_, err = sc.Client.DeployTemplate(
 		context.Background(),
 		sc.ResourceGroupName,
-		fmt.Sprintf("%s-%d", sc.ResourceGroupName, deploymentSuffix),
+		fmt.Sprintf("%s-%d", sc.ResourceGroupName, randomDeploymentSuffix()),
 		templateJSON,
 		parametersJSON)
 	if err != nil {
@@ -266,4 +250,9 @@ func saveScaledApimodel(sc *client.ScaleClient, d *schema.ResourceData) error {
 	sc.Cluster.Properties.AgentPoolProfiles[sc.AgentPoolIndex].Count = sc.DesiredAgentCount
 
 	return saveTemplates(d, sc.Cluster, sc.DeploymentDirectory)
+}
+
+func randomDeploymentSuffix() int32 {
+	random := rand.New(rand.NewSource(time.Now().UnixNano()))
+	return random.Int31()
 }

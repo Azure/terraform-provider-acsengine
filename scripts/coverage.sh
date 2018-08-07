@@ -2,21 +2,24 @@
 
 set -eo pipefail
 
-# TEST=$(go list ./... |grep -v 'vendor')
 TEST="./acsengine"
+# TEST="./acsengine ./acsengine/utils ./acsengine/helpers/client" # should have utils and everything in helpers too...
+# TEST=$(go list ./... |grep -v 'vendor')
+# TEST=$(find ./acsengine -type d)
 coverdir=$(mktemp -d /tmp/coverage.XXXXXXXXXX)
-profile="$coverdir/coverage.out"
+profile="coverage.out"
 mode="count"
 
 generate_cover_data() {
-    for pkg in "$TEST"; do
-        file="$coverdir/$(echo $pkg).cover"
-        go test -covermode="$mode" -coverprofile="$file" "$pkg"
+    for pkg in $TEST; do
+        echo $pkg
+        file="$coverdir/$pkg.cover"
+        go test "$pkg" -covermode="$mode" -coverprofile="$file"
     done
-    # find . -type f -name "*.go" | while read -r file; do go test -covermode="$mode" -coverprofile="$file"; done
-    # find . -type f -name "*.go" | while read -r file; do echo $file; done
+    # find ./acsengine -type f -name "*.go" | while read -r file; do echo $file; go test $file -covermode="$mode" -coverprofile="$file".cover && mv "$file".cover ${coverdir}; done
+    # find ./acsengine -type f -name "*.go" | while read -r file; do echo $file; done
 
-    echo "mode: $mode" >"$profile"
+    echo "mode: $mode" >"$profile" # somehow this read into scale_k8s_cluster.go when I used second option
     grep -h -v "^mode:" "$coverdir"/*.cover >>"$profile"
 }
 

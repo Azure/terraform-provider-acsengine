@@ -2,13 +2,11 @@ package acsengine
 
 // TO DO
 // - add tests that check if cluster is running on nodes (I can basically only check if cluster API is there...)
-// - use a CI tool in GitHub (seems to be mostly working, now I just need a successful build with acceptance tests)
 // - Write documentation
 // - add code coverage
 // - make code more unit test-able and write more unit tests (plus clean up ones I have to use mock objects more?)
 // - Important: fix dependency problems and use dep when acs-engine has been updated - DONE but update when acs-engine version has my change
 // - do I need more translations?
-// - get data source working (read from api model in resource state somehow)
 // - OS type
 // - refactor: better organization of functions, get rid of code duplication, inheritance where it makes sense, better function/variable naming
 // - ask about additions to acs-engine: doesn't seem to allow tagging deployment, weird index problem
@@ -122,7 +120,7 @@ func resourceArmACSEngineKubernetesCluster() *schema.Resource {
 							Type:             schema.TypeString,
 							Optional:         true,
 							Default:          "Standard_DS1_v2",
-							ForceNew:         true, // really?
+							ForceNew:         true,
 							DiffSuppressFunc: ignoreCaseDiffSuppressFunc,
 						},
 						"os_disk_size": {
@@ -293,8 +291,6 @@ func resourceACSEngineK8sClusterRead(d *schema.ResourceData, m interface{}) erro
 	if err = setKubeConfig(d, cluster); err != nil {
 		return err
 	}
-
-	// set apimodel here? doesn't really make sense if I'm using that to set everything
 
 	fmt.Println("finished reading")
 

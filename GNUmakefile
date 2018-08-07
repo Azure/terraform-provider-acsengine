@@ -64,7 +64,7 @@ vendor-status:
 test: fmtcheck
 	go test -i $(TEST) || exit 1
 	echo $(TEST) | \
-		xargs -t -n4 go test $(TESTARGS) -coverprofile=coverage.out -timeout=2m -parallel=4
+		xargs -t -n4 go test $(TESTARGS) -timeout=2m -parallel=4 -coverprofile=coverage.out
 
 testacc: fmtcheck
 	TF_ACC=1 go test ./acsengine -v -timeout 15h

@@ -34,6 +34,24 @@ func TestACSEngineK8sCluster_flattenLinuxProfile(t *testing.T) {
 	test.Equals(t, val, adminUsername)
 }
 
+func TestACSEngineK8sCluster_flattenUnsetLinuxProfile(t *testing.T) {
+	profile := api.LinuxProfile{
+		AdminUsername: "",
+		SSH: struct {
+			PublicKeys []api.PublicKey `json:"publicKeys"`
+		}{
+			PublicKeys: []api.PublicKey{
+				{KeyData: ""},
+			},
+		},
+	}
+	_, err := flattenLinuxProfile(profile)
+
+	if err == nil {
+		t.Fatalf("flattenLinuxProfile should have failed with unset values")
+	}
+}
+
 func TestACSEngineK8sCluster_flattenServicePrincipal(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -59,6 +77,15 @@ func TestACSEngineK8sCluster_flattenServicePrincipal(t *testing.T) {
 		t.Fatalf("flattenServicePrincipal failed: Master count does not exist")
 	}
 	test.Equals(t, val, clientID)
+}
+
+func TestACSEngineK8sCluster_flattenUnsetServicePrincipal(t *testing.T) {
+	profile := api.ServicePrincipalProfile{}
+	_, err := flattenServicePrincipal(profile)
+
+	if err == nil {
+		t.Fatalf("flattenServicePrincipal should have failed with unset values")
+	}
 }
 
 func TestACSEngineK8sCluster_flattenDataSourceServicePrincipal(t *testing.T) {
@@ -88,6 +115,15 @@ func TestACSEngineK8sCluster_flattenDataSourceServicePrincipal(t *testing.T) {
 	test.Equals(t, val, clientID)
 }
 
+func TestACSEngineK8sCluster_flattenUnsetDataSourceServicePrincipal(t *testing.T) {
+	profile := api.ServicePrincipalProfile{}
+	_, err := flattenDataSourceServicePrincipal(profile)
+
+	if err == nil {
+		t.Fatalf("flattenServicePrincipal should have failed with unset values")
+	}
+}
+
 func TestACSEngineK8sCluster_flattenMasterProfile(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -99,7 +135,7 @@ func TestACSEngineK8sCluster_flattenMasterProfile(t *testing.T) {
 	dnsNamePrefix := "testPrefix"
 	vmSize := "Standard_D2_v2"
 	fqdn := "abcdefg"
-	profile := testExpandMasterProfile(count, dnsNamePrefix, vmSize, fqdn)
+	profile := testExpandMasterProfile(count, dnsNamePrefix, vmSize, fqdn, 0)
 
 	masterProfile, err := flattenMasterProfile(profile, "southcentralus")
 	if err != nil {
@@ -120,6 +156,50 @@ func TestACSEngineK8sCluster_flattenMasterProfile(t *testing.T) {
 	}
 }
 
+func TestACSEngineK8sCluster_flattenMasterProfileWithOSDiskSize(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("flattenMasterProfile failed")
+		}
+	}()
+
+	count := 1
+	dnsNamePrefix := "testPrefix"
+	vmSize := "Standard_D2_v2"
+	fqdn := "abcdefg"
+	osDiskSize := 30
+	profile := testExpandMasterProfile(count, dnsNamePrefix, vmSize, fqdn, osDiskSize)
+
+	masterProfile, err := flattenMasterProfile(profile, "southcentralus")
+	if err != nil {
+		t.Fatalf("flattenServicePrincipal failed: %v", err)
+	}
+
+	if len(masterProfile) != 1 {
+		t.Fatalf("flattenMasterProfile failed: did not find one master profile")
+	}
+	masterPf := masterProfile[0].(map[string]interface{})
+	val, ok := masterPf["count"]
+	if !ok {
+		t.Fatalf("flattenMasterProfile failed: Master count does not exist")
+	}
+	test.Equals(t, val, int(count))
+	val, ok = masterPf["os_disk_size"]
+	if !ok {
+		t.Fatalf("OS disk size should was not set correctly")
+	}
+	test.Equals(t, val.(int), osDiskSize)
+}
+
+func TestACSEngineK8sCluster_flattenUnsetMasterProfile(t *testing.T) {
+	profile := api.MasterProfile{}
+	_, err := flattenMasterProfile(profile, "")
+
+	if err == nil {
+		t.Fatalf("flattenMasterProfile should have failed with unset values")
+	}
+}
+
 func TestACSEngineK8sCluster_flattenAgentPoolProfiles(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -132,10 +212,10 @@ func TestACSEngineK8sCluster_flattenAgentPoolProfiles(t *testing.T) {
 	vmSize := "Standard_D2_v2"
 	osDiskSize := 200
 
-	profile1 := testExpandAgentPoolProfile(name, count, vmSize, 0)
+	profile1 := testExpandAgentPoolProfile(name, count, vmSize, 0, false)
 
 	name = "agentpool2"
-	profile2 := testExpandAgentPoolProfile(name, count, vmSize, osDiskSize)
+	profile2 := testExpandAgentPoolProfile(name, count, vmSize, osDiskSize, false)
 
 	profiles := []*api.AgentPoolProfile{profile1, profile2}
 	agentPoolProfiles, err := flattenAgentPoolProfiles(profiles)
@@ -166,6 +246,63 @@ func TestACSEngineK8sCluster_flattenAgentPoolProfiles(t *testing.T) {
 		t.Fatalf("agent pool os disk size is not set when it should be")
 	}
 	test.Equals(t, val.(int), osDiskSize)
+}
+
+func TestACSEngineK8sCluster_flattenAgentPoolProfilesWithOSType(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("flattenAgentPoolProfiles failed")
+		}
+	}()
+
+	name := "agentpool1"
+	count := 1
+	vmSize := "Standard_D2_v2"
+
+	profile1 := testExpandAgentPoolProfile(name, count, vmSize, 0, false)
+
+	name = "agentpool2"
+	profile2 := testExpandAgentPoolProfile(name, count, vmSize, 0, true)
+
+	profiles := []*api.AgentPoolProfile{profile1, profile2}
+	agentPoolProfiles, err := flattenAgentPoolProfiles(profiles)
+	if err != nil {
+		t.Fatalf("flattenAgentPoolProfiles failed: %v", err)
+	}
+
+	if len(agentPoolProfiles) < 1 {
+		t.Fatalf("flattenAgentPoolProfile failed: did not find any agent pool profiles")
+	}
+	agentPf0 := agentPoolProfiles[0].(map[string]interface{})
+	val, ok := agentPf0["count"]
+	if !ok {
+		t.Fatalf("agent pool count does not exist")
+	}
+	test.Equals(t, val.(int), count)
+	if val, ok := agentPf0["os_type"]; ok {
+		t.Fatalf("'os_type' should not be set but is set to %s", val.(string))
+	}
+	agentPf1 := agentPoolProfiles[1].(map[string]interface{})
+	val, ok = agentPf1["name"]
+	if !ok {
+		t.Fatalf("flattenAgentPoolProfile failed: agent pool count does not exist")
+	}
+	test.Equals(t, val.(string), name)
+	val, ok = agentPf1["os_type"]
+	if !ok {
+		t.Fatalf("'os_type' does not exist")
+	}
+	test.Equals(t, val.(string), "Windows")
+}
+
+func TestACSEngineK8sCluster_flattenUnsetAgentPoolProfiles(t *testing.T) {
+	profile := &api.AgentPoolProfile{}
+	profiles := []*api.AgentPoolProfile{profile}
+	_, err := flattenAgentPoolProfiles(profiles)
+
+	if err == nil {
+		t.Fatalf("flattenAgentPoolProfiles should have failed with unset values")
+	}
 }
 
 func TestACSEngineK8sCluster_expandLinuxProfile(t *testing.T) {
@@ -341,7 +478,7 @@ func testExpandServicePrincipal(clientID string, clientSecret string) api.Servic
 	return profile
 }
 
-func testExpandMasterProfile(count int, dnsPrefix string, vmSize string, fqdn string) api.MasterProfile {
+func testExpandMasterProfile(count int, dnsPrefix string, vmSize string, fqdn string, osDiskSize int) api.MasterProfile {
 	profile := api.MasterProfile{
 		Count:     count,
 		DNSPrefix: dnsPrefix,
@@ -349,10 +486,14 @@ func testExpandMasterProfile(count int, dnsPrefix string, vmSize string, fqdn st
 		FQDN:      fqdn,
 	}
 
+	if osDiskSize != 0 {
+		profile.OSDiskSizeGB = osDiskSize
+	}
+
 	return profile
 }
 
-func testExpandAgentPoolProfile(name string, count int, vmSize string, osDiskSizeGB int) *api.AgentPoolProfile {
+func testExpandAgentPoolProfile(name string, count int, vmSize string, osDiskSizeGB int, isWindows bool) *api.AgentPoolProfile {
 	profile := &api.AgentPoolProfile{
 		Name:   name,
 		Count:  count,
@@ -361,6 +502,10 @@ func testExpandAgentPoolProfile(name string, count int, vmSize string, osDiskSiz
 
 	if osDiskSizeGB > 0 {
 		profile.OSDiskSizeGB = osDiskSizeGB
+	}
+
+	if isWindows {
+		profile.OSType = api.Windows
 	}
 
 	return profile

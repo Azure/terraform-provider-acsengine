@@ -60,7 +60,7 @@ func writeTemplatesAndCerts(cluster *api.ContainerService, template string, para
 	return nil
 }
 
-func formatTemplates(cluster *api.ContainerService) (string, string, bool, error) {
+func formatTemplates(cluster *api.ContainerService, buildParamsFile bool) (string, string, bool, error) {
 	locale, err := i18n.LoadTranslations()
 	if err != nil {
 		return "", "", false, fmt.Errorf("error loading translations: %+v", err)
@@ -80,20 +80,20 @@ func formatTemplates(cluster *api.ContainerService) (string, string, bool, error
 		return "", "", false, fmt.Errorf("error generating templates: %+v", err)
 	}
 
-	template, err = transform.PrettyPrintArmTemplate(template)
-	if err != nil {
+	if template, err = transform.PrettyPrintArmTemplate(template); err != nil {
 		return "", "", false, fmt.Errorf("error pretty printing template: %+v", err)
 	}
-	parameters, err = transform.BuildAzureParametersFile(parameters)
-	if err != nil {
-		return "", "", false, fmt.Errorf("error pretty printing template parameters: %+v", err)
+	if buildParamsFile {
+		if parameters, err = transform.BuildAzureParametersFile(parameters); err != nil {
+			return "", "", false, fmt.Errorf("error pretty printing template parameters: %+v", err)
+		}
 	}
 
 	return template, parameters, certsGenerated, nil
 }
 
 func saveTemplates(d *schema.ResourceData, cluster *api.ContainerService, deploymentDirectory string) error {
-	template, parameters, certsGenerated, err := formatTemplates(cluster)
+	template, parameters, certsGenerated, err := formatTemplates(cluster, true)
 	if err != nil {
 		return fmt.Errorf("failed to format templates: %+v", err)
 	}
