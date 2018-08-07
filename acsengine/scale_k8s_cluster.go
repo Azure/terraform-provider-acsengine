@@ -204,6 +204,9 @@ func scaleUpCluster(sc *client.ScaleClient, highestUsedIndex, currentNodeCount, 
 	}
 	// don't format parameters! It messes things up
 	template, parameters, _, err := formatTemplates(sc.Cluster, false)
+	if err != nil {
+		return fmt.Errorf("failed to format templates: %+v", err)
+	}
 
 	templateJSON, parametersJSON, err := expandTemplates(template, parameters)
 	if err != nil {

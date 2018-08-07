@@ -143,7 +143,6 @@ func TestACSEngineK8sCluster_flattenMasterProfile(t *testing.T) {
 	val, ok := masterPf["count"]
 	test.OK(t, ok, "flattenMasterProfile failed: Master count does not exist")
 	test.Equals(t, val, int(count))
-	val, ok = masterPf["os_disk_size"]
 	if val, ok := masterPf["os_disk_size"]; ok {
 		t.Fatalf("OS disk size should not be set but value is %d", val.(int))
 	}
@@ -219,7 +218,6 @@ func TestACSEngineK8sCluster_flattenAgentPoolProfiles(t *testing.T) {
 	val, ok := agentPf0["count"]
 	test.OK(t, ok, "agent pool count does not exist")
 	test.Equals(t, val.(int), count)
-	val, ok = agentPf0["os_disk_size"]
 	if val, ok := agentPf0["os_disk_size"]; ok {
 		t.Fatalf("agent pool OS disk size should not be set, but is %d", val.(int))
 	}
