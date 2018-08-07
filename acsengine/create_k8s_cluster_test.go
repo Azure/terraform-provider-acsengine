@@ -26,7 +26,7 @@ func TestAccACSEngineK8sCluster_generateTemplateBasic(t *testing.T) {
 			MasterCount: 1, DNSPrefix: "jumpingJabberwock", AgentPoolCount: 10, ExpectError: false},
 	}
 
-	r := resourceArmAcsEngineKubernetesCluster()
+	r := resourceArmACSEngineKubernetesCluster()
 	d := r.TestResourceData()
 
 	for _, tc := range cases {
@@ -104,7 +104,7 @@ func TestAccACSEngineK8sCluster_generateTemplateCustomized(t *testing.T) {
 			MasterVMSize: "", DNSPrefix: "jumpingJabberwock", AgentPoolCount: 50, AgentVMSize: "", ExpectError: false},
 	}
 
-	r := resourceArmAcsEngineKubernetesCluster()
+	r := resourceArmACSEngineKubernetesCluster()
 	d := r.TestResourceData()
 
 	for _, tc := range cases {

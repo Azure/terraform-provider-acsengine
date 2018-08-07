@@ -169,7 +169,7 @@ func TestACSEngineK8sCluster_flattenAgentPoolProfiles(t *testing.T) {
 }
 
 func TestACSEngineK8sCluster_expandLinuxProfile(t *testing.T) {
-	r := resourceArmAcsEngineKubernetesCluster()
+	r := resourceArmACSEngineKubernetesCluster()
 	d := r.TestResourceData()
 
 	adminUsername := "azureuser"
@@ -185,7 +185,7 @@ func TestACSEngineK8sCluster_expandLinuxProfile(t *testing.T) {
 }
 
 func TestACSEngineK8sCluster_expandServicePrincipal(t *testing.T) {
-	r := resourceArmAcsEngineKubernetesCluster()
+	r := resourceArmACSEngineKubernetesCluster()
 	d := r.TestResourceData()
 
 	clientID := testClientID()
@@ -201,7 +201,7 @@ func TestACSEngineK8sCluster_expandServicePrincipal(t *testing.T) {
 }
 
 func TestACSEngineK8sCluster_expandMasterProfile(t *testing.T) {
-	r := resourceArmAcsEngineKubernetesCluster()
+	r := resourceArmACSEngineKubernetesCluster()
 	d := r.TestResourceData()
 
 	dnsPrefix := "masterDNSPrefix"
@@ -219,7 +219,7 @@ func TestACSEngineK8sCluster_expandMasterProfile(t *testing.T) {
 }
 
 func TestACSEngineK8sCluster_expandAgentPoolProfiles(t *testing.T) {
-	r := resourceArmAcsEngineKubernetesCluster()
+	r := resourceArmACSEngineKubernetesCluster()
 	d := r.TestResourceData()
 
 	agentPool1Name := "agentpool1"

@@ -8,7 +8,7 @@ import (
 )
 
 func mockClusterResourceData(name string, location string, resourceGroup string, dnsPrefix string) *schema.ResourceData {
-	r := resourceArmAcsEngineKubernetesCluster()
+	r := resourceArmACSEngineKubernetesCluster()
 	d := r.TestResourceData()
 
 	d.Set("name", name)
