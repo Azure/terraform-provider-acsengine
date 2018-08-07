@@ -168,7 +168,7 @@ func TestACSEngineK8sCluster_flattenTagsEmpty(t *testing.T) {
 }
 
 func TestACSEngineK8sCluster_setTags(t *testing.T) {
-	r := resourceArmAcsEngineKubernetesCluster()
+	r := resourceArmACSEngineKubernetesCluster()
 	d := r.TestResourceData()
 
 	tags := map[string]string{
