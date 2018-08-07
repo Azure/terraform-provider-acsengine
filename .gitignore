@@ -339,3 +339,5 @@ terraform.tfplan
 *.backup
 .terraform.tfstate.lock.info
 *.test
+# for now
+coverage.out

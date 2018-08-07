@@ -1,10 +1,12 @@
 package acsengine
 
 import (
+	"encoding/base64"
 	"fmt"
 	"os"
 	"testing"
 
+	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
 	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/authentication"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -29,6 +31,105 @@ func TestProvider(t *testing.T) {
 
 func TestProvider_impl(t *testing.T) {
 	var _ terraform.ResourceProvider = Provider()
+}
+
+func TestDetermineAzureResourceProvidersToRegister(t *testing.T) {
+	namespace := "Microsoft.Compute"
+	namespace2 := "imaginary namespace"
+	registrationState := "registered"
+	provider := resources.Provider{
+		Namespace:         &namespace,
+		RegistrationState: &registrationState,
+	}
+	provider2 := resources.Provider{
+		Namespace:         &namespace2,
+		RegistrationState: &registrationState,
+	}
+	providerList := []resources.Provider{provider, provider2}
+
+	providerMap := determineAzureResourceProvidersToRegister(providerList)
+	if _, ok := providerMap[namespace]; ok {
+		t.Fatalf("%s should have been deleted", namespace)
+	}
+	if _, ok := providerMap["Microsoft.Authorization"]; !ok {
+		t.Fatalf("Microsoft.Authorization should be in provider map")
+	}
+}
+
+func TestBase64Encode(t *testing.T) {
+	cases := []struct {
+		Input  string
+		Output string
+	}{
+		{
+			Input:  "hello",
+			Output: base64.StdEncoding.EncodeToString([]byte("hello")),
+		},
+		{
+			Input:  base64.StdEncoding.EncodeToString([]byte("hello")),
+			Output: base64.StdEncoding.EncodeToString([]byte("hello")),
+		},
+	}
+
+	for _, tc := range cases {
+		output := base64Encode(tc.Input)
+
+		if output != tc.Output {
+			t.Fatalf("expected %s but got %s", output, tc.Output)
+		}
+	}
+}
+
+func TestIgnoreCaseDiffSuppressFunc(t *testing.T) {
+	cases := []struct {
+		New      string
+		Old      string
+		Expected bool
+	}{
+		{
+			New:      "testRG",
+			Old:      "testrg",
+			Expected: true,
+		},
+		{
+			New:      "testrg1",
+			Old:      "testrg",
+			Expected: false,
+		},
+	}
+
+	for _, tc := range cases {
+		diff := ignoreCaseDiffSuppressFunc("", tc.Old, tc.New, nil)
+
+		if diff != tc.Expected {
+			t.Fatalf("")
+		}
+	}
+
+}
+
+func TestIsBase64Encoded(t *testing.T) {
+	cases := []struct {
+		Input  string
+		Output bool
+	}{
+		{
+			Input:  "hello",
+			Output: false,
+		},
+		{
+			Input:  base64.StdEncoding.EncodeToString([]byte("hello")),
+			Output: true,
+		},
+	}
+
+	for _, tc := range cases {
+		output := isBase64Encoded(tc.Input)
+
+		if output != tc.Output {
+			t.Fatalf("expected %t but got %t", output, tc.Output)
+		}
+	}
 }
 
 func testAccPreCheck(t *testing.T) {

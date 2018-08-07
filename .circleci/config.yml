@@ -1,5 +1,3 @@
-# Golang CircleCI 2.0 configuration file
-# Check https://circleci.com/docs/2.0/language-go/ for more details
 version: 2
 
 defaults: &defaults
@@ -26,11 +24,42 @@ jobs:
           name: Build
           command: make build
       - run:
-          name: Run unit tests
+          name: Run unit tests and shorter tests
           command: make test
       - run:
           name: Run linting rules
           command: make lint
-    #  - run: # I need to add this eventually
-    #       name: Acceptance tests (cluster lifecycle)
-    #       command: make testacc
+      - run: |
+            echo `TF_ACC=1` >> $BASH_ENV
+      - run:
+          name: Cluster creation acceptance tests
+          command: make cluster-create
+          no_output_timeout: 30m
+      - run:
+          name: Cluster scale acceptance tests
+          command: make cluster-scale
+          no_output_timeout: 30m
+      - run:
+          name: Cluster upgrade acceptance tests
+          command: make cluster-upgrade
+          no_output_timeout: 30m
+    #   - run:
+    #       name: Cluster acceptance tests with combined update operations, starting with scale
+    #       command: make cluster-update-scale
+    #       no_output_timeout: 30m
+    #   - run:
+    #       name: Cluster acceptance tests with combined update operations, starting with upgrade
+    #       command: make cluster-update-upgrade
+    #       no_output_timeout: 30m
+      - run:
+          name: Cluster update tags acceptance test
+          command: make cluster-update-tags
+          no_output_timeout: 30m
+      - run:
+          name: Cluster data source acceptance test
+          command: make cluster-data
+          no_output_timeout: 30m
+      - run:
+          name: Cluster import test
+          command: make cluster-import
+          no_output_timeout: 30m
