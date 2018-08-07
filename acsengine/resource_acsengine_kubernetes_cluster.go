@@ -339,7 +339,6 @@ func resourceACSEngineK8sClusterUpdate(d *schema.ResourceData, m interface{}) er
 
 	d.Partial(true)
 
-	// UPGRADE
 	if d.HasChange("kubernetes_version") {
 		old, new := d.GetChange("kubernetes_version")
 		if err = kubernetes.ValidateKubernetesVersionUpgrade(new.(string), old.(string)); err != nil {
@@ -352,7 +351,6 @@ func resourceACSEngineK8sClusterUpdate(d *schema.ResourceData, m interface{}) er
 		d.SetPartial("kubernetes_version")
 	}
 
-	// SCALE
 	agentPoolProfiles := d.Get("agent_pool_profiles").([]interface{})
 	for i := 0; i < len(agentPoolProfiles); i++ {
 		profileCount := "agent_pool_profiles." + strconv.Itoa(i) + ".count"

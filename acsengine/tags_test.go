@@ -142,10 +142,9 @@ func TestACSEngineK8sCluster_flattenTags(t *testing.T) {
 		t.Fatalf("flattenTags failed: %v", err)
 	}
 
-	if _, ok := output["Environment"]; !ok {
-		t.Fatalf("output['Environment'] does not exist")
-	}
-	if output["Environment"] != "Production" {
+	val, ok := output["Environment"]
+	test.OK(t, ok, "output['Environment'] does not exist")
+	if val != "Production" {
 		t.Fatalf("output['Environment'] is not set correctly")
 	}
 }
@@ -176,8 +175,7 @@ func TestACSEngineK8sCluster_setTags(t *testing.T) {
 		"cell": "2222222222",
 	}
 
-	err := setTags(d, tags)
-	if err != nil {
+	if err := setTags(d, tags); err != nil {
 		t.Fatalf("failed to set tags: %+v", err)
 	}
 }

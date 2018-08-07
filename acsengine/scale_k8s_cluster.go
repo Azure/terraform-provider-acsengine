@@ -211,15 +211,11 @@ func scaleUpCluster(sc *client.ScaleClient, highestUsedIndex, currentNodeCount, 
 	}
 
 	transformer := transform.Transformer{Translator: ctx.Translator}
-	countForTemplate := sc.DesiredAgentCount
-	if highestUsedIndex != 0 { // if not scale set
-		countForTemplate += highestUsedIndex + 1 - currentNodeCount
-	}
+
+	countForTemplate := setCountForTemplate(sc, highestUsedIndex, currentNodeCount)
 	addValue(parametersJSON, sc.AgentPoolToScale+"Count", countForTemplate)
 
-	if windowsIndex != -1 {
-		templateJSON["variables"].(map[string]interface{})[sc.AgentPool.Name+"Index"] = windowsIndex
-	}
+	setWindowsIndex(sc, windowsIndex, templateJSON)
 
 	if err = transformer.NormalizeForK8sVMASScalingUp(sc.Logger, templateJSON); err != nil {
 		return fmt.Errorf("error transforming the template for scaling template: %+v", err)
@@ -255,4 +251,18 @@ func saveScaledApimodel(sc *client.ScaleClient, d *schema.ResourceData) error {
 func randomDeploymentSuffix() int32 {
 	random := rand.New(rand.NewSource(time.Now().UnixNano()))
 	return random.Int31()
+}
+
+func setCountForTemplate(sc *client.ScaleClient, highestUsedIndex, currentNodeCount int) int {
+	countForTemplate := sc.DesiredAgentCount
+	if highestUsedIndex != 0 { // if not scale set
+		countForTemplate += highestUsedIndex + 1 - currentNodeCount
+	}
+	return countForTemplate
+}
+
+func setWindowsIndex(sc *client.ScaleClient, windowsIndex int, templateJSON map[string]interface{}) {
+	if windowsIndex != -1 {
+		templateJSON["variables"].(map[string]interface{})[sc.AgentPool.Name+"Index"] = windowsIndex
+	}
 }

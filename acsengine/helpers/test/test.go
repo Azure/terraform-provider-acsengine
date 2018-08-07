@@ -28,6 +28,13 @@ func Contains(t *testing.T, str string, sub string) {
 	}
 }
 
+// OK fails if not okay with error string
+func OK(t *testing.T, ok bool, message string) {
+	if !ok {
+		t.Fatalf(message)
+	}
+}
+
 func intEquals(t *testing.T, actual int, expected int) {
 	if actual != expected {
 		t.Fatalf("equals check failed - actual: '%d', expected: '%d'", actual, expected)

@@ -17,8 +17,7 @@ func TestInitializeACSEngineClient(t *testing.T) {
 
 	c := client.ACSEngineClient{}
 
-	err := initializeACSEngineClient(d, &c)
-	if err != nil {
+	if err := initializeACSEngineClient(d, &c); err != nil {
 		t.Fatalf("initializeScaleClient failed: %+v", err)
 	}
 
@@ -38,8 +37,7 @@ func TestInitializeACSEngineClientBadID(t *testing.T) {
 
 	c := client.ACSEngineClient{}
 
-	err := initializeACSEngineClient(d, &c)
-	if err == nil {
+	if err := initializeACSEngineClient(d, &c); err == nil {
 		t.Fatalf("initializeScaleClient should have failed")
 	}
 }

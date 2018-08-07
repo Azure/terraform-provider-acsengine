@@ -2,7 +2,6 @@ package acsengine
 
 import (
 	"fmt"
-	"log"
 	"regexp"
 	"strings"
 
@@ -76,12 +75,7 @@ func createClusterResourceGroup(d *schema.ResourceData, m interface{}) error {
 	}
 	location = azureRMNormalizeLocation(v.(string))
 
-	var tags map[string]interface{}
-	if v, ok := d.GetOk("tags"); ok {
-		tags = v.(map[string]interface{})
-	} else {
-		tags = map[string]interface{}{}
-	}
+	tags := getTags(d)
 	parameters := resources.Group{
 		Location: &location,
 		Tags:     expandTags(tags),
@@ -98,7 +92,7 @@ func createClusterResourceGroup(d *schema.ResourceData, m interface{}) error {
 	if *resp.ID == "" {
 		return fmt.Errorf("resource group ID is not set")
 	}
-	log.Printf("[INFO] resource group %q ID: %q", name, *resp.ID)
+	fmt.Printf("[INFO] resource group %q ID: %q", name, *resp.ID)
 
 	return nil
 }

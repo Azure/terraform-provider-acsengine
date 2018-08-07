@@ -28,9 +28,7 @@ func TestACSEngineK8sCluster_flattenLinuxProfile(t *testing.T) {
 	}
 	linuxPf := linuxProfile[0].(map[string]interface{})
 	val, ok := linuxPf["admin_username"]
-	if !ok {
-		t.Fatalf("flattenLinuxProfile failed: Master count does not exist")
-	}
+	test.OK(t, ok, "flattenLinuxProfile failed: Master count does not exist")
 	test.Equals(t, val, adminUsername)
 }
 
@@ -73,9 +71,7 @@ func TestACSEngineK8sCluster_flattenServicePrincipal(t *testing.T) {
 	}
 	spPf := servicePrincipal[0].(map[string]interface{})
 	val, ok := spPf["client_id"]
-	if !ok {
-		t.Fatalf("flattenServicePrincipal failed: Master count does not exist")
-	}
+	test.OK(t, ok, "flattenServicePrincipal failed: Master count does not exist")
 	test.Equals(t, val, clientID)
 }
 
@@ -101,17 +97,15 @@ func TestACSEngineK8sCluster_flattenDataSourceServicePrincipal(t *testing.T) {
 
 	servicePrincipal, err := flattenDataSourceServicePrincipal(profile)
 	if err != nil {
-		t.Fatalf("flattenServicePrincipal failed: %v", err)
+		t.Fatalf("flattenDataSourceServicePrincipal failed: %v", err)
 	}
 
 	if len(servicePrincipal) != 1 {
-		t.Fatalf("flattenServicePrincipal failed: did not find one master profile")
+		t.Fatalf("flattenDataSourceServicePrincipal failed: did not find one master profile")
 	}
 	spPf := servicePrincipal[0].(map[string]interface{})
 	val, ok := spPf["client_id"]
-	if !ok {
-		t.Fatalf("flattenServicePrincipal failed: Master count does not exist")
-	}
+	test.OK(t, ok, "flattenDataSourceServicePrincipal failed: Master count does not exist")
 	test.Equals(t, val, clientID)
 }
 
@@ -147,10 +141,9 @@ func TestACSEngineK8sCluster_flattenMasterProfile(t *testing.T) {
 	}
 	masterPf := masterProfile[0].(map[string]interface{})
 	val, ok := masterPf["count"]
-	if !ok {
-		t.Fatalf("flattenMasterProfile failed: Master count does not exist")
-	}
+	test.OK(t, ok, "flattenMasterProfile failed: Master count does not exist")
 	test.Equals(t, val, int(count))
+	val, ok = masterPf["os_disk_size"]
 	if val, ok := masterPf["os_disk_size"]; ok {
 		t.Fatalf("OS disk size should not be set but value is %d", val.(int))
 	}
@@ -180,14 +173,10 @@ func TestACSEngineK8sCluster_flattenMasterProfileWithOSDiskSize(t *testing.T) {
 	}
 	masterPf := masterProfile[0].(map[string]interface{})
 	val, ok := masterPf["count"]
-	if !ok {
-		t.Fatalf("flattenMasterProfile failed: Master count does not exist")
-	}
+	test.OK(t, ok, "flattenMasterProfile failed: Master count does not exist")
 	test.Equals(t, val, int(count))
 	val, ok = masterPf["os_disk_size"]
-	if !ok {
-		t.Fatalf("OS disk size should was not set correctly")
-	}
+	test.OK(t, ok, "OS disk size should was not set correctly")
 	test.Equals(t, val.(int), osDiskSize)
 }
 
@@ -228,23 +217,18 @@ func TestACSEngineK8sCluster_flattenAgentPoolProfiles(t *testing.T) {
 	}
 	agentPf0 := agentPoolProfiles[0].(map[string]interface{})
 	val, ok := agentPf0["count"]
-	if !ok {
-		t.Fatalf("agent pool count does not exist")
-	}
+	test.OK(t, ok, "agent pool count does not exist")
 	test.Equals(t, val.(int), count)
+	val, ok = agentPf0["os_disk_size"]
 	if val, ok := agentPf0["os_disk_size"]; ok {
 		t.Fatalf("agent pool OS disk size should not be set, but is %d", val.(int))
 	}
 	agentPf1 := agentPoolProfiles[1].(map[string]interface{})
 	val, ok = agentPf1["name"]
-	if !ok {
-		t.Fatalf("flattenAgentPoolProfile failed: agent pool count does not exist")
-	}
+	test.OK(t, ok, "flattenAgentPoolProfile failed: agent pool count does not exist")
 	test.Equals(t, val.(string), name)
 	val, ok = agentPf1["os_disk_size"]
-	if !ok {
-		t.Fatalf("agent pool os disk size is not set when it should be")
-	}
+	test.OK(t, ok, "agent pool os disk size is not set when it should be")
 	test.Equals(t, val.(int), osDiskSize)
 }
 
@@ -275,23 +259,17 @@ func TestACSEngineK8sCluster_flattenAgentPoolProfilesWithOSType(t *testing.T) {
 	}
 	agentPf0 := agentPoolProfiles[0].(map[string]interface{})
 	val, ok := agentPf0["count"]
-	if !ok {
-		t.Fatalf("agent pool count does not exist")
-	}
+	test.OK(t, ok, "agent pool count does not exist")
 	test.Equals(t, val.(int), count)
 	if val, ok := agentPf0["os_type"]; ok {
-		t.Fatalf("'os_type' should not be set but is set to %s", val.(string))
+		t.Fatalf("agent pool OS type should not be set, but is %d", val.(int))
 	}
 	agentPf1 := agentPoolProfiles[1].(map[string]interface{})
 	val, ok = agentPf1["name"]
-	if !ok {
-		t.Fatalf("flattenAgentPoolProfile failed: agent pool count does not exist")
-	}
+	test.OK(t, ok, "flattenAgentPoolProfile failed: agent pool count does not exist")
 	test.Equals(t, val.(string), name)
 	val, ok = agentPf1["os_type"]
-	if !ok {
-		t.Fatalf("'os_type' does not exist")
-	}
+	test.OK(t, ok, "'os_type' does not exist")
 	test.Equals(t, val.(string), "Windows")
 }
 

@@ -107,8 +107,7 @@ func TestACSEngineK8sCluster_setKubeConfig(t *testing.T) {
 		t.Fatalf("failed to load cluster: %+v", err)
 	}
 
-	err = setKubeConfig(d, cluster)
-	if err != nil {
+	if err = setKubeConfig(d, cluster); err != nil {
 		t.Fatalf("failed to set kube config: %+v", err)
 	}
 }

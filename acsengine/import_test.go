@@ -24,8 +24,7 @@ func TestACSEngineK8sCluster_parseImportID(t *testing.T) {
 		t.Fatalf("parseImportID failed: deploymentDirectory was %s but expected %s", deploymentDirectory, deploymentDirectoryInput)
 	}
 
-	_, err = utils.ParseAzureResourceID(azureID)
-	if err != nil {
+	if _, err = utils.ParseAzureResourceID(azureID); err != nil {
 		t.Fatalf("failed to parse azureID: %+v", err)
 	}
 }

@@ -2,7 +2,6 @@ package acsengine
 
 import (
 	"fmt"
-	"log"
 	"path"
 
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
@@ -76,7 +75,6 @@ func deployTemplate(d *schema.ResourceData, m interface{}, template, parameters 
 	if err = future.WaitForCompletion(ctx, deployClient.Client); err != nil {
 		return "", fmt.Errorf("error creating deployment: %+v", err)
 	}
-	fmt.Println("Deployment created (2)")
 
 	read, err := deployClient.Get(ctx, resourceGroup, name)
 	if err != nil {
@@ -85,7 +83,7 @@ func deployTemplate(d *schema.ResourceData, m interface{}, template, parameters 
 	if read.ID == nil {
 		return "", fmt.Errorf("Cannot read ACS Engine Kubernetes cluster deployment %s (resource group %s) ID", name, resourceGroup)
 	}
-	log.Printf("[INFO] cluster %q ID: %q", name, *read.ID)
+	fmt.Printf("[INFO] cluster %q ID: %q", name, *read.ID)
 
 	return *read.ID, nil
 }
