@@ -65,3 +65,31 @@ func TestValidateArmResourceGroupName(t *testing.T) {
 		}
 	}
 }
+
+func TestResourceGroupNameDiffSuppress(t *testing.T) {
+	cases := []struct {
+		New      string
+		Old      string
+		Expected bool
+	}{
+		{
+			New:      "testRG",
+			Old:      "testrg",
+			Expected: true,
+		},
+		{
+			New:      "testrg1",
+			Old:      "testrg",
+			Expected: false,
+		},
+	}
+
+	for _, tc := range cases {
+		diff := resourceAzurermResourceGroupNameDiffSuppress("", tc.Old, tc.New, nil)
+
+		if diff != tc.Expected {
+			t.Fatalf("")
+		}
+	}
+
+}

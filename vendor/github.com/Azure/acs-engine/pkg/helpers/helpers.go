@@ -65,6 +65,12 @@ func PointerToBool(b bool) *bool {
 	return &p
 }
 
+// PointerToInt returns a pointer to a int
+func PointerToInt(i int) *int {
+	p := i
+	return &p
+}
+
 // EqualError is a ni;-safe method which reports whether errors a and b are considered equal.
 // They're equal if both are nil, or both are not nil and a.Error() == b.Error().
 func EqualError(a, b error) bool {
@@ -91,6 +97,15 @@ func CreateSSH(rg io.Reader, s *i18n.Translator) (privateKey *rsa.PrivateKey, pu
 
 // AcceleratedNetworkingSupported check if the VmSKU support the Accelerated Networking
 func AcceleratedNetworkingSupported(sku string) bool {
+	if strings.Contains(sku, "Standard_D2s_v3") {
+		return false
+	}
+	if strings.Contains(sku, "Standard_DS3") {
+		return false
+	}
+	if strings.Contains(sku, "Standard_D2_v3") {
+		return false
+	}
 	if strings.Contains(sku, "Standard_A") {
 		return false
 	}

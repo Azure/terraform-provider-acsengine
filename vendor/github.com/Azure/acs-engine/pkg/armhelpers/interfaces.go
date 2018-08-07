@@ -7,11 +7,12 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/authorization/mgmt/2015-07-01/authorization"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-04-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/graphrbac/1.6/graphrbac"
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-02-01/resources"
+	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 )
 
+// VirtualMachineListResultPage is an interface for compute.VirtualMachineListResultPage to aid in mocking
 type VirtualMachineListResultPage interface {
 	Next() error
 	NotDone() bool
@@ -19,6 +20,7 @@ type VirtualMachineListResultPage interface {
 	Values() []compute.VirtualMachine
 }
 
+// DeploymentOperationsListResultPage is an interface for resources.DeploymentOperationsListResultPage to aid in mocking
 type DeploymentOperationsListResultPage interface {
 	Next() error
 	NotDone() bool
@@ -26,6 +28,7 @@ type DeploymentOperationsListResultPage interface {
 	Values() []resources.DeploymentOperation
 }
 
+// RoleAssignmentListResultPage is an interface for authorization.RoleAssignmentListResultPage to aid in mocking
 type RoleAssignmentListResultPage interface {
 	Next() error
 	NotDone() bool

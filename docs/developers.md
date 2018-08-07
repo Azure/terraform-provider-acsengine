@@ -13,7 +13,7 @@ The code for this project is organized as follows:
 
 * The `acsengine` folder contains most of the Go code specific to configuring acs-engine Kubernetes clusters through Terraform. This folder also contains tests for files in that folder.
 * The `docs` folder contains user and developer documentation and examples
-* The `vendor` folder is managed by Golang Dep and should not be modified except through Gopkg.toml
+* The `vendor` folder is managed by Golang Dep and should not be modified except through [Gopkg.toml](https://github.com/shanalily/terraform-provider-acsengine/blob/master/Gopkg.toml).
 
 ## Git Conventions
 
@@ -31,7 +31,7 @@ If there seem to be dependencies missing, you can run `make vendor`. If you want
 
 We follow the Go coding style standards.
 
-To check that your code meets our standards, run `make lint`. This will run `gometalinter`
+To check that your code meets our standards, run `make lint`. This will run `gometalinter`.
 
 ## Unit Tests
 
