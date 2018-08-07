@@ -95,7 +95,6 @@ test-compile:
 	fi
 	go test -c $(TEST) $(TESTARGS)
 
-# figure out coverage
 coverage:
 	@scripts/coverage.sh --codecov
  
@@ -135,6 +134,6 @@ cluster-data:
 	TF_ACC=1 go test ./acsengine -v -run DataSource -timeout 5h
 
 cluster-import:
-    TF_ACC=1 go test ./acsengine -v -run import -timeout 5h
+	TF_ACC=1 go test ./acsengine -v -run importBasic -timeout 5h
 
 .PHONY: cluster-create cluster-scale cluster-upgrade cluster-update-scale cluster-update-upgrade cluster-update-tags cluster-data cluster-import
