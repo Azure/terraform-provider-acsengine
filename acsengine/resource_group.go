@@ -92,7 +92,7 @@ func createClusterResourceGroup(d *schema.ResourceData, m interface{}) error {
 	if *resp.ID == "" {
 		return fmt.Errorf("resource group ID is not set")
 	}
-	fmt.Printf("[INFO] resource group %q ID: %q", name, *resp.ID)
+	fmt.Printf("[INFO] resource group %q ID: %q\n", name, *resp.ID)
 
 	return nil
 }

@@ -83,7 +83,7 @@ func deployTemplate(d *schema.ResourceData, m interface{}, template, parameters 
 	if read.ID == nil {
 		return "", fmt.Errorf("Cannot read ACS Engine Kubernetes cluster deployment %s (resource group %s) ID", name, resourceGroup)
 	}
-	fmt.Printf("[INFO] cluster %q ID: %q", name, *read.ID)
+	fmt.Printf("[INFO] cluster %q ID: %q\n", name, *read.ID)
 
 	return *read.ID, nil
 }
