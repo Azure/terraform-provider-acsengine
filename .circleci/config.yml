@@ -63,3 +63,10 @@ jobs:
           name: Cluster import test
           command: make cluster-import
           no_output_timeout: 30m
+      - run:
+          name: Windows cluster test
+          command: make cluster-windows
+          no_output_timeout: 30m
+      - run:
+          name: Get unit test coverage
+          command: make coverage
