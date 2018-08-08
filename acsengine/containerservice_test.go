@@ -50,6 +50,51 @@ func TestACSEngineK8sCluster_flattenUnsetLinuxProfile(t *testing.T) {
 	}
 }
 
+func TestACSEngineK8sCluster_flattenWindowsProfile(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("flattenLinuxProfile failed")
+		}
+	}()
+
+	adminUsername := "adminUser"
+	adminPassword := "password"
+	profile := testExpandWindowsProfile(adminUsername, adminPassword)
+
+	windowsProfile, err := flattenWindowsProfile(&profile)
+	if err != nil {
+		t.Fatalf("flattenWindowsProfile failed: %v", err)
+	}
+
+	if len(windowsProfile) != 1 {
+		t.Fatalf("flattenWindowsProfile failed: did not find one Windows profile")
+	}
+	windowsPf := windowsProfile[0].(map[string]interface{})
+	val, ok := windowsPf["admin_username"]
+	test.OK(t, ok, "flattenWindowsProfile failed: admin username does not exist")
+	test.Equals(t, val, adminUsername)
+}
+
+func TestACSEngineK8sCluster_flattenUnsetWindowsProfile(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("flattenLinuxProfile failed")
+		}
+	}()
+
+	var profile *api.WindowsProfile
+	profile = nil
+
+	windowsProfile, err := flattenWindowsProfile(profile)
+	if err != nil {
+		t.Fatalf("flattenWindowsProfile failed: %v", err)
+	}
+
+	if len(windowsProfile) != 0 {
+		t.Fatalf("flattenWindowsProfile failed: did not find zero Windows profiles")
+	}
+}
+
 func TestACSEngineK8sCluster_flattenServicePrincipal(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -297,6 +342,24 @@ func TestACSEngineK8sCluster_expandLinuxProfile(t *testing.T) {
 	test.Equals(t, linuxProfile.AdminUsername, "azureuser")
 }
 
+func TestACSEngineK8sCluster_expandWindowsProfile(t *testing.T) {
+	r := resourceArmACSEngineKubernetesCluster()
+	d := r.TestResourceData()
+
+	adminUsername := "azureuser"
+	adminPassword := "password"
+	windowsProfiles := testFlattenWindowsProfile(adminUsername, adminPassword)
+	d.Set("windows_profile", &windowsProfiles)
+
+	windowsProfile, err := expandWindowsProfile(d)
+	if err != nil {
+		t.Fatalf("expand Windows profile failed: %v", err)
+	}
+
+	test.Equals(t, windowsProfile.AdminUsername, adminUsername)
+	test.Equals(t, windowsProfile.AdminPassword, adminPassword)
+}
+
 func TestACSEngineK8sCluster_expandServicePrincipal(t *testing.T) {
 	r := resourceArmACSEngineKubernetesCluster()
 	d := r.TestResourceData()
@@ -383,6 +446,17 @@ func testFlattenLinuxProfile(adminUsername string) []interface{} {
 	return linuxProfiles
 }
 
+func testFlattenWindowsProfile(adminUsername string, adminPassword string) []interface{} {
+	values := map[string]interface{}{
+		"admin_username": adminUsername,
+		"admin_password": adminPassword,
+	}
+	windowsProfiles := []interface{}{}
+	windowsProfiles = append(windowsProfiles, values)
+
+	return windowsProfiles
+}
+
 func testFlattenServicePrincipal() []interface{} {
 	servicePrincipals := []interface{}{}
 
@@ -440,6 +514,15 @@ func testExpandLinuxProfile(adminUsername string, keyData string) api.LinuxProfi
 		}{
 			PublicKeys: sshPublicKeys,
 		},
+	}
+
+	return profile
+}
+
+func testExpandWindowsProfile(adminUsername string, adminPassword string) api.WindowsProfile {
+	profile := api.WindowsProfile{
+		AdminUsername: adminUsername,
+		AdminPassword: adminPassword,
 	}
 
 	return profile

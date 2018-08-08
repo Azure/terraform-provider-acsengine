@@ -136,4 +136,7 @@ cluster-data:
 cluster-import:
 	TF_ACC=1 go test ./acsengine -v -run importBasic -timeout 5h
 
+cluster-windows:
+	TF_ACC=1 go test ./acsengine -v -run windowsCreate -timeout 5h
+
 .PHONY: cluster-create cluster-scale cluster-upgrade cluster-update-scale cluster-update-upgrade cluster-update-tags cluster-data cluster-import

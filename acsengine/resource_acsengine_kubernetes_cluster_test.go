@@ -927,10 +927,15 @@ func testAccACSEngineK8sClusterOSType(rInt int, clientID string, clientSecret st
 		}
 	
 		linux_profile {
-			admin_username = "acctstusr%s"
+			admin_username = "acctestuser%d"
 			ssh {
 				key_data = "%s"
 			}
+		}
+
+		windows_profile {
+			admin_username = "acctstusr%s"
+			admin_password = "password%d!"
 		}
 
 		service_principal {
@@ -941,7 +946,7 @@ func testAccACSEngineK8sClusterOSType(rInt int, clientID string, clientSecret st
 		tags {
 			Environment = "Production"
 		}
-	}`, rInt, rInt, location, kubernetesVersion, rInt, agentCount, rStr, keyData, clientID, clientSecret)
+	}`, rInt, rInt, location, kubernetesVersion, rInt, agentCount, rInt, keyData, rStr, rInt, clientID, clientSecret)
 }
 
 func testCheckACSEngineClusterExists(name string) resource.TestCheckFunc {

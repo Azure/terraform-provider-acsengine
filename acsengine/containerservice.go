@@ -48,6 +48,26 @@ func flattenLinuxProfile(profile api.LinuxProfile) ([]interface{}, error) {
 	return profiles, nil
 }
 
+func flattenWindowsProfile(profile *api.WindowsProfile) ([]interface{}, error) {
+	if profile == nil {
+		return []interface{}{}, nil
+	}
+	adminUsername := profile.AdminUsername
+	adminPassword := profile.AdminPassword
+	if profile.AdminUsername == "" || adminPassword == "" {
+		return nil, fmt.Errorf("Windows profile not set correctly")
+	}
+
+	profiles := []interface{}{}
+
+	values := map[string]interface{}{}
+	values["admin_username"] = adminUsername
+	values["admin_password"] = adminPassword
+	profiles = append(profiles, values)
+
+	return profiles, nil
+}
+
 func flattenServicePrincipal(profile api.ServicePrincipalProfile) ([]interface{}, error) {
 	clientID := profile.ClientID
 	clientSecret := profile.Secret
@@ -169,6 +189,26 @@ func expandLinuxProfile(d *schema.ResourceData) (api.LinuxProfile, error) {
 	return profile, nil
 }
 
+func expandWindowsProfile(d *schema.ResourceData) (*api.WindowsProfile, error) {
+	var profiles []interface{}
+	v, ok := d.GetOk("windows_profile")
+	if !ok { // maybe don't return error here?
+		return nil, nil
+	}
+	profiles = v.([]interface{})
+	config := profiles[0].(map[string]interface{})
+
+	adminUsername := config["admin_username"].(string)
+	adminPassword := config["admin_password"].(string)
+
+	profile := &api.WindowsProfile{
+		AdminUsername: adminUsername,
+		AdminPassword: adminPassword,
+	}
+
+	return profile, nil
+}
+
 func expandServicePrincipal(d *schema.ResourceData) (api.ServicePrincipalProfile, error) {
 	var configs []interface{}
 	v, ok := d.GetOk("service_principal")
@@ -277,6 +317,10 @@ func initializeContainerService(d *schema.ResourceData) (*api.ContainerService, 
 	if err != nil {
 		return nil, fmt.Errorf("error expanding `linux_profile: %+v`", err)
 	}
+	windowsProfile, err := expandWindowsProfile(d)
+	if err != nil {
+		return nil, fmt.Errorf("error expanding `windows_profile: %+v`", err)
+	}
 	servicePrincipal, err := expandServicePrincipal(d)
 	if err != nil {
 		return nil, fmt.Errorf("error expanding `service_principal: %+v`", err)
@@ -289,10 +333,10 @@ func initializeContainerService(d *schema.ResourceData) (*api.ContainerService, 
 	if err != nil {
 		return nil, fmt.Errorf("error expanding `agent_pool_profiles: %+v`", err)
 	}
-	windowsProfile, err := createWindowsProfile(d)
-	if err != nil {
-		return nil, fmt.Errorf("error creating windows profile: %+v", err)
-	}
+	// windowsProfile, err := createWindowsProfile(d)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("error creating windows profile: %+v", err)
+	// }
 
 	tags := getTags(d)
 
@@ -376,6 +420,16 @@ func setProfiles(d *schema.ResourceData, cluster *api.ContainerService) error {
 		return fmt.Errorf("Error setting 'linux_profile': %+v", err)
 	}
 
+	windowsProfile, err := flattenWindowsProfile(cluster.Properties.WindowsProfile)
+	if err != nil {
+		return fmt.Errorf("Error flattening `windows_profile`: %+v", err)
+	}
+	if len(windowsProfile) > 0 {
+		if err = d.Set("windows_profile", windowsProfile); err != nil {
+			return fmt.Errorf("Error setting 'windows_profile': %+v", err)
+		}
+	}
+
 	masterProfile, err := flattenMasterProfile(*cluster.Properties.MasterProfile, cluster.Location)
 	if err != nil {
 		return fmt.Errorf("Error flattening `master_profile`: %+v", err)
@@ -425,41 +479,4 @@ func setDataSourceProfiles(d *schema.ResourceData, cluster *api.ContainerService
 	}
 
 	return nil
-}
-
-// kind of like expand windows profile
-func createWindowsProfile(d *schema.ResourceData) (*api.WindowsProfile, error) {
-	hasWindows := false
-	v, ok := d.GetOk("agent_pool_profiles")
-	if !ok {
-		return nil, fmt.Errorf("failed to get agent pool profiles")
-	}
-	configs := v.([]interface{})
-	for _, c := range configs {
-		config := c.(map[string]interface{})
-		osType, ok := config["os_type"]
-		if !ok {
-			return nil, fmt.Errorf("")
-		}
-		if osType == string(api.Windows) {
-			hasWindows = true
-		}
-	}
-	if !hasWindows {
-		return nil, nil
-	}
-
-	v, ok = d.GetOk("linux_profile.0.admin_username")
-	if !ok {
-		return nil, fmt.Errorf("failed to get linux profile admin username")
-	}
-	adminUsername := v.(string)
-	fmt.Println(adminUsername)
-
-	windowsProfile := &api.WindowsProfile{
-		AdminUsername: adminUsername,
-		AdminPassword: "replacepassword1234$",
-	}
-
-	return windowsProfile, nil
 }
