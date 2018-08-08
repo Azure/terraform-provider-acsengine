@@ -99,6 +99,21 @@ func TestACSEngineK8sCluster_flattenKubeConfig(t *testing.T) {
 	}
 }
 
+func TestACSEngineK8sCluster_flattenInvalidKubeConfig(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("flattenKubeConfig failed")
+		}
+	}()
+
+	kubeConfigFile := ""
+
+	_, _, err := flattenKubeConfig(kubeConfigFile)
+	if err == nil {
+		t.Fatalf("flattenKubeConfig should have failed")
+	}
+}
+
 func TestACSEngineK8sCluster_setKubeConfig(t *testing.T) {
 	d := mockClusterResourceData("cluster", "southcentralus", "rg", "prefix")
 	// I need a mock container service

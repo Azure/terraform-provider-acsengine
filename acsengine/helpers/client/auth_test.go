@@ -4,41 +4,45 @@ import "testing"
 
 func TestValidateAuthArgs(t *testing.T) {
 	cases := []struct {
-		Auth        AuthArgs
-		ExpectError bool
+		RawSubscriptionID string
+		RawClientID       string
+		ClientSecret      string
+		AuthMethod        string
+		ExpectError       bool
 	}{
 		{
-			Auth:        AuthArgs{},
-			ExpectError: true,
+			RawSubscriptionID: "",
+			RawClientID:       "",
+			ExpectError:       true,
 		},
-		// {
-		// 	Auth: AuthArgs{
-		// 		RawSubscriptionID: "12345678-9000-1000-1100-120000000000",
-		// 		RawClientID:       "12345678-9000-1000-1100-120000000000",
-		// 	},
-		// 	ExpectError: false,
-		// },
 		{
-			Auth: AuthArgs{
-				RawSubscriptionID: "12345678-9000-1000-1100-120000000000",
-				AuthMethod:        "client_secret",
-				RawClientID:       "12345678-9000-1000-1100-120000000000",
-			},
-			ExpectError: true,
+			RawSubscriptionID: "12345678-9000-1000-1100-120000000000",
+			RawClientID:       "12345678-9000-1000-1100-120000000000",
+			ExpectError:       false,
 		},
-		// {
-		// 	Auth: AuthArgs{
-		// 		RawSubscriptionID: "12345678-9000-1000-1100-120000000000",
-		// 		AuthMethod:        "client_secret",
-		// 		RawClientID:       "1234",
-		// 		ClientSecret:      "12345678-9000-1000-1100-120000000000",
-		// 	},
-		// 	ExpectError: false,
-		// },
+		{
+			RawSubscriptionID: "12345678-9000-1000-1100-120000000000",
+			RawClientID:       "12345678-9000-1000-1100-120000000000",
+			AuthMethod:        "client_secret",
+			ExpectError:       true,
+		},
+		{
+			RawSubscriptionID: "12345678-9000-1000-1100-120000000000",
+			AuthMethod:        "client_secret",
+			RawClientID:       "12345678-9000-1000-1100-120000000000",
+			ClientSecret:      "12345678-9000-1000-1100-120000000000",
+			ExpectError:       false,
+		},
 	}
+
 	for _, tc := range cases {
-		AddAuthArgs(&tc.Auth)
-		err := tc.Auth.ValidateAuthArgs()
+		auth := AuthArgs{}
+		AddAuthArgs(&auth)
+		auth.RawSubscriptionID = tc.RawSubscriptionID
+		auth.RawClientID = tc.RawClientID
+		auth.ClientSecret = tc.ClientSecret
+		auth.AuthMethod = tc.AuthMethod
+		err := auth.ValidateAuthArgs()
 		if err == nil && tc.ExpectError {
 			t.Fatalf("expected error")
 		}

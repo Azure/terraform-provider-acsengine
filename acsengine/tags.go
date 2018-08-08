@@ -125,8 +125,6 @@ func updateResourceGroupTags(d *schema.ResourceData, m interface{}) error {
 		return fmt.Errorf("failed to update resource group: %+v", err)
 	}
 
-	// do I want to tag deployment as well?
-
 	tags := getTags(d)
 
 	cluster, err := loadContainerServiceFromApimodel(d, true, false)

@@ -64,10 +64,10 @@ vendor-status:
 test: fmtcheck
 	go test -i $(TEST) || exit 1
 	echo $(TEST) | \
-		xargs -t -n4 go test $(TESTARGS) -timeout=2m -parallel=4 -coverprofile=coverage.out
+		xargs -t -n4 go test $(TESTARGS) -timeout=2m -parallel=4
 
 testacc: fmtcheck
-	TF_ACC=1 go test ./acsengine -v -timeout 15h
+	@TF_ACC=1 go test ./acsengine -v -timeout 15h
 
 lint:
 	gometalinter ./acsengine/... --disable-all \

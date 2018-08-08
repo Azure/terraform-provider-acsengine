@@ -126,7 +126,29 @@ func TestExpandClusterTags(t *testing.T) {
 	}
 }
 
-func TestACSEngineK8sCluster_flattenTags(t *testing.T) {
+func TestTagValueToString(t *testing.T) {
+	vInt := 1
+	value, err := tagValueToString(vInt)
+	if err != nil {
+		t.Fatalf("failed to convert value to string")
+	}
+	test.Equals(t, value, "1")
+
+	vStr := "hi"
+	value, err = tagValueToString(vStr)
+	if err != nil {
+		t.Fatalf("failed to convert value to string")
+	}
+	test.Equals(t, value, vStr)
+
+	vMap := map[string]string{"good morning": "goodnight"}
+	value, err = tagValueToString(vMap)
+	if err == nil {
+		t.Fatalf("should have failed to convert value to string")
+	}
+}
+
+func TestFlattenTags(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {
 			t.Fatalf("flattenTags failed")
@@ -149,7 +171,7 @@ func TestACSEngineK8sCluster_flattenTags(t *testing.T) {
 	}
 }
 
-func TestACSEngineK8sCluster_flattenTagsEmpty(t *testing.T) {
+func TestFlattenTagsEmpty(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {
 			t.Fatalf("flattenTags failed")
@@ -166,7 +188,22 @@ func TestACSEngineK8sCluster_flattenTagsEmpty(t *testing.T) {
 	test.Equals(t, len(output), 0)
 }
 
-func TestACSEngineK8sCluster_setTags(t *testing.T) {
+// func TestGetTags(t *testing.T) {
+// 	r := resourceArmACSEngineKubernetesCluster()
+// 	d := r.TestResourceData()
+
+// 	tags := map[string]interface{}{}
+// 	if err := d.Set("tags", tags); err != nil {
+// 		t.Fatalf("set tags failed: %+v", err)
+// 	}
+
+// 	if err := getTags(d); err != nil {
+// 		t.Fatalf("failed to get tags: %+v", err)
+// 	}
+
+// }
+
+func TestSetTags(t *testing.T) {
 	r := resourceArmACSEngineKubernetesCluster()
 	d := r.TestResourceData()
 

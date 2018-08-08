@@ -5,7 +5,6 @@ import (
 )
 
 // RetryOnFailure is based on k8s.io/client-go RetryOnConflict but for any error
-// If I figure out common error(s) I can use it as case instead of having default retry
 func RetryOnFailure(backoff wait.Backoff, fn func() error) error {
 	var lastConflictErr error
 	err := wait.ExponentialBackoff(backoff, func() (bool, error) {

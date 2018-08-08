@@ -28,3 +28,23 @@ func TestACSEngineK8sCluster_parseImportID(t *testing.T) {
 		t.Fatalf("failed to parse azureID: %+v", err)
 	}
 }
+
+func TestACSEngineK8sCluster_parseInvalidImportID(t *testing.T) {
+	cases := []struct {
+		ImportID string
+	}{
+		{
+			ImportID: "/subscriptions/1234/resourceGroups/testrg/providers/Microsoft.Resources/deployments/deploymentName",
+		},
+		{
+			ImportID: "_output/dnsPrefix",
+		},
+	}
+
+	for _, tc := range cases {
+		_, _, err := parseImportID(tc.ImportID)
+		if err == nil {
+			t.Fatalf("parseImportID should have failed with ID %s", tc.ImportID)
+		}
+	}
+}
