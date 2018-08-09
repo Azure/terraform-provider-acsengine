@@ -12,8 +12,6 @@ package acsengine
 // - ask about additions to acs-engine: doesn't seem to allow tagging deployment, weird index problem
 // - create a new struct for api.ContainerService so I can write methods for it?
 // - use assert functions where I can so that tests are uniform
-// - chang sp because of silly commit
-// - make sure everything that can't be updated has ForceNew: true
 
 import (
 	"fmt"
