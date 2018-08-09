@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/acctest"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestValidateArmResourceGroupName(t *testing.T) {
@@ -87,9 +88,7 @@ func TestResourceGroupNameDiffSuppress(t *testing.T) {
 	for _, tc := range cases {
 		diff := resourceAzurermResourceGroupNameDiffSuppress("", tc.Old, tc.New, nil)
 
-		if diff != tc.Expected {
-			t.Fatalf("")
-		}
+		assert.Equal(t, diff, tc.Expected, "resource name difference evaluated incorrectly")
 	}
 
 }

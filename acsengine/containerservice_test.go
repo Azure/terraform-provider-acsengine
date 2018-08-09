@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestACSEngineK8sCluster_flattenLinuxProfile(t *testing.T) {
+func TestFlattenLinuxProfile(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {
 			t.Fatalf("flattenLinuxProfile failed")
@@ -30,7 +30,7 @@ func TestACSEngineK8sCluster_flattenLinuxProfile(t *testing.T) {
 	assert.Equal(t, val, adminUsername)
 }
 
-func TestACSEngineK8sCluster_flattenUnsetLinuxProfile(t *testing.T) {
+func TestFlattenUnsetLinuxProfile(t *testing.T) {
 	profile := api.LinuxProfile{
 		AdminUsername: "",
 		SSH: struct {
@@ -48,7 +48,7 @@ func TestACSEngineK8sCluster_flattenUnsetLinuxProfile(t *testing.T) {
 	}
 }
 
-func TestACSEngineK8sCluster_flattenWindowsProfile(t *testing.T) {
+func TestFlattenWindowsProfile(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {
 			t.Fatalf("flattenLinuxProfile failed")
@@ -71,7 +71,7 @@ func TestACSEngineK8sCluster_flattenWindowsProfile(t *testing.T) {
 	assert.Equal(t, val, adminUsername)
 }
 
-func TestACSEngineK8sCluster_flattenUnsetWindowsProfile(t *testing.T) {
+func TestFlattenUnsetWindowsProfile(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {
 			t.Fatalf("flattenLinuxProfile failed")
@@ -91,7 +91,7 @@ func TestACSEngineK8sCluster_flattenUnsetWindowsProfile(t *testing.T) {
 	}
 }
 
-func TestACSEngineK8sCluster_flattenServicePrincipal(t *testing.T) {
+func TestFlattenServicePrincipal(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {
 			t.Fatalf("flattenServicePrincipal failed")
@@ -116,7 +116,7 @@ func TestACSEngineK8sCluster_flattenServicePrincipal(t *testing.T) {
 	assert.Equal(t, val, clientID)
 }
 
-func TestACSEngineK8sCluster_flattenUnsetServicePrincipal(t *testing.T) {
+func TestFlattenUnsetServicePrincipal(t *testing.T) {
 	profile := api.ServicePrincipalProfile{}
 	_, err := flattenServicePrincipal(profile)
 
@@ -125,7 +125,7 @@ func TestACSEngineK8sCluster_flattenUnsetServicePrincipal(t *testing.T) {
 	}
 }
 
-func TestACSEngineK8sCluster_flattenDataSourceServicePrincipal(t *testing.T) {
+func TestFlattenDataSourceServicePrincipal(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {
 			t.Fatalf("flattenServicePrincipal failed")
@@ -150,7 +150,7 @@ func TestACSEngineK8sCluster_flattenDataSourceServicePrincipal(t *testing.T) {
 	assert.Equal(t, val, clientID)
 }
 
-func TestACSEngineK8sCluster_flattenUnsetDataSourceServicePrincipal(t *testing.T) {
+func TestFlattenUnsetDataSourceServicePrincipal(t *testing.T) {
 	profile := api.ServicePrincipalProfile{}
 	_, err := flattenDataSourceServicePrincipal(profile)
 
@@ -159,7 +159,7 @@ func TestACSEngineK8sCluster_flattenUnsetDataSourceServicePrincipal(t *testing.T
 	}
 }
 
-func TestACSEngineK8sCluster_flattenMasterProfile(t *testing.T) {
+func TestFlattenMasterProfile(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {
 			t.Fatalf("flattenMasterProfile failed")
@@ -189,7 +189,7 @@ func TestACSEngineK8sCluster_flattenMasterProfile(t *testing.T) {
 	}
 }
 
-func TestACSEngineK8sCluster_flattenMasterProfileWithOSDiskSize(t *testing.T) {
+func TestFlattenMasterProfileWithOSDiskSize(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {
 			t.Fatalf("flattenMasterProfile failed")
@@ -220,7 +220,7 @@ func TestACSEngineK8sCluster_flattenMasterProfileWithOSDiskSize(t *testing.T) {
 	assert.Equal(t, val.(int), osDiskSize)
 }
 
-func TestACSEngineK8sCluster_flattenUnsetMasterProfile(t *testing.T) {
+func TestFlattenUnsetMasterProfile(t *testing.T) {
 	profile := api.MasterProfile{}
 	_, err := flattenMasterProfile(profile, "")
 
@@ -229,7 +229,7 @@ func TestACSEngineK8sCluster_flattenUnsetMasterProfile(t *testing.T) {
 	}
 }
 
-func TestACSEngineK8sCluster_flattenAgentPoolProfiles(t *testing.T) {
+func TestFlattenAgentPoolProfiles(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {
 			t.Fatalf("flattenAgentPoolProfiles failed")
@@ -271,7 +271,7 @@ func TestACSEngineK8sCluster_flattenAgentPoolProfiles(t *testing.T) {
 	assert.Equal(t, val.(int), osDiskSize)
 }
 
-func TestACSEngineK8sCluster_flattenAgentPoolProfilesWithOSType(t *testing.T) {
+func TestFlattenAgentPoolProfilesWithOSType(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {
 			t.Fatalf("flattenAgentPoolProfiles failed")
@@ -312,7 +312,7 @@ func TestACSEngineK8sCluster_flattenAgentPoolProfilesWithOSType(t *testing.T) {
 	assert.Equal(t, val.(string), "Windows")
 }
 
-func TestACSEngineK8sCluster_flattenUnsetAgentPoolProfiles(t *testing.T) {
+func TestFlattenUnsetAgentPoolProfiles(t *testing.T) {
 	profile := &api.AgentPoolProfile{}
 	profiles := []*api.AgentPoolProfile{profile}
 	_, err := flattenAgentPoolProfiles(profiles)
@@ -322,7 +322,7 @@ func TestACSEngineK8sCluster_flattenUnsetAgentPoolProfiles(t *testing.T) {
 	}
 }
 
-func TestACSEngineK8sCluster_expandLinuxProfile(t *testing.T) {
+func TestExpandLinuxProfile(t *testing.T) {
 	r := resourceArmACSEngineKubernetesCluster()
 	d := r.TestResourceData()
 
@@ -338,7 +338,7 @@ func TestACSEngineK8sCluster_expandLinuxProfile(t *testing.T) {
 	assert.Equal(t, linuxProfile.AdminUsername, "azureuser")
 }
 
-func TestACSEngineK8sCluster_expandWindowsProfile(t *testing.T) {
+func TestExpandWindowsProfile(t *testing.T) {
 	r := resourceArmACSEngineKubernetesCluster()
 	d := r.TestResourceData()
 
@@ -356,7 +356,7 @@ func TestACSEngineK8sCluster_expandWindowsProfile(t *testing.T) {
 	assert.Equal(t, windowsProfile.AdminPassword, adminPassword)
 }
 
-func TestACSEngineK8sCluster_expandServicePrincipal(t *testing.T) {
+func TestExpandServicePrincipal(t *testing.T) {
 	r := resourceArmACSEngineKubernetesCluster()
 	d := r.TestResourceData()
 
@@ -372,7 +372,7 @@ func TestACSEngineK8sCluster_expandServicePrincipal(t *testing.T) {
 	assert.Equal(t, servicePrincipal.ClientID, clientID)
 }
 
-func TestACSEngineK8sCluster_expandMasterProfile(t *testing.T) {
+func TestExpandMasterProfile(t *testing.T) {
 	r := resourceArmACSEngineKubernetesCluster()
 	d := r.TestResourceData()
 
@@ -390,7 +390,7 @@ func TestACSEngineK8sCluster_expandMasterProfile(t *testing.T) {
 	assert.Equal(t, masterProfile.VMSize, vmSize)
 }
 
-func TestACSEngineK8sCluster_expandAgentPoolProfiles(t *testing.T) {
+func TestExpandAgentPoolProfiles(t *testing.T) {
 	r := resourceArmACSEngineKubernetesCluster()
 	d := r.TestResourceData()
 
@@ -588,7 +588,7 @@ func testCertificateProfile() *api.CertificateProfile {
 	return profile
 }
 
-func TestACSEngineK8sCluster_initializeContainerService(t *testing.T) {
+func TestInitializeContainerService(t *testing.T) {
 	name := "testcluster"
 	location := "southcentralus"
 	resourceGroup := "testrg"
@@ -617,7 +617,7 @@ func TestACSEngineK8sCluster_initializeContainerService(t *testing.T) {
 	}
 }
 
-func TestACSEngineK8sCluster_loadContainerServiceFromApimodel(t *testing.T) {
+func TestLoadContainerServiceFromApimodel(t *testing.T) {
 	name := "testcluster"
 	location := "southcentralus"
 
@@ -632,7 +632,7 @@ func TestACSEngineK8sCluster_loadContainerServiceFromApimodel(t *testing.T) {
 	assert.Equal(t, apimodel.Location, location, "cluster location '%s' not found", location)
 }
 
-func TestACSEngineCluster_setProfiles(t *testing.T) {
+func TestSetProfiles(t *testing.T) {
 	dnsPrefix := "lessCreativeMasterDNSPrefix"
 	d := mockClusterResourceData("name1", "westus", "testrg", "creativeMasterDNSPrefix")
 	cluster := mockContainerService("name2", "southcentralus", dnsPrefix)
@@ -646,7 +646,7 @@ func TestACSEngineCluster_setProfiles(t *testing.T) {
 }
 
 // These need to test linux profile...
-func TestACSEngineCluster_setResourceProfiles(t *testing.T) {
+func TestSetResourceProfiles(t *testing.T) {
 	dnsPrefix := "lessCreativeMasterDNSPrefix"
 	d := mockClusterResourceData("name1", "westus", "testrg", "creativeMasterDNSPrefix")
 	cluster := mockContainerService("name2", "southcentralus", dnsPrefix)
@@ -659,7 +659,7 @@ func TestACSEngineCluster_setResourceProfiles(t *testing.T) {
 	assert.Equal(t, v.(string), dnsPrefix, "'master_profile.0.dns_name_prefix' is not set correctly")
 }
 
-func TestACSEngineCluster_setDataSourceProfiles(t *testing.T) {
+func TestSetDataSourceProfiles(t *testing.T) {
 	dnsPrefix := "lessCreativeMasterDNSPrefix"
 	d := mockClusterResourceData("name1", "westus", "testrg", "creativeMasterDNSPrefix")
 	cluster := mockContainerService("name2", "southcentralus", dnsPrefix)

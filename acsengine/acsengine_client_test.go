@@ -8,7 +8,7 @@ import (
 	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/client"
 )
 
-func TestInitializeACSEngineClient(t *testing.T) {
+func TestSetACSEngineClient(t *testing.T) {
 	resourceGroup := "clusterResourceGroup"
 	masterDNSPrefix := "masterDNSPrefix"
 	d := mockClusterResourceData("clusterName", "southcentralus", resourceGroup, masterDNSPrefix)
@@ -17,7 +17,7 @@ func TestInitializeACSEngineClient(t *testing.T) {
 
 	c := client.ACSEngineClient{}
 
-	if err := initializeACSEngineClient(d, &c); err != nil {
+	if err := setACSEngineClient(d, &c); err != nil {
 		t.Fatalf("initializeScaleClient failed: %+v", err)
 	}
 
@@ -29,7 +29,7 @@ func TestInitializeACSEngineClient(t *testing.T) {
 	}
 }
 
-func TestInitializeACSEngineClientBadID(t *testing.T) {
+func TestSetACSEngineClientBadID(t *testing.T) {
 	resourceGroup := "clusterResourceGroup"
 	masterDNSPrefix := "masterDNSPrefix"
 	d := mockClusterResourceData("clusterName", "southcentralus", resourceGroup, masterDNSPrefix)
@@ -37,12 +37,12 @@ func TestInitializeACSEngineClientBadID(t *testing.T) {
 
 	c := client.ACSEngineClient{}
 
-	if err := initializeACSEngineClient(d, &c); err == nil {
+	if err := setACSEngineClient(d, &c); err == nil {
 		t.Fatalf("initializeScaleClient should have failed")
 	}
 }
 
-// func TestInitializeACSEngineClientInvalidAuthArgs(t *testing.T) {
+// func TestsetACSEngineClientInvalidAuthArgs(t *testing.T) {
 // 	resourceGroup := "clusterResourceGroup"
 // 	masterDNSPrefix := "masterDNSPrefix"
 // 	d := mockClusterResourceData("clusterName", "southcentralus", resourceGroup, masterDNSPrefix)
@@ -54,7 +54,7 @@ func TestInitializeACSEngineClientBadID(t *testing.T) {
 
 // 	c := client.ACSEngineClient{}
 
-// 	err := initializeACSEngineClient(d, &c)
+// 	err := setACSEngineClient(d, &c)
 // 	if err == nil {
 // 		t.Fatalf("initializeScaleClient should have failed")
 // 	}

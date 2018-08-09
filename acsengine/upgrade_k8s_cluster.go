@@ -10,8 +10,8 @@ import (
 )
 
 // Upgrades a cluster to a higher Kubernetes version
-func upgradeCluster(d *schema.ResourceData, m interface{}, upgradeVersion string) error {
-	uc, err := initializeUpgradeClient(d, upgradeVersion)
+func upgradeCluster(d *schema.ResourceData, upgradeVersion string) error {
+	uc, err := setUpgradeClient(d, upgradeVersion)
 	if err != nil {
 		return fmt.Errorf("error initializing upgrade client: %+v", err)
 	}
@@ -45,18 +45,16 @@ func upgradeCluster(d *schema.ResourceData, m interface{}, upgradeVersion string
 	return saveTemplates(d, uc.Cluster, uc.DeploymentDirectory)
 }
 
-func initializeUpgradeClient(d *schema.ResourceData, upgradeVersion string) (client.UpgradeClient, error) {
-	uc := client.UpgradeClient{}
+func setUpgradeClient(d *schema.ResourceData, upgradeVersion string) (*client.UpgradeClient, error) {
+	uc := client.NewUpgradeClient()
 
-	err := initializeACSEngineClient(d, &uc.ACSEngineClient)
-	if err != nil {
+	if err := setACSEngineClient(d, &uc.ACSEngineClient); err != nil {
 		return uc, fmt.Errorf("failed to initialize ACSEngineClient: %+v", err)
 	}
 
 	uc.UpgradeVersion = upgradeVersion
 	uc.TimeoutInMinutes = -1
-	err = uc.Validate()
-	if err != nil {
+	if err := uc.Validate(); err != nil {
 		return uc, fmt.Errorf(": %+v", err)
 	}
 

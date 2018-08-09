@@ -2,8 +2,7 @@
 
 
 [[projects]]
-  branch = "jpang/go-sdk"
-  digest = "1:b7fad290c3cac867c9180a43e5c96e0eb4776baa285bd185b2743ac883260c23"
+  digest = "1:d172d8bb2488928f8e33880f53c4394b9d4f93f9eea0b3181cf6b83752629bb6"
   name = "github.com/Azure/acs-engine"
   packages = [
     "pkg/acsengine",
@@ -13,7 +12,6 @@
     "pkg/api/agentPoolOnlyApi/v20180331",
     "pkg/api/agentPoolOnlyApi/vlabs",
     "pkg/api/common",
-    "pkg/api/osa/vlabs",
     "pkg/api/v20160330",
     "pkg/api/v20160930",
     "pkg/api/v20170131",
@@ -34,7 +32,8 @@
     "pkg/operations/kubernetesupgrade",
   ]
   pruneopts = "T"
-  revision = "a37ef2d8cdadaf899806250242f3f00a0c6ff588"
+  revision = "da4127d0ffbad3b62593c43253e3ec59b7bcf75c"
+  version = "v0.20.7"
 
 [[projects]]
   digest = "1:739f535db13b1e0acad1883fcb3cb76978584c9c1b3af52a351c87a9bae7b655"

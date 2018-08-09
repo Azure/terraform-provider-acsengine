@@ -1,17 +1,15 @@
 package acsengine
 
 // TO DO
-// - add tests that check if cluster is running on nodes (I can basically only check if cluster API is there...)
-// - Write documentation
+// - move as much of upgrade and scale into the client package I made and make them struct methods
+// - change import (and maybe other things?) to depend on deployment template which I should be able to get from DeploymentExtended in azure-sdk-for-go
+// - Keep improving documentation
 // - add code coverage
 // - make code more unit test-able and write more unit tests (plus clean up ones I have to use mock objects more?)
-// - Important: fix dependency problems and use dep when acs-engine has been updated - DONE but update when acs-engine version has my change
 // - do I need more translations?
-// - OS type
 // - refactor: better organization of functions, get rid of code duplication, inheritance where it makes sense, better function/variable naming
 // - ask about additions to acs-engine: doesn't seem to allow tagging deployment, weird index problem
 // - create a new struct for api.ContainerService so I can write methods for it?
-// - write an equals helper function?
 
 import (
 	"fmt"
@@ -244,24 +242,26 @@ func resourceArmACSEngineKubernetesCluster() *schema.Resource {
 }
 
 const (
-	acsEngineVersion = "0.20.4" // is this completely separate from the package that calls this?
+	acsEngineVersion = "0.20.4"
 	apiVersion       = "vlabs"
 )
 
 func resourceACSEngineK8sClusterCreate(d *schema.ResourceData, m interface{}) error {
-	err := createClusterResourceGroup(d, m)
+	client := m.(*ArmClient)
+
+	err := createClusterResourceGroup(d, client)
 	if err != nil {
-		return fmt.Errorf("Failed to create resource group: %+v", err)
+		return fmt.Errorf("failed to create resource group: %+v", err)
 	}
 
 	template, parameters, err := generateACSEngineTemplate(d, true)
 	if err != nil {
-		return fmt.Errorf("Failed to generate ACS Engine template: %+v", err)
+		return fmt.Errorf("failed to generate ACS Engine template: %+v", err)
 	}
 
-	id, err := deployTemplate(d, m, template, parameters)
+	id, err := deployTemplate(d, client, template, parameters)
 	if err != nil {
-		return fmt.Errorf("Failed to deploy template: %+v", err)
+		return fmt.Errorf("failed to deploy template: %+v", err)
 	}
 
 	d.SetId(id)
@@ -277,7 +277,7 @@ func resourceACSEngineK8sClusterRead(d *schema.ResourceData, m interface{}) erro
 	}
 
 	if err = d.Set("resource_group", id.ResourceGroup); err != nil {
-		return fmt.Errorf("Error setting `resource_group`: %+v", err)
+		return fmt.Errorf("error setting `resource_group`: %+v", err)
 	}
 
 	cluster, err := loadContainerServiceFromApimodel(d, true, false)
@@ -319,18 +319,16 @@ func resourceACSEngineK8sClusterDelete(d *schema.ResourceData, m interface{}) er
 
 	id, err := utils.ParseAzureResourceID(d.Id())
 	if err != nil {
-		return fmt.Errorf("Error parsing Azure Resource ID %q: %+v", d.Id(), err)
+		return fmt.Errorf("error parsing Azure Resource ID %q: %+v", d.Id(), err)
 	}
 
-	resourceGroupName := id.ResourceGroup
-
-	deleteFuture, err := rgClient.Delete(ctx, resourceGroupName)
+	deleteFuture, err := rgClient.Delete(ctx, id.ResourceGroup)
 	if err != nil {
 		if response.WasNotFound(deleteFuture.Response()) {
 			return nil
 		}
 
-		return fmt.Errorf("Error deleting Resource Group %q: %+v", resourceGroupName, err)
+		return fmt.Errorf("error deleting Resource Group %q: %+v", id.ResourceGroup, err)
 	}
 
 	err = deleteFuture.WaitForCompletion(ctx, rgClient.Client)
@@ -339,7 +337,7 @@ func resourceACSEngineK8sClusterDelete(d *schema.ResourceData, m interface{}) er
 			return nil
 		}
 
-		return fmt.Errorf("Error deleting Resource Group %q: %+v", resourceGroupName, err)
+		return fmt.Errorf("error deleting Resource Group %q: %+v", id.ResourceGroup, err)
 	}
 
 	return nil
@@ -352,15 +350,17 @@ func resourceACSEngineK8sClusterUpdate(d *schema.ResourceData, m interface{}) er
 		return err
 	}
 
+	c := m.(*ArmClient)
+
 	d.Partial(true)
 
 	if d.HasChange("kubernetes_version") {
 		old, new := d.GetChange("kubernetes_version")
 		if err = kubernetes.ValidateKubernetesVersionUpgrade(new.(string), old.(string)); err != nil {
-			return fmt.Errorf("Error upgrading Kubernetes version: %+v", err)
+			return fmt.Errorf("error upgrading Kubernetes version: %+v", err)
 		}
-		if err = upgradeCluster(d, m, new.(string)); err != nil {
-			return fmt.Errorf("Error upgrading Kubernetes version: %+v", err)
+		if err = upgradeCluster(d, new.(string)); err != nil {
+			return fmt.Errorf("error upgrading Kubernetes version: %+v", err)
 		}
 
 		d.SetPartial("kubernetes_version")
@@ -370,9 +370,13 @@ func resourceACSEngineK8sClusterUpdate(d *schema.ResourceData, m interface{}) er
 	for i := 0; i < len(agentPoolProfiles); i++ {
 		profileCount := "agent_pool_profiles." + strconv.Itoa(i) + ".count"
 		if d.HasChange(profileCount) {
-			count := d.Get(profileCount).(int)
-			if err = scaleCluster(d, m, i, count); err != nil {
-				return fmt.Errorf("Error scaling agent pool: %+v", err)
+			v, ok := d.GetOk(profileCount)
+			if !ok {
+				return fmt.Errorf("")
+			}
+			count := v.(int)
+			if err = scaleCluster(d, i, count); err != nil {
+				return fmt.Errorf("error scaling agent pool: %+v", err)
 			}
 		}
 
@@ -380,8 +384,8 @@ func resourceACSEngineK8sClusterUpdate(d *schema.ResourceData, m interface{}) er
 	}
 
 	if d.HasChange("tags") {
-		if err = updateResourceGroupTags(d, m); err != nil {
-			return fmt.Errorf("Error updating tags: %+v", err)
+		if err = updateResourceGroupTags(d, c); err != nil {
+			return fmt.Errorf("error updating tags: %+v", err)
 		}
 
 		d.SetPartial("tags")

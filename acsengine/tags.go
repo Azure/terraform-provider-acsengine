@@ -120,8 +120,8 @@ func setTags(d *schema.ResourceData, tagMap map[string]string) error {
 
 // only updates resource group tags
 // I don't like that this function depends on containerservice.go and that file depends on tags.go
-func updateResourceGroupTags(d *schema.ResourceData, m interface{}) error {
-	if err := createClusterResourceGroup(d, m); err != nil { // this should update... let's see if it works
+func updateResourceGroupTags(d *schema.ResourceData, c *ArmClient) error {
+	if err := createClusterResourceGroup(d, c); err != nil { // this should update... let's see if it works
 		return fmt.Errorf("failed to update resource group: %+v", err)
 	}
 

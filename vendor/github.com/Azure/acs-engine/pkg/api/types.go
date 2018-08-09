@@ -369,16 +369,6 @@ type OpenShiftConfig struct {
 	EnableAADAuthentication bool `json:"enableAADAuthentication,omitempty"`
 
 	ConfigBundles map[string][]byte `json:"configBundles,omitempty"`
-
-	PublicHostname string
-	RouterProfiles []OpenShiftRouterProfile
-}
-
-// OpenShiftRouterProfile represents an OpenShift router.
-type OpenShiftRouterProfile struct {
-	Name            string
-	PublicSubdomain string
-	FQDN            string
 }
 
 // MasterProfile represents the definition of the master cluster
@@ -908,17 +898,6 @@ func (k *KubernetesConfig) IsTillerEnabled() bool {
 		}
 	}
 	return tillerAddon.IsEnabled(DefaultTillerAddonEnabled)
-}
-
-// IsAADPodIdentityEnabled checks if the tiller addon is enabled
-func (k *KubernetesConfig) IsAADPodIdentityEnabled() bool {
-	var aadPodIdentityAddon KubernetesAddon
-	for i := range k.Addons {
-		if k.Addons[i].Name == DefaultAADPodIdentityAddonName {
-			aadPodIdentityAddon = k.Addons[i]
-		}
-	}
-	return aadPodIdentityAddon.IsEnabled(DefaultAADPodIdentityAddonEnabled)
 }
 
 // IsACIConnectorEnabled checks if the ACI Connector addon is enabled

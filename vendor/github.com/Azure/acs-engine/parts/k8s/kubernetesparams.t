@@ -388,13 +388,6 @@
       },
       "type": "string"
     },
-    "kubernetesAADPodIdentityEnabled": {
-      "defaultValue": false,
-      "metadata": {
-        "description": "AAD Pod Identity status"
-      },
-      "type": "bool"
-    },
     "kubernetesACIConnectorEnabled": {
       "defaultValue": false,
       "metadata": {

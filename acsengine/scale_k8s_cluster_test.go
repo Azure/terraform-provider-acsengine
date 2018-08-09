@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestACSEngineK8sCluster_initializeScaleClient(t *testing.T) {
+func TestSetScaleClient(t *testing.T) {
 	resourceGroup := "clusterResourceGroup"
 	masterDNSPrefix := "masterDNSPrefix"
 	d := mockClusterResourceData("clusterName", "southcentralus", resourceGroup, masterDNSPrefix)
@@ -19,9 +19,9 @@ func TestACSEngineK8sCluster_initializeScaleClient(t *testing.T) {
 
 	agentIndex := 0
 	desiredAgentCount := 2
-	sc, err := initializeScaleClient(d, agentIndex, desiredAgentCount)
+	sc, err := setScaleClient(d, agentIndex, desiredAgentCount)
 	if err != nil {
-		t.Fatalf("initializeScaleClient failed: %+v", err)
+		t.Fatalf("setScaleClient failed: %+v", err)
 	}
 
 	assert.Equal(t, sc.ResourceGroupName, resourceGroup, "Resource group is not named correctly")
@@ -29,7 +29,7 @@ func TestACSEngineK8sCluster_initializeScaleClient(t *testing.T) {
 	assert.Equal(t, sc.AuthArgs.SubscriptionID.String(), os.Getenv("ARM_SUBSCRIPTION_ID"), "Subscription ID is not set correctly")
 }
 
-func TestACSEngineK8sCluster_setCountForTemplate(t *testing.T) {
+func TestSetCountForTemplate(t *testing.T) {
 	cases := []struct {
 		DesiredAgentCount int
 		HighestUsedIndex  int
@@ -59,7 +59,7 @@ func TestACSEngineK8sCluster_setCountForTemplate(t *testing.T) {
 	}
 }
 
-func TestACSEngineK8sCluster_setWindowsIndex(t *testing.T) {
+func TestSetWindowsIndex(t *testing.T) {
 	cases := []struct {
 		WindowsIndex  int
 		AgentPoolName string

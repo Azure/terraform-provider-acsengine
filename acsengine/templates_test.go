@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestACSEngineK8sCluster_addValue(t *testing.T) {
+func TestAddValue(t *testing.T) {
 	parameters := map[string]interface{}{}
 
 	addValue(parameters, "key", "data")
@@ -18,7 +18,7 @@ func TestACSEngineK8sCluster_addValue(t *testing.T) {
 	assert.Equal(t, val["value"], "data", "value not set correctly")
 }
 
-func TestACSEngineK8sCluster_expandTemplateBodies(t *testing.T) {
+func TestExpandTemplateBodies(t *testing.T) {
 	body := `{
 		"groceries": {
 			"quinoa": "5",
@@ -51,7 +51,7 @@ func TestACSEngineK8sCluster_expandTemplateBodies(t *testing.T) {
 	assert.Equal(t, v.(string), "2")
 }
 
-func TestACSEngineK8sCluster_expandBody(t *testing.T) {
+func TestExpandBody(t *testing.T) {
 	body := `{
 		"groceries": {
 			"bananas": "5",

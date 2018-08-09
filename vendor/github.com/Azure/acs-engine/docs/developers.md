@@ -5,9 +5,9 @@ acs-engine.
 
 ## Prerequisites
 
-- Go 1.7.0 or later
-- Golang dep 0.4.1 or later
-- kubectl 1.7 or later
+- Go 1.6.0 or later
+- Glide 0.12.0 or later
+- kubectl 1.5 or later
 - An Azure account (needed for deploying VMs and Azure infrastructure)
 - Git
 
@@ -87,8 +87,8 @@ deploy and tear down a cluster as part of the test (this is enabled by default).
 You'll need access to an Azure subscription, as well as at least the following
 environment variables to be set:
 
-* `CLIENT_ID`: "name" field (a URL) from an Azure service principal
-* `CLIENT_SECRET`: "password" field from an Azure service principal
+* `CLIENT_ID`: Azure client ID
+* `CLIENT_SECRET`: Azure client secret
 * `SUBSCRIPTION_ID`: Azure subscription UUID
 * `TENANT_ID`: Azure tenant UUID
 

@@ -21,9 +21,13 @@ type ScaleClient struct {
 	AgentPoolIndex    int
 }
 
+// NewScaleClient returns a new ScaleClient
+func NewScaleClient() *ScaleClient {
+	return &ScaleClient{}
+}
+
 // Validate checks that required client fields are set
 func (sc *ScaleClient) Validate() error {
-	// client.Logger = log.NewEntry(log.New())
 	sc.Logger = log.New().WithField("source", "scaling update")
 
 	if err := sc.ACSEngineClient.Validate(); err != nil {

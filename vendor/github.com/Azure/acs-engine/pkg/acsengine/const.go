@@ -102,9 +102,7 @@ const (
 	DefaultTillerAddonName = "tiller"
 	// DefaultTillerMaxHistory limits the maximum number of revisions saved per release. Use 0 for no limit.
 	DefaultTillerMaxHistory = 0
-	// DefaultAADPodIdentityAddonName is the name of the aad-pod-identity addon deployment
-	DefaultAADPodIdentityAddonName = "aad-pod-identity"
-	// DefaultACIConnectorAddonName is the name of the aci-connector addon deployment
+	// DefaultACIConnectorAddonName is the name of the tiller addon deployment
 	DefaultACIConnectorAddonName = "aci-connector"
 	// DefaultDashboardAddonName is the name of the kubernetes-dashboard addon deployment
 	DefaultDashboardAddonName = "kubernetes-dashboard"

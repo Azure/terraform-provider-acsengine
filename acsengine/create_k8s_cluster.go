@@ -32,8 +32,7 @@ func generateACSEngineTemplate(d *schema.ResourceData, write bool) (template str
 	return template, parameters, nil
 }
 
-func deployTemplate(d *schema.ResourceData, m interface{}, template, parameters string) (id string, err error) {
-	client := m.(*ArmClient)
+func deployTemplate(d *schema.ResourceData, client *ArmClient, template, parameters string) (id string, err error) {
 	deployClient := client.deploymentsClient
 	ctx := client.StopContext
 

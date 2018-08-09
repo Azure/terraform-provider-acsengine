@@ -48,7 +48,8 @@ func addACSEngineClientAuthArgs(d *schema.ResourceData, c *client.ACSEngineClien
 	return nil
 }
 
-func initializeACSEngineClient(d *schema.ResourceData, c *client.ACSEngineClient) error {
+// If I pass an api.ContainerService struct to this, it's easier to move this into separate package
+func setACSEngineClient(d *schema.ResourceData, c *client.ACSEngineClient) error {
 	var err error
 	if v, ok := d.GetOk("resource_group"); ok {
 		c.ResourceGroupName = v.(string)

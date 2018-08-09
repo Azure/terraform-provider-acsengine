@@ -54,8 +54,7 @@ func resourceAzurermResourceGroupNameDiffSuppress(k, old, new string, d *schema.
 // is this the right place for this function?
 
 // Creates a resource group which will be used for all of the cluster resources
-func createClusterResourceGroup(d *schema.ResourceData, m interface{}) error {
-	client := m.(*ArmClient)
+func createClusterResourceGroup(d *schema.ResourceData, client *ArmClient) error {
 	rgClient := client.resourceGroupsClient
 	ctx := client.StopContext
 

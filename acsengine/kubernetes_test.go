@@ -18,7 +18,7 @@ import (
 	// nodeutil "k8s.io/kubernetes/pkg/api/v1/node"
 )
 
-func TestACSEngineK8sCluster_validateKubernetesVersion(t *testing.T) {
+func TestValidateKubernetesVersion(t *testing.T) {
 	cases := []struct {
 		Version     string
 		ExpectError bool
@@ -41,7 +41,7 @@ func TestACSEngineK8sCluster_validateKubernetesVersion(t *testing.T) {
 	}
 }
 
-func TestACSEngineK8sCluster_getKubeConfig(t *testing.T) {
+func TestGetKubeConfig(t *testing.T) {
 	// I should have mockContainerService
 	name := "cluster"
 	location := "southcentralus"
@@ -56,7 +56,7 @@ func TestACSEngineK8sCluster_getKubeConfig(t *testing.T) {
 	assert.Contains(t, kubeconfig, fmt.Sprintf(`"cluster": "%s"`, prefix), "kubeconfig was not set correctly")
 }
 
-func TestACSEngineK8sCluster_flattenKubeConfig(t *testing.T) {
+func TestFlattenKubeConfig(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {
 			t.Fatalf("flattenKubeConfig failed")
@@ -87,7 +87,7 @@ func TestACSEngineK8sCluster_flattenKubeConfig(t *testing.T) {
 	}
 }
 
-func TestACSEngineK8sCluster_flattenInvalidKubeConfig(t *testing.T) {
+func TestFlattenInvalidKubeConfig(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {
 			t.Fatalf("flattenKubeConfig failed")
@@ -102,7 +102,7 @@ func TestACSEngineK8sCluster_flattenInvalidKubeConfig(t *testing.T) {
 	}
 }
 
-func TestACSEngineK8sCluster_setKubeConfig(t *testing.T) {
+func TestSetKubeConfig(t *testing.T) {
 	d := mockClusterResourceData("cluster", "southcentralus", "rg", "prefix")
 	// I need a mock container service
 	cluster, err := loadContainerServiceFromApimodel(d, true, false)

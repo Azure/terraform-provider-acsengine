@@ -18,8 +18,8 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
-func scaleCluster(d *schema.ResourceData, m interface{}, agentIndex, agentCount int) error {
-	sc, err := initializeScaleClient(d, agentIndex, agentCount)
+func scaleCluster(d *schema.ResourceData, agentIndex, agentCount int) error {
+	sc, err := setScaleClient(d, agentIndex, agentCount)
 	if err != nil {
 		return fmt.Errorf("failed to initialize scale client: %+v", err)
 	}
@@ -27,7 +27,7 @@ func scaleCluster(d *schema.ResourceData, m interface{}, agentIndex, agentCount 
 	var currentNodeCount, highestUsedIndex, windowsIndex int
 	var indexToVM []string
 	if sc.AgentPool.IsAvailabilitySets() {
-		if highestUsedIndex, currentNodeCount, windowsIndex, indexToVM, err = scaleVMAS(&sc, d); err != nil {
+		if highestUsedIndex, currentNodeCount, windowsIndex, indexToVM, err = scaleVMAS(sc, d); err != nil {
 			return fmt.Errorf("failed to scale availability set: %+v", err)
 		}
 
@@ -36,22 +36,22 @@ func scaleCluster(d *schema.ResourceData, m interface{}, agentIndex, agentCount 
 			return nil
 		}
 		if currentNodeCount > sc.DesiredAgentCount {
-			return scaleDownCluster(&sc, currentNodeCount, indexToVM, d)
+			return scaleDownCluster(sc, currentNodeCount, indexToVM, d)
 		}
 	} else {
-		if highestUsedIndex, currentNodeCount, windowsIndex, err = scaleVMSS(&sc); err != nil {
+		if highestUsedIndex, currentNodeCount, windowsIndex, err = scaleVMSS(sc); err != nil {
 			return fmt.Errorf("failed to scale scale set: %+v", err)
 		}
 	}
 
-	return scaleUpCluster(&sc, highestUsedIndex, currentNodeCount, windowsIndex, d)
+	return scaleUpCluster(sc, highestUsedIndex, currentNodeCount, windowsIndex, d)
 }
 
-func initializeScaleClient(d *schema.ResourceData, agentIndex int, agentCount int) (client.ScaleClient, error) {
-	sc := client.ScaleClient{}
+func setScaleClient(d *schema.ResourceData, agentIndex int, agentCount int) (*client.ScaleClient, error) {
+	sc := client.NewScaleClient()
 	var err error
 
-	err = initializeACSEngineClient(d, &sc.ACSEngineClient)
+	err = setACSEngineClient(d, &sc.ACSEngineClient)
 	if err != nil {
 		return sc, fmt.Errorf("failed to initialize ACSEngineClient: %+v", err)
 	}
@@ -80,7 +80,7 @@ func scaleVMAS(sc *client.ScaleClient, d *schema.ResourceData) (int, int, int, [
 	windowsIndex := -1
 	highestUsedIndex = 0
 	indexToVM := make([]string, 0)
-	ctx := context.Background()
+	ctx := context.Background() // StopContext
 	vms, err := sc.Client.ListVirtualMachines(ctx, sc.ResourceGroupName)
 	if err != nil {
 		return highestUsedIndex, currentNodeCount, windowsIndex, indexToVM, fmt.Errorf("failed to get vms in the resource group. Error: %s", err.Error())
@@ -120,7 +120,7 @@ func scaleVMSS(sc *client.ScaleClient) (int, int, int, error) {
 	var currentNodeCount, highestUsedIndex int
 	windowsIndex := -1
 	highestUsedIndex = 0
-	ctx := context.Background()
+	ctx := context.Background() // StopContext
 	vmssList, err := sc.Client.ListVirtualMachineScaleSets(ctx, sc.ResourceGroupName)
 	if err != nil {
 		return highestUsedIndex, currentNodeCount, windowsIndex, fmt.Errorf("failed to get vmss list in the resource group: %+v", err)

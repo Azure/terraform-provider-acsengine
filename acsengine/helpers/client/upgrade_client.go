@@ -17,6 +17,11 @@ type UpgradeClient struct {
 	Timeout             *time.Duration
 }
 
+// NewUpgradeClient returns a new UpgradeClient
+func NewUpgradeClient() *UpgradeClient {
+	return &UpgradeClient{}
+}
+
 // Validate checks that required client fields are set
 func (uc *UpgradeClient) Validate() error {
 	uc.Logger = log.New().WithField("source", "upgrade update")

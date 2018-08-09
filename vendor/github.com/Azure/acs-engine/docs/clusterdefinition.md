@@ -35,7 +35,7 @@ Here are the valid values for the orchestrator types:
 | addons                          | no       | Configure various Kubernetes addons configuration (currently supported: tiller, kubernetes-dashboard). See `addons` configuration below                                                                                                                                                                                                                                                                       |
 | apiServerConfig                 | no       | Configure various runtime configuration for apiserver. See `apiServerConfig` [below](#feat-apiserver-config)                                                                                                                                                                                                                                                                                                  |
 | cloudControllerManagerConfig    | no       | Configure various runtime configuration for cloud-controller-manager. See `cloudControllerManagerConfig` [below](#feat-cloud-controller-manager-config)                                                                                                                                                                                                                                                       |
-| clusterSubnet                   | no       | The IP subnet used for allocating IP addresses for pod network interfaces. The subnet must be in the VNET address space. With Azure CNI enabled, the default value is 10.240.0.0/12. Without Azure CNI, the default value is 10.244.0.0/16.                                            |
+| clusterSubnet                   | no       | The IP subnet used for allocating IP addresses for pod network interfaces. The subnet must be in the VNET address space. Default value is 10.244.0.0/16                                                                                                                                                                                                                                                       |
 | containerRuntime                | no       | The container runtime to use as a backend. The default is `docker`. The other options are `clear-containers`, `kata-containers`, and `containerd`                                                                                                                                                                                                                                                             |
 | controllerManagerConfig         | no       | Configure various runtime configuration for controller-manager. See `controllerManagerConfig` [below](#feat-controller-manager-config)                                                                                                                                                                                                                                                                        |
 | customWindowsPackageURL         | no       | Configure custom windows Kubernetes release package URL for deployment on Windows                                                                                                                                                                                                                                                                                                                             |
@@ -74,7 +74,6 @@ Here are the valid values for the orchestrator types:
 | [nvidia-device-plugin](../examples/addons/nvidia-device-plugin/README.md) | true if using a Kubernetes cluster (v1.10+) with an N-series agent pool               | 1                   | Delivers the Kubernetes NVIDIA device plugin component. See https://github.com/NVIDIA/k8s-device-plugin for more info |
 | container-monitoring                       | false               | 1                   | Delivers the Kubernetes container monitoring component |
 | [keyvault-flexvolume](../examples/addons/keyvault-flexvolume/README.md)                        | false               | as many as linux agent nodes                   | Access secrets, keys, and certs in Azure Key Vault from pods |
-| [aad-pod-identity](../examples/addons/aad-pod-identity/README.md)                        | false               | 1 + 1 on each linux agent nodes | Assign Azure Active Directory Identities to Kubernetes applications |
 
 To give a bit more info on the `addons` property: We've tried to expose the basic bits of data that allow useful configuration of these cluster features. Here are some example usage patterns that will unpack what `addons` provide:
 
@@ -260,7 +259,7 @@ Below is a list of controller-manager options that are _not_ currently user-conf
 | ------------------------------------ | ------------------------------------------------------- |
 | "--kubeconfig"                       | "/var/lib/kubelet/kubeconfig"                           |
 | "--allocate-node-cidrs"              | "false"                                                 |
-| "--cluster-cidr"                     | _uses clusterSubnet value_                              |
+| "--cluster-cidr"                     | "10.240.0.0/12"                                         |
 | "--cluster-name"                     | _auto-generated using api model properties_             |
 | "--cloud-provider"                   | "azure"                                                 |
 | "--cloud-config"                     | "/etc/kubernetes/azure.json"                            |
@@ -301,7 +300,7 @@ Below is a list of cloud-controller-manager options that are _not_ currently use
 | ------------------------- | ------------------------------------------- |
 | "--kubeconfig"            | "/var/lib/kubelet/kubeconfig"               |
 | "--allocate-node-cidrs"   | "false"                                     |
-| "--cluster-cidr"          | _uses clusterSubnet value_                  |
+| "--cluster-cidr"          | "10.240.0.0/12"                             |
 | "--cluster-name"          | _auto-generated using api model properties_ |
 | "--cloud-provider"        | "azure"                                     |
 | "--cloud-config"          | "/etc/kubernetes/azure.json"                |

@@ -8,7 +8,7 @@ import (
 )
 
 // correct values are 1, 3, and 5
-func TestAccACSEngineK8sCluster_masterProfileCountValidation(t *testing.T) {
+func TestMasterProfileCountValidation(t *testing.T) {
 	cases := []struct {
 		Value    int
 		ErrCount int
@@ -31,7 +31,7 @@ func TestAccACSEngineK8sCluster_masterProfileCountValidation(t *testing.T) {
 }
 
 // correct values are 1-100, can be even or odd
-func TestAccACSEngineK8sCluster_agentPoolProfileCountValidation(t *testing.T) {
+func TestAgentPoolProfileCountValidation(t *testing.T) {
 	cases := []struct {
 		Value    int
 		ErrCount int

@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// very similar to initializeScaleClient test, get rid of duplicate code (with mock ResourceData function?)
-func TestACSEngineK8sCluster_initializeUpgradeClient(t *testing.T) {
+// very similar to setUpgradeClient test, get rid of duplicate code (with mock ResourceData function?)
+func TestACSEngineK8sCluster_setUpgradeClient(t *testing.T) {
 	resourceGroup := "clusterResourceGroup"
 	masterDNSPrefix := "masterDNSPrefix"
 	d := mockClusterResourceData("clusterName", "southcentralus", resourceGroup, masterDNSPrefix)
@@ -17,9 +17,9 @@ func TestACSEngineK8sCluster_initializeUpgradeClient(t *testing.T) {
 	d.SetId(id)
 
 	upgradeVersion := "1.9.8"
-	uc, err := initializeUpgradeClient(d, upgradeVersion)
+	uc, err := setUpgradeClient(d, upgradeVersion)
 	if err != nil {
-		t.Fatalf("initializeScaleClient failed: %+v", err)
+		t.Fatalf("setUpgradeClient failed: %+v", err)
 	}
 
 	assert.Equal(t, uc.ResourceGroupName, resourceGroup, "Resource group is not named correctly")
