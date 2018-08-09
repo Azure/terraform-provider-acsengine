@@ -9,7 +9,7 @@ import (
 )
 
 func generateACSEngineTemplate(d *schema.ResourceData, write bool) (template string, parameters string, err error) {
-	cluster, err := initializeContainerService(d)
+	cluster, err := setContainerService(d)
 	if err != nil {
 		return "", "", err
 	}
@@ -34,7 +34,6 @@ func generateACSEngineTemplate(d *schema.ResourceData, write bool) (template str
 
 func deployTemplate(d *schema.ResourceData, client *ArmClient, template, parameters string) (id string, err error) {
 	deployClient := client.deploymentsClient
-	ctx := client.StopContext
 
 	var name, resourceGroup string
 	var v interface{}
@@ -50,32 +49,40 @@ func deployTemplate(d *schema.ResourceData, client *ArmClient, template, paramet
 	}
 	resourceGroup = v.(string)
 
-	azureDeployTemplate, azureDeployParameters, err := expandTemplates(template, parameters)
+	azureDeployTemplate, azureDeployParametersFile, err := expandTemplates(template, parameters)
 	if err != nil {
 		return "", fmt.Errorf("failed to expand template and parameters: %+v", err)
 	}
 
-	properties := resources.DeploymentProperties{
-		Mode:       resources.Incremental,
-		Parameters: azureDeployParameters["parameters"],
-		Template:   azureDeployTemplate,
+	if v, ok = azureDeployParametersFile["parameters"]; !ok {
+		return "", fmt.Errorf("azureDeployParameters formatted incorrectly")
 	}
+	azureDeployParameters := v.(map[string]interface{})
 
 	deployment := resources.Deployment{
-		Properties: &properties,
+		Properties: &resources.DeploymentProperties{
+			Mode:       resources.Incremental,
+			Parameters: azureDeployParameters,
+			Template:   azureDeployTemplate,
+		},
 	}
 
-	future, err := deployClient.CreateOrUpdate(ctx, resourceGroup, name, deployment)
+	future, err := deployClient.CreateOrUpdate(client.StopContext, resourceGroup, name, deployment)
 	if err != nil {
 		return "", fmt.Errorf("error creating deployment: %+v", err)
 	}
 	fmt.Println("Deployment created (1)")
 
-	if err = future.WaitForCompletion(ctx, deployClient.Client); err != nil {
+	if err = future.WaitForCompletion(client.StopContext, deployClient.Client); err != nil {
 		return "", fmt.Errorf("error creating deployment: %+v", err)
 	}
+	_, err = future.Result(deployClient)
+	if err != nil {
+		return "", fmt.Errorf("error getting deployment result")
+	}
+	// check response status code
 
-	read, err := deployClient.Get(ctx, resourceGroup, name)
+	read, err := deployClient.Get(client.StopContext, resourceGroup, name)
 	if err != nil {
 		return "", fmt.Errorf("error getting deployment: %+v", err)
 	}
@@ -83,6 +90,7 @@ func deployTemplate(d *schema.ResourceData, client *ArmClient, template, paramet
 		return "", fmt.Errorf("Cannot read ACS Engine Kubernetes cluster deployment %s (resource group %s) ID", name, resourceGroup)
 	}
 	fmt.Printf("[INFO] cluster %q ID: %q\n", name, *read.ID)
+	// also set id to new deployment name?
 
 	return *read.ID, nil
 }

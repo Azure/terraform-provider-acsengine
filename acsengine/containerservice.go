@@ -292,7 +292,7 @@ func expandAgentPoolProfiles(d *schema.ResourceData) ([]*api.AgentPoolProfile, e
 
 // I feel kind of funny about having these functions here
 
-func initializeContainerService(d *schema.ResourceData) (*api.ContainerService, error) {
+func setContainerService(d *schema.ResourceData) (*api.ContainerService, error) {
 	var name, location, kubernetesVersion string
 	var v interface{}
 	var ok bool
@@ -333,10 +333,6 @@ func initializeContainerService(d *schema.ResourceData) (*api.ContainerService, 
 	if err != nil {
 		return nil, fmt.Errorf("error expanding `agent_pool_profiles: %+v`", err)
 	}
-	// windowsProfile, err := createWindowsProfile(d)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("error creating windows profile: %+v", err)
-	// }
 
 	tags := getTags(d)
 

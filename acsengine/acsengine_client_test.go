@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/client"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSetACSEngineClient(t *testing.T) {
@@ -21,12 +22,8 @@ func TestSetACSEngineClient(t *testing.T) {
 		t.Fatalf("initializeScaleClient failed: %+v", err)
 	}
 
-	if c.ResourceGroupName != resourceGroup {
-		t.Fatalf("Resource group is not named correctly")
-	}
-	if c.AuthArgs.SubscriptionID.String() != os.Getenv("ARM_SUBSCRIPTION_ID") {
-		t.Fatalf("Subscription ID is not set correctly")
-	}
+	assert.Equal(t, c.ResourceGroupName, resourceGroup, "Resource group is not named correctly")
+	assert.Equal(t, c.SubscriptionID.String(), os.Getenv("ARM_SUBSCRIPTION_ID"), "Subscription ID is not set correctly")
 }
 
 func TestSetACSEngineClientBadID(t *testing.T) {

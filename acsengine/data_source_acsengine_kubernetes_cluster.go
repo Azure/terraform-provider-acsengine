@@ -172,7 +172,6 @@ func dataSourceACSEngineKubernetesCluster() *schema.Resource {
 func dataSourceACSEngineK8sClusterRead(d *schema.ResourceData, m interface{}) error {
 	client := m.(*ArmClient)
 	deployClient := client.deploymentsClient
-	ctx := client.StopContext
 
 	var name, resourceGroup, apimodel string
 	if v, ok := d.GetOk("name"); ok {
@@ -183,7 +182,7 @@ func dataSourceACSEngineK8sClusterRead(d *schema.ResourceData, m interface{}) er
 	}
 
 	// this could be a problem because the deployment name changes
-	resp, err := deployClient.Get(ctx, resourceGroup, name)
+	resp, err := deployClient.Get(client.StopContext, resourceGroup, name)
 	if err != nil {
 		if utils.ResponseWasNotFound(resp.Response) {
 			return fmt.Errorf("Error: cluster %s (with resource group %s) was not found", name, resourceGroup)

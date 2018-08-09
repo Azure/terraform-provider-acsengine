@@ -11,7 +11,7 @@ package acsengine
 // - refactor: better organization of functions, get rid of code duplication, inheritance where it makes sense, better function/variable naming
 // - ask about additions to acs-engine: doesn't seem to allow tagging deployment, weird index problem
 // - create a new struct for api.ContainerService so I can write methods for it?
-// - use assert functions where I can so that tests are uniform
+// - use assert functions where I can so that tests are uniform, I've accidentally been writing expected and actual in wrong order too
 
 import (
 	"fmt"
@@ -315,7 +315,18 @@ func resourceACSEngineK8sClusterRead(d *schema.ResourceData, m interface{}) erro
 		return err
 	}
 
-	fmt.Println("finished reading")
+	// the ID changes with each deployment because scale and upgrade change it
+	// client := m.(*ArmClient)
+	// read, err := client.deploymentsClient.Get(client.StopContext, id.ResourceGroup, id.Path["deployment"])
+	// if err != nil {
+	// 	return fmt.Errorf("error getting deployment: %+v", err)
+	// }
+	// if read.ID == nil {
+	// 	return fmt.Errorf("Cannot read ACS Engine Kubernetes cluster deployment %s (resource group %s) ID", id.ResourceGroup, id.Path["deployment"])
+	// }
+	// log.Printf("*read.ID: %s", *read.ID)
+	// log.Printf("deployment template: %+v", read.Properties.Template)
+	//
 
 	return nil
 }
@@ -323,30 +334,35 @@ func resourceACSEngineK8sClusterRead(d *schema.ResourceData, m interface{}) erro
 func resourceACSEngineK8sClusterDelete(d *schema.ResourceData, m interface{}) error {
 	client := m.(*ArmClient)
 	rgClient := client.resourceGroupsClient
-	ctx := client.StopContext
 
 	id, err := utils.ParseAzureResourceID(d.Id())
 	if err != nil {
-		return fmt.Errorf("error parsing Azure Resource ID %q: %+v", d.Id(), err)
+		return fmt.Errorf("error parsing Azure resource ID %q: %+v", d.Id(), err)
 	}
 
-	deleteFuture, err := rgClient.Delete(ctx, id.ResourceGroup)
+	deleteFuture, err := rgClient.Delete(client.StopContext, id.ResourceGroup)
 	if err != nil {
 		if response.WasNotFound(deleteFuture.Response()) {
 			return nil
 		}
 
-		return fmt.Errorf("error deleting Resource Group %q: %+v", id.ResourceGroup, err)
+		return fmt.Errorf("error deleting resource Group %q: %+v", id.ResourceGroup, err)
 	}
 
-	err = deleteFuture.WaitForCompletion(ctx, rgClient.Client)
+	err = deleteFuture.WaitForCompletion(client.StopContext, rgClient.Client)
 	if err != nil {
 		if response.WasNotFound(deleteFuture.Response()) {
 			return nil
 		}
 
-		return fmt.Errorf("error deleting Resource Group %q: %+v", id.ResourceGroup, err)
+		return fmt.Errorf("error deleting resource group %q: %+v", id.ResourceGroup, err)
 	}
+
+	_, err = deleteFuture.Result(rgClient)
+	if err != nil {
+		return fmt.Errorf("error deleting resource group %q: %+v", id.ResourceGroup, err)
+	}
+	// if resp.StatusCode == http.StatusNotFound {} // check status
 
 	return nil
 }

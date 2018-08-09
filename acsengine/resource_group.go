@@ -56,7 +56,6 @@ func resourceAzurermResourceGroupNameDiffSuppress(k, old, new string, d *schema.
 // Creates a resource group which will be used for all of the cluster resources
 func createClusterResourceGroup(d *schema.ResourceData, client *ArmClient) error {
 	rgClient := client.resourceGroupsClient
-	ctx := client.StopContext
 
 	var v interface{}
 	var ok bool
@@ -79,12 +78,12 @@ func createClusterResourceGroup(d *schema.ResourceData, client *ArmClient) error
 		Location: &location,
 		Tags:     expandTags(tags),
 	}
-	_, err := rgClient.CreateOrUpdate(ctx, name, parameters)
+	_, err := rgClient.CreateOrUpdate(client.StopContext, name, parameters)
 	if err != nil {
 		return fmt.Errorf("Error creating resource group: %+v", err)
 	}
 
-	resp, err := rgClient.Get(ctx, name)
+	resp, err := rgClient.Get(client.StopContext, name)
 	if err != nil {
 		return fmt.Errorf("Error retrieving resource group: %+v", err)
 	}

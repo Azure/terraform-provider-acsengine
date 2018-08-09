@@ -206,8 +206,7 @@ func testCheckACSEngineClusterTagsExists(name string) resource.TestCheckFunc {
 
 		client := testAccProvider.Meta().(*ArmClient)
 		rgClient := client.resourceGroupsClient
-		ctx := client.StopContext
-		resp, err := rgClient.Get(ctx, resourceGroup)
+		resp, err := rgClient.Get(client.StopContext, resourceGroup)
 		if err != nil {
 			return fmt.Errorf("Error retrieving resource group: %+v", err)
 		}

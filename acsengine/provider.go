@@ -11,7 +11,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
 	"github.com/Azure/go-autorest/autorest/adal"
 	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/authentication"
-	azSchema "github.com/Azure/terraform-provider-acsengine/acsengine/helpers/schema"
+	azschema "github.com/Azure/terraform-provider-acsengine/acsengine/helpers/schema"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
 )
@@ -50,6 +50,7 @@ func Provider() terraform.ResourceProvider {
 				DefaultFunc: schema.EnvDefaultFunc("ARM_ENVIRONMENT", "public"),
 			},
 
+			// CR: see if this is supported, if not remove
 			"skip_credentials_validation": {
 				Type:        schema.TypeBool,
 				Optional:    true,
@@ -148,8 +149,7 @@ func providerConfigure(p *schema.Provider) schema.ConfigureFunc {
 		if !config.SkipCredentialsValidation {
 			// List all the available providers and their registration state to avoid unnecessary
 			// requests. This also lets us check if the provider credentials are correct.
-			ctx := client.StopContext
-			providerList, err := client.providersClient.List(ctx, nil, "")
+			providerList, err := client.providersClient.List(client.StopContext, nil, "")
 			if err != nil {
 				return nil, fmt.Errorf("Unable to list provider registration status, it is possible that this is due to invalid "+
 					"credentials or the service principal does not have permission to use the Resource Manager API, Azure "+
@@ -157,7 +157,7 @@ func providerConfigure(p *schema.Provider) schema.ConfigureFunc {
 			}
 
 			if !config.SkipProviderRegistration {
-				if err = registerAzureResourceProvidersWithSubscription(ctx, providerList.Values(), client.providersClient); err != nil {
+				if err = registerAzureResourceProvidersWithSubscription(client.StopContext, providerList.Values(), client.providersClient); err != nil {
 					return nil, err
 				}
 			}
@@ -177,32 +177,12 @@ func registerProviderWithSubscription(ctx context.Context, providerName string, 
 }
 
 func determineAzureResourceProvidersToRegister(providerList []resources.Provider) map[string]struct{} {
+	// only Compute and Network are used to make a cluster, do I still need KeyVault and Storage?
 	providers := map[string]struct{}{
-		"Microsoft.Authorization":       {},
-		"Microsoft.Automation":          {},
-		"Microsoft.Cache":               {},
-		"Microsoft.Cdn":                 {},
-		"Microsoft.Compute":             {},
-		"Microsoft.ContainerInstance":   {},
-		"Microsoft.ContainerRegistry":   {},
-		"Microsoft.ContainerService":    {},
-		"Microsoft.DataLakeStore":       {},
-		"Microsoft.DBforMySQL":          {},
-		"Microsoft.DBforPostgreSQL":     {},
-		"Microsoft.Devices":             {},
-		"Microsoft.DocumentDB":          {},
-		"Microsoft.EventGrid":           {},
-		"Microsoft.EventHub":            {},
-		"Microsoft.KeyVault":            {},
-		"microsoft.insights":            {},
-		"Microsoft.Network":             {},
-		"Microsoft.OperationalInsights": {},
-		"Microsoft.Relay":               {},
-		"Microsoft.Resources":           {},
-		"Microsoft.Search":              {},
-		"Microsoft.ServiceBus":          {},
-		"Microsoft.Sql":                 {},
-		"Microsoft.Storage":             {},
+		"Microsoft.Compute":  {},
+		"Microsoft.KeyVault": {},
+		"Microsoft.Network":  {},
+		"Microsoft.Storage":  {},
 	}
 
 	// filter out any providers already registered
@@ -248,7 +228,7 @@ func registerAzureResourceProvidersWithSubscription(ctx context.Context, provide
 
 // Deprecated - use `azschema.IgnoreCaseDiffSuppressFunc` instead
 func ignoreCaseDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	return azSchema.IgnoreCaseDiffSuppressFunc(k, old, new, d)
+	return azschema.IgnoreCaseDiffSuppressFunc(k, old, new, d)
 }
 
 // base64Encode encodes data if the input isn't already encoded using
