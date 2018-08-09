@@ -1,6 +1,11 @@
 package acsengine
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
 
 // correct values are 1, 3, and 5
 func TestAccACSEngineK8sCluster_masterProfileCountValidation(t *testing.T) {
@@ -21,9 +26,7 @@ func TestAccACSEngineK8sCluster_masterProfileCountValidation(t *testing.T) {
 		// from resource_arm_container_service.go
 		_, errors := validateMasterProfileCount(tc.Value, "acsengine_kubernetes_cluster")
 
-		if len(errors) != tc.ErrCount {
-			t.Fatalf("Expected the Azure RM Kubernetes cluster master profile count to trigger a validation error for '%d'", tc.Value)
-		}
+		assert.Equal(t, len(errors), tc.ErrCount, fmt.Sprintf("Expected the Azure RM Kubernetes cluster master profile count to trigger a validation error for '%d'", tc.Value))
 	}
 }
 
@@ -48,5 +51,7 @@ func TestAccACSEngineK8sCluster_agentPoolProfileCountValidation(t *testing.T) {
 		if len(errors) != tc.ErrCount {
 			t.Fatalf("Expected the Azure RM Kubernetes cluster agent pool profile Count to trigger a validation error for '%d'", tc.Value)
 		}
+
+		assert.Equal(t, len(errors), tc.ErrCount, fmt.Sprintf("Expected the Azure RM Kubernetes cluster agent pool profile Count to trigger a validation error for '%d'", tc.Value))
 	}
 }

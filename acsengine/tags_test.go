@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/test"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestValidateMaximumNumberOfARMTags(t *testing.T) {
@@ -18,13 +18,9 @@ func TestValidateMaximumNumberOfARMTags(t *testing.T) {
 
 	_, es := validateAzureRMTags(tagsMap, "tags")
 
-	if len(es) != 1 {
-		t.Fatal("Expected one validation error for too many tags")
-	}
+	assert.Equal(t, len(es), 1, "Expected one validation error for too many tags")
 
-	if !strings.Contains(es[0].Error(), "a maximum of 15 tags") {
-		t.Fatal("Wrong validation error message for too many tags")
-	}
+	assert.Contains(t, es[0].Error(), "a maximum of 15 tags", "Wrong validation error message for too many tags")
 }
 
 func TestValidateARMTagMaxKeyLength(t *testing.T) {
@@ -37,17 +33,11 @@ func TestValidateARMTagMaxKeyLength(t *testing.T) {
 		t.Fatal("Expected one validation error for a key which is > 512 chars")
 	}
 
-	if !strings.Contains(es[0].Error(), "maximum length for a tag key") {
-		t.Fatal("Wrong validation error message maximum tag key length")
-	}
+	assert.Contains(t, es[0].Error(), "maximum length for a tag key", "Wrong validation error message maximum tag key length")
 
-	if !strings.Contains(es[0].Error(), tooLongKey) {
-		t.Fatal("Expected validated error to contain the key name")
-	}
+	assert.Contains(t, es[0].Error(), tooLongKey, "Expected validated error to contain the key name")
 
-	if !strings.Contains(es[0].Error(), "513") {
-		t.Fatal("Expected the length in the validation error for tag key")
-	}
+	assert.Contains(t, es[0].Error(), "513", "Expected the length in the validation error for tag key")
 }
 
 func TestValidateARMTagMaxValueLength(t *testing.T) {
@@ -55,21 +45,13 @@ func TestValidateARMTagMaxValueLength(t *testing.T) {
 	tagsMap["toolong"] = strings.Repeat("long", 64) + "a"
 
 	_, es := validateAzureRMTags(tagsMap, "tags")
-	if len(es) != 1 {
-		t.Fatal("Expected one validation error for a value which is > 256 chars")
-	}
+	assert.Equal(t, len(es), 1, "Expected one validation error for a value which is > 256 chars")
 
-	if !strings.Contains(es[0].Error(), "maximum length for a tag value") {
-		t.Fatal("Wrong validation error message for maximum tag value length")
-	}
+	assert.Contains(t, es[0].Error(), "maximum length for a tag value", "Wrong validation error message for maximum tag value length")
 
-	if !strings.Contains(es[0].Error(), "toolong") {
-		t.Fatal("Expected validated error to contain the key name")
-	}
+	assert.Contains(t, es[0].Error(), "toolong", "Expected validated error to contain the key name")
 
-	if !strings.Contains(es[0].Error(), "257") {
-		t.Fatal("Expected the length in the validation error for value")
-	}
+	assert.Contains(t, es[0].Error(), "257", "Expected the length in the validation error for value")
 }
 
 func TestExpandARMTags(t *testing.T) {
@@ -93,9 +75,7 @@ func TestExpandARMTags(t *testing.T) {
 			strVal = fmt.Sprintf("%d", v.(int))
 		}
 
-		if *expanded[k] != strVal {
-			t.Fatalf("Expanded value %q incorrect: expected %q, got %q", k, strVal, expanded[k])
-		}
+		assert.Equal(t, *expanded[k], strVal, "expanded value is incorrect")
 	}
 }
 
@@ -107,9 +87,7 @@ func TestExpandClusterTags(t *testing.T) {
 
 	expanded := expandClusterTags(testData)
 
-	if len(expanded) != 3 {
-		t.Fatalf("Expected 3 results in expanded tag map, got %d", len(expanded))
-	}
+	assert.Equal(t, len(expanded), 3, "Expected 3 results in expanded tag map, got %d", len(expanded))
 
 	for k, v := range testData {
 		var strVal string
@@ -120,9 +98,7 @@ func TestExpandClusterTags(t *testing.T) {
 			strVal = fmt.Sprintf("%d", v.(int))
 		}
 
-		if expanded[k] != strVal {
-			t.Fatalf("Expanded value %q incorrect: expected %q, got %q", k, strVal, expanded[k])
-		}
+		assert.Equal(t, expanded[k], strVal, "Expanded value %q incorrect: expected %q, got %q", k, strVal, expanded[k])
 	}
 }
 
@@ -132,17 +108,17 @@ func TestTagValueToString(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to convert value to string")
 	}
-	test.Equals(t, value, "1")
+	assert.Equal(t, value, "1")
 
 	vStr := "hi"
 	value, err = tagValueToString(vStr)
 	if err != nil {
 		t.Fatalf("failed to convert value to string")
 	}
-	test.Equals(t, value, vStr)
+	assert.Equal(t, value, vStr)
 
 	vMap := map[string]string{"good morning": "goodnight"}
-	value, err = tagValueToString(vMap)
+	_, err = tagValueToString(vMap)
 	if err == nil {
 		t.Fatalf("should have failed to convert value to string")
 	}
@@ -165,10 +141,8 @@ func TestFlattenTags(t *testing.T) {
 	}
 
 	val, ok := output["Environment"]
-	test.OK(t, ok, "output['Environment'] does not exist")
-	if val != "Production" {
-		t.Fatalf("output['Environment'] is not set correctly")
-	}
+	assert.True(t, ok, "output['Environment'] does not exist")
+	assert.Equal(t, val, "Production", "output['Environment'] is not set correctly")
 }
 
 func TestFlattenTagsEmpty(t *testing.T) {
@@ -185,7 +159,7 @@ func TestFlattenTagsEmpty(t *testing.T) {
 		t.Fatalf("flattenTags failed: %v", err)
 	}
 
-	test.Equals(t, len(output), 0)
+	assert.Equal(t, len(output), 0)
 }
 
 // func TestGetTags(t *testing.T) {

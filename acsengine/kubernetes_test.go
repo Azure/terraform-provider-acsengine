@@ -3,11 +3,11 @@ package acsengine
 import (
 	"encoding/base64"
 	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/Azure/terraform-provider-acsengine/acsengine/utils"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -53,9 +53,7 @@ func TestACSEngineK8sCluster_getKubeConfig(t *testing.T) {
 		t.Fatalf("failed to get kube config: %+v", err)
 	}
 
-	if !strings.Contains(kubeconfig, fmt.Sprintf(`"cluster": "%s"`, prefix)) {
-		t.Fatalf(fmt.Sprintf(`kubeconfig was not set correctly: does not contain string '"cluster": "%s"'`, prefix))
-	}
+	assert.Contains(t, kubeconfig, fmt.Sprintf(`"cluster": "%s"`, prefix), "kubeconfig was not set correctly")
 }
 
 func TestACSEngineK8sCluster_flattenKubeConfig(t *testing.T) {
@@ -71,31 +69,21 @@ func TestACSEngineK8sCluster_flattenKubeConfig(t *testing.T) {
 	if err != nil {
 		t.Fatalf("flattenKubeConfig failed: %+v", err)
 	}
-	if len(kubeConfigs) != 1 {
-		t.Fatalf("Incorrect number of kube configs: there are %d kube configs", len(kubeConfigs))
-	}
+	assert.Equal(t, len(kubeConfigs), 1, "incorrect number of kube configs")
 	kubeConfig := kubeConfigs[0].(map[string]interface{})
 	v, ok := kubeConfig["cluster_ca_certificate"]
-	if !ok {
-		t.Fatalf("'cluster_ca_certificate' not found")
-	}
+	assert.True(t, ok, "'cluster_ca_certificate' not found")
 	caCert := v.(string)
-	if caCert != base64Encode("0123") {
-		t.Fatalf("'cluster_ca_certificate' not set correctly: set to %s", caCert)
-	}
+	assert.Equal(t, caCert, base64Encode("0123"), "'cluster_ca_certificate' not set correctly")
 	if v, ok := kubeConfig["host"]; ok {
 		server := v.(string)
 		expected := fmt.Sprintf("https://%s.%s.cloudapp.azure.com", "masterfqdn", "southcentralus")
-		if server != expected {
-			t.Fatalf("Master fqdn is not set correctly: %s != %s", server, expected)
-		}
+		assert.Equal(t, server, expected, "master fqdn is not set correctly")
 	}
 	if v, ok := kubeConfig["username"]; ok {
 		user := v.(string)
 		expected := fmt.Sprintf("%s-admin", "masterfqdn")
-		if user != expected {
-			t.Fatalf("Username is not set correctly: %s != %s", user, expected)
-		}
+		assert.Equal(t, user, expected, "username is not set correctly")
 	}
 }
 

@@ -7,7 +7,7 @@ import (
 
 	"github.com/Azure/acs-engine/pkg/api"
 	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/client"
-	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/test"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestACSEngineK8sCluster_initializeScaleClient(t *testing.T) {
@@ -24,15 +24,9 @@ func TestACSEngineK8sCluster_initializeScaleClient(t *testing.T) {
 		t.Fatalf("initializeScaleClient failed: %+v", err)
 	}
 
-	if sc.ResourceGroupName != resourceGroup {
-		t.Fatalf("Resource group is not named correctly")
-	}
-	if sc.DesiredAgentCount != desiredAgentCount {
-		t.Fatalf("Desired agent count is not set correctly")
-	}
-	if sc.AuthArgs.SubscriptionID.String() != os.Getenv("ARM_SUBSCRIPTION_ID") {
-		t.Fatalf("Subscription ID is not set correctly")
-	}
+	assert.Equal(t, sc.ResourceGroupName, resourceGroup, "Resource group is not named correctly")
+	assert.Equal(t, sc.DesiredAgentCount, desiredAgentCount, "Desired agent count is not set correctly")
+	assert.Equal(t, sc.AuthArgs.SubscriptionID.String(), os.Getenv("ARM_SUBSCRIPTION_ID"), "Subscription ID is not set correctly")
 }
 
 func TestACSEngineK8sCluster_setCountForTemplate(t *testing.T) {
@@ -61,7 +55,7 @@ func TestACSEngineK8sCluster_setCountForTemplate(t *testing.T) {
 			DesiredAgentCount: tc.DesiredAgentCount,
 		}
 		countForTemplate := setCountForTemplate(&sc, tc.HighestUsedIndex, tc.CurrentNodeCount)
-		test.Equals(t, countForTemplate, tc.Expected)
+		assert.Equal(t, countForTemplate, tc.Expected, "count for template should be the same")
 	}
 }
 
@@ -92,6 +86,6 @@ func TestACSEngineK8sCluster_setWindowsIndex(t *testing.T) {
 		}
 		setWindowsIndex(&sc, tc.WindowsIndex, templateJSON)
 
-		test.Equals(t, templateJSON["variables"].(map[string]interface{})[sc.AgentPool.Name+"Index"], tc.WindowsIndex)
+		assert.Equal(t, templateJSON["variables"].(map[string]interface{})[sc.AgentPool.Name+"Index"], tc.WindowsIndex, "Windows index should be the same")
 	}
 }

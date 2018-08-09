@@ -1,9 +1,10 @@
 package acsengine
 
 import (
+	"fmt"
 	"testing"
 
-	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/test"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestACSEngineK8sCluster_addValue(t *testing.T) {
@@ -12,11 +13,9 @@ func TestACSEngineK8sCluster_addValue(t *testing.T) {
 	addValue(parameters, "key", "data")
 
 	v, ok := parameters["key"]
-	test.OK(t, ok, "could not find key")
+	assert.True(t, ok, "could not find key")
 	val := v.(map[string]interface{})
-	if val["value"] != "data" {
-		t.Fatalf("value not set correctly")
-	}
+	assert.Equal(t, val["value"], "data", "value not set correctly")
 }
 
 func TestACSEngineK8sCluster_expandTemplateBodies(t *testing.T) {
@@ -33,26 +32,23 @@ func TestACSEngineK8sCluster_expandTemplateBodies(t *testing.T) {
 	}
 
 	v, ok := parameters["groceries"]
-	test.OK(t, ok, "could not find `groceries`")
+	assert.True(t, ok, "could not find `groceries`")
 	paramsGroceries := v.(map[string]interface{})
-	if len(paramsGroceries) != 2 {
-		t.Fatalf("length of grocery list is not correct: expected 2 and found %d", len(paramsGroceries))
-	}
-	test.Equals(t, len(paramsGroceries), 2)
+	assert.Equal(t, len(paramsGroceries), 2, fmt.Sprintf("length of grocery list is not correct: expected 2 and found %d", len(paramsGroceries)))
 	v, ok = paramsGroceries["quinoa"]
-	test.OK(t, ok, "could not find `quinoa`")
-	test.Equals(t, v.(string), "5")
+	assert.True(t, ok, "could not find `quinoa`")
+	assert.Equal(t, v.(string), "5")
 
 	v, ok = template["groceries"]
-	test.OK(t, ok, "could not find `groceries`")
+	assert.True(t, ok, "could not find `groceries`")
 	templateGroceries := v.(map[string]interface{})
 	if len(templateGroceries) != 2 {
 		t.Fatalf("length of grocery list is not correct: expected 2 and found %d", len(templateGroceries))
 	}
-	test.Equals(t, len(templateGroceries), 2)
+	assert.Equal(t, len(templateGroceries), 2)
 	v, ok = templateGroceries["pasta"]
-	test.OK(t, ok, "could not find `pasta`")
-	test.Equals(t, v.(string), "2")
+	assert.True(t, ok, "could not find `pasta`")
+	assert.Equal(t, v.(string), "2")
 }
 
 func TestACSEngineK8sCluster_expandBody(t *testing.T) {
@@ -69,10 +65,10 @@ func TestACSEngineK8sCluster_expandBody(t *testing.T) {
 	}
 
 	v, ok := expandedBody["groceries"]
-	test.OK(t, ok, "could not find `groceries`")
+	assert.True(t, ok, "could not find `groceries`")
 	groceries := v.(map[string]interface{})
-	test.Equals(t, len(groceries), 2)
+	assert.Equal(t, len(groceries), 2)
 	v, ok = groceries["bananas"]
-	test.OK(t, ok, "could not find `bananas`")
-	test.Equals(t, v.(string), "5")
+	assert.True(t, ok, "could not find `bananas`")
+	assert.Equal(t, v.(string), "5")
 }

@@ -275,9 +275,8 @@ func resourceACSEngineK8sClusterRead(d *schema.ResourceData, m interface{}) erro
 		d.SetId("")
 		return err
 	}
-	resourceGroup := id.ResourceGroup
 
-	if err = d.Set("resource_group", resourceGroup); err != nil {
+	if err = d.Set("resource_group", id.ResourceGroup); err != nil {
 		return fmt.Errorf("Error setting `resource_group`: %+v", err)
 	}
 
@@ -286,16 +285,13 @@ func resourceACSEngineK8sClusterRead(d *schema.ResourceData, m interface{}) erro
 		return fmt.Errorf("error parsing API model: %+v", err)
 	}
 
-	err = d.Set("name", cluster.Name)
-	if err != nil {
+	if err = d.Set("name", cluster.Name); err != nil {
 		return fmt.Errorf("error setting `name`: %+v", err)
 	}
-	err = d.Set("location", azureRMNormalizeLocation(cluster.Location))
-	if err != nil {
+	if err = d.Set("location", azureRMNormalizeLocation(cluster.Location)); err != nil {
 		return fmt.Errorf("error setting `location`: %+v", err)
 	}
-	err = d.Set("kubernetes_version", cluster.Properties.OrchestratorProfile.OrchestratorVersion)
-	if err != nil {
+	if err = d.Set("kubernetes_version", cluster.Properties.OrchestratorProfile.OrchestratorVersion); err != nil {
 		return fmt.Errorf("error setting `kubernetes_version`: %+v", err)
 	}
 

@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/Azure/acs-engine/pkg/api"
-	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/test"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestACSEngineK8sCluster_flattenLinuxProfile(t *testing.T) {
@@ -23,13 +23,11 @@ func TestACSEngineK8sCluster_flattenLinuxProfile(t *testing.T) {
 		t.Fatalf("flattenLinuxProfile failed: %v", err)
 	}
 
-	if len(linuxProfile) != 1 {
-		t.Fatalf("flattenLinuxProfile failed: did not find one linux profile")
-	}
+	assert.Equal(t, len(linuxProfile), 1, "did not find linux profile")
 	linuxPf := linuxProfile[0].(map[string]interface{})
 	val, ok := linuxPf["admin_username"]
-	test.OK(t, ok, "flattenLinuxProfile failed: Master count does not exist")
-	test.Equals(t, val, adminUsername)
+	assert.True(t, ok, "flattenLinuxProfile failed: Master count does not exist")
+	assert.Equal(t, val, adminUsername)
 }
 
 func TestACSEngineK8sCluster_flattenUnsetLinuxProfile(t *testing.T) {
@@ -66,13 +64,11 @@ func TestACSEngineK8sCluster_flattenWindowsProfile(t *testing.T) {
 		t.Fatalf("flattenWindowsProfile failed: %v", err)
 	}
 
-	if len(windowsProfile) != 1 {
-		t.Fatalf("flattenWindowsProfile failed: did not find one Windows profile")
-	}
+	assert.Equal(t, len(windowsProfile), 1, "did not find windows profile")
 	windowsPf := windowsProfile[0].(map[string]interface{})
 	val, ok := windowsPf["admin_username"]
-	test.OK(t, ok, "flattenWindowsProfile failed: admin username does not exist")
-	test.Equals(t, val, adminUsername)
+	assert.True(t, ok, "flattenWindowsProfile failed: admin username does not exist")
+	assert.Equal(t, val, adminUsername)
 }
 
 func TestACSEngineK8sCluster_flattenUnsetWindowsProfile(t *testing.T) {
@@ -116,8 +112,8 @@ func TestACSEngineK8sCluster_flattenServicePrincipal(t *testing.T) {
 	}
 	spPf := servicePrincipal[0].(map[string]interface{})
 	val, ok := spPf["client_id"]
-	test.OK(t, ok, "flattenServicePrincipal failed: Master count does not exist")
-	test.Equals(t, val, clientID)
+	assert.True(t, ok, "flattenServicePrincipal failed: Master count does not exist")
+	assert.Equal(t, val, clientID)
 }
 
 func TestACSEngineK8sCluster_flattenUnsetServicePrincipal(t *testing.T) {
@@ -150,8 +146,8 @@ func TestACSEngineK8sCluster_flattenDataSourceServicePrincipal(t *testing.T) {
 	}
 	spPf := servicePrincipal[0].(map[string]interface{})
 	val, ok := spPf["client_id"]
-	test.OK(t, ok, "flattenDataSourceServicePrincipal failed: Master count does not exist")
-	test.Equals(t, val, clientID)
+	assert.True(t, ok, "flattenDataSourceServicePrincipal failed: Master count does not exist")
+	assert.Equal(t, val, clientID)
 }
 
 func TestACSEngineK8sCluster_flattenUnsetDataSourceServicePrincipal(t *testing.T) {
@@ -186,8 +182,8 @@ func TestACSEngineK8sCluster_flattenMasterProfile(t *testing.T) {
 	}
 	masterPf := masterProfile[0].(map[string]interface{})
 	val, ok := masterPf["count"]
-	test.OK(t, ok, "flattenMasterProfile failed: Master count does not exist")
-	test.Equals(t, val, int(count))
+	assert.True(t, ok, "flattenMasterProfile failed: Master count does not exist")
+	assert.Equal(t, val, int(count))
 	if val, ok := masterPf["os_disk_size"]; ok {
 		t.Fatalf("OS disk size should not be set but value is %d", val.(int))
 	}
@@ -217,11 +213,11 @@ func TestACSEngineK8sCluster_flattenMasterProfileWithOSDiskSize(t *testing.T) {
 	}
 	masterPf := masterProfile[0].(map[string]interface{})
 	val, ok := masterPf["count"]
-	test.OK(t, ok, "flattenMasterProfile failed: Master count does not exist")
-	test.Equals(t, val, int(count))
+	assert.True(t, ok, "flattenMasterProfile failed: Master count does not exist")
+	assert.Equal(t, val, int(count))
 	val, ok = masterPf["os_disk_size"]
-	test.OK(t, ok, "OS disk size should was not set correctly")
-	test.Equals(t, val.(int), osDiskSize)
+	assert.True(t, ok, "OS disk size should was not set correctly")
+	assert.Equal(t, val.(int), osDiskSize)
 }
 
 func TestACSEngineK8sCluster_flattenUnsetMasterProfile(t *testing.T) {
@@ -261,18 +257,18 @@ func TestACSEngineK8sCluster_flattenAgentPoolProfiles(t *testing.T) {
 	}
 	agentPf0 := agentPoolProfiles[0].(map[string]interface{})
 	val, ok := agentPf0["count"]
-	test.OK(t, ok, "agent pool count does not exist")
-	test.Equals(t, val.(int), count)
+	assert.True(t, ok, "agent pool count does not exist")
+	assert.Equal(t, val.(int), count)
 	if val, ok := agentPf0["os_disk_size"]; ok {
 		t.Fatalf("agent pool OS disk size should not be set, but is %d", val.(int))
 	}
 	agentPf1 := agentPoolProfiles[1].(map[string]interface{})
 	val, ok = agentPf1["name"]
-	test.OK(t, ok, "flattenAgentPoolProfile failed: agent pool count does not exist")
-	test.Equals(t, val.(string), name)
+	assert.True(t, ok, "flattenAgentPoolProfile failed: agent pool count does not exist")
+	assert.Equal(t, val.(string), name)
 	val, ok = agentPf1["os_disk_size"]
-	test.OK(t, ok, "agent pool os disk size is not set when it should be")
-	test.Equals(t, val.(int), osDiskSize)
+	assert.True(t, ok, "agent pool os disk size is not set when it should be")
+	assert.Equal(t, val.(int), osDiskSize)
 }
 
 func TestACSEngineK8sCluster_flattenAgentPoolProfilesWithOSType(t *testing.T) {
@@ -302,18 +298,18 @@ func TestACSEngineK8sCluster_flattenAgentPoolProfilesWithOSType(t *testing.T) {
 	}
 	agentPf0 := agentPoolProfiles[0].(map[string]interface{})
 	val, ok := agentPf0["count"]
-	test.OK(t, ok, "agent pool count does not exist")
-	test.Equals(t, val.(int), count)
+	assert.True(t, ok, "agent pool count does not exist")
+	assert.Equal(t, val.(int), count)
 	if val, ok := agentPf0["os_type"]; ok {
 		t.Fatalf("agent pool OS type should not be set, but is %d", val.(int))
 	}
 	agentPf1 := agentPoolProfiles[1].(map[string]interface{})
 	val, ok = agentPf1["name"]
-	test.OK(t, ok, "flattenAgentPoolProfile failed: agent pool count does not exist")
-	test.Equals(t, val.(string), name)
+	assert.True(t, ok, "flattenAgentPoolProfile failed: agent pool count does not exist")
+	assert.Equal(t, val.(string), name)
 	val, ok = agentPf1["os_type"]
-	test.OK(t, ok, "'os_type' does not exist")
-	test.Equals(t, val.(string), "Windows")
+	assert.True(t, ok, "'os_type' does not exist")
+	assert.Equal(t, val.(string), "Windows")
 }
 
 func TestACSEngineK8sCluster_flattenUnsetAgentPoolProfiles(t *testing.T) {
@@ -339,7 +335,7 @@ func TestACSEngineK8sCluster_expandLinuxProfile(t *testing.T) {
 		t.Fatalf("expand linux profile failed: %v", err)
 	}
 
-	test.Equals(t, linuxProfile.AdminUsername, "azureuser")
+	assert.Equal(t, linuxProfile.AdminUsername, "azureuser")
 }
 
 func TestACSEngineK8sCluster_expandWindowsProfile(t *testing.T) {
@@ -356,8 +352,8 @@ func TestACSEngineK8sCluster_expandWindowsProfile(t *testing.T) {
 		t.Fatalf("expand Windows profile failed: %v", err)
 	}
 
-	test.Equals(t, windowsProfile.AdminUsername, adminUsername)
-	test.Equals(t, windowsProfile.AdminPassword, adminPassword)
+	assert.Equal(t, windowsProfile.AdminUsername, adminUsername)
+	assert.Equal(t, windowsProfile.AdminPassword, adminPassword)
 }
 
 func TestACSEngineK8sCluster_expandServicePrincipal(t *testing.T) {
@@ -373,7 +369,7 @@ func TestACSEngineK8sCluster_expandServicePrincipal(t *testing.T) {
 		t.Fatalf("expand service principal failed: %v", err)
 	}
 
-	test.Equals(t, servicePrincipal.ClientID, clientID)
+	assert.Equal(t, servicePrincipal.ClientID, clientID)
 }
 
 func TestACSEngineK8sCluster_expandMasterProfile(t *testing.T) {
@@ -390,8 +386,8 @@ func TestACSEngineK8sCluster_expandMasterProfile(t *testing.T) {
 		t.Fatalf("expand master profile failed: %v", err)
 	}
 
-	test.Equals(t, masterProfile.DNSPrefix, dnsPrefix)
-	test.Equals(t, masterProfile.VMSize, vmSize)
+	assert.Equal(t, masterProfile.DNSPrefix, dnsPrefix)
+	assert.Equal(t, masterProfile.VMSize, vmSize)
 }
 
 func TestACSEngineK8sCluster_expandAgentPoolProfiles(t *testing.T) {
@@ -416,15 +412,15 @@ func TestACSEngineK8sCluster_expandAgentPoolProfiles(t *testing.T) {
 		t.Fatalf("expand agent pool profiles failed: %v", err)
 	}
 
-	test.Equals(t, len(profiles), 2)
-	test.Equals(t, profiles[0].Name, agentPool1Name)
-	test.Equals(t, profiles[0].Count, agentPool1Count)
-	test.Equals(t, profiles[0].OSDiskSizeGB, 0)
+	assert.Equal(t, len(profiles), 2)
+	assert.Equal(t, profiles[0].Name, agentPool1Name)
+	assert.Equal(t, profiles[0].Count, agentPool1Count)
+	assert.Equal(t, profiles[0].OSDiskSizeGB, 0)
 	if profiles[0].OSType != api.Linux {
 		t.Fatalf("The first agent pool profile has OS type %s when it should be %s", profiles[0].OSType, api.Linux)
 	}
-	test.Equals(t, profiles[1].Count, agentPool2Count)
-	test.Equals(t, profiles[1].OSDiskSizeGB, agentPool2osDiskSize)
+	assert.Equal(t, profiles[1].Count, agentPool2Count)
+	assert.Equal(t, profiles[1].OSDiskSizeGB, agentPool2osDiskSize)
 	if profiles[1].OSType != api.Windows {
 		t.Fatalf("The first agent pool profile has OS type %s when it should be %s", profiles[0].OSType, api.Windows)
 	}
@@ -632,12 +628,8 @@ func TestACSEngineK8sCluster_loadContainerServiceFromApimodel(t *testing.T) {
 		t.Fatalf("failed to load container service from api model: %+v", err)
 	}
 
-	if apimodel.Name != name {
-		t.Fatalf("cluster name '%s' not found", name)
-	}
-	if apimodel.Location != location {
-		t.Fatalf("cluster location '%s' not found", location)
-	}
+	assert.Equal(t, apimodel.Name, name, "cluster name '%s' not found", name)
+	assert.Equal(t, apimodel.Location, location, "cluster location '%s' not found", location)
 }
 
 func TestACSEngineCluster_setProfiles(t *testing.T) {
@@ -649,12 +641,8 @@ func TestACSEngineCluster_setProfiles(t *testing.T) {
 		t.Fatalf("setProfiles failed: %+v", err)
 	}
 	v, ok := d.GetOk("master_profile.0.dns_name_prefix")
-	if !ok {
-		t.Fatalf("failed to get 'master_profile.0.dns_name_prefix'")
-	}
-	if v.(string) != dnsPrefix {
-		t.Fatalf("'master_profile.0.dns_name_prefix' is not set correctly - actual: '%s', expected: '%s'", v.(string), dnsPrefix)
-	}
+	assert.True(t, ok, "failed to get 'master_profile.0.dns_name_prefix'")
+	assert.Equal(t, v.(string), dnsPrefix, "'master_profile.0.dns_name_prefix' is not set correctly")
 }
 
 // These need to test linux profile...
@@ -667,12 +655,8 @@ func TestACSEngineCluster_setResourceProfiles(t *testing.T) {
 		t.Fatalf("setProfiles failed: %+v", err)
 	}
 	v, ok := d.GetOk("master_profile.0.dns_name_prefix")
-	if !ok {
-		t.Fatalf("failed to get 'master_profile.0.dns_name_prefix'")
-	}
-	if v.(string) != dnsPrefix {
-		t.Fatalf("'master_profile.0.dns_name_prefix' is not set correctly - actual: '%s', expected: '%s'", v.(string), dnsPrefix)
-	}
+	assert.True(t, ok, "failed to get 'master_profile.0.dns_name_prefix'")
+	assert.Equal(t, v.(string), dnsPrefix, "'master_profile.0.dns_name_prefix' is not set correctly")
 }
 
 func TestACSEngineCluster_setDataSourceProfiles(t *testing.T) {
@@ -684,10 +668,6 @@ func TestACSEngineCluster_setDataSourceProfiles(t *testing.T) {
 		t.Fatalf("setProfiles failed: %+v", err)
 	}
 	v, ok := d.GetOk("master_profile.0.dns_name_prefix")
-	if !ok {
-		t.Fatalf("failed to get 'master_profile.0.dns_name_prefix'")
-	}
-	if v.(string) != dnsPrefix {
-		t.Fatalf("'master_profile.0.dns_name_prefix' is not set correctly - actual: '%s', expected: '%s'", v.(string), dnsPrefix)
-	}
+	assert.True(t, ok, "failed to get 'master_profile.0.dns_name_prefix'")
+	assert.Equal(t, v.(string), dnsPrefix, "'master_profile.0.dns_name_prefix' is not set correctly")
 }

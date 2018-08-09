@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 // very similar to initializeScaleClient test, get rid of duplicate code (with mock ResourceData function?)
@@ -20,13 +22,7 @@ func TestACSEngineK8sCluster_initializeUpgradeClient(t *testing.T) {
 		t.Fatalf("initializeScaleClient failed: %+v", err)
 	}
 
-	if uc.ResourceGroupName != resourceGroup {
-		t.Fatalf("Resource group is not named correctly")
-	}
-	if uc.UpgradeVersion != upgradeVersion {
-		t.Fatalf("Desired agent count is not set correctly")
-	}
-	if uc.AuthArgs.SubscriptionID.String() != os.Getenv("ARM_SUBSCRIPTION_ID") {
-		t.Fatalf("Subscription ID is not set correctly")
-	}
+	assert.Equal(t, uc.ResourceGroupName, resourceGroup, "Resource group is not named correctly")
+	assert.Equal(t, uc.UpgradeVersion, upgradeVersion, "Desired agent count is not named correctly")
+	assert.Equal(t, uc.AuthArgs.SubscriptionID.String(), os.Getenv("ARM_SUBSCRIPTION_ID"), "Subscription ID is not set correctly")
 }

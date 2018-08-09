@@ -18,7 +18,6 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
-// Creates ScaleClient, loads ACS Engine templates, finds relevant node VM info, calls appropriate function for scaling up or down
 func scaleCluster(d *schema.ResourceData, m interface{}, agentIndex, agentCount int) error {
 	sc, err := initializeScaleClient(d, agentIndex, agentCount)
 	if err != nil {
@@ -48,7 +47,6 @@ func scaleCluster(d *schema.ResourceData, m interface{}, agentIndex, agentCount 
 	return scaleUpCluster(&sc, highestUsedIndex, currentNodeCount, windowsIndex, d)
 }
 
-// Creates and initializes most fields in client.ScaleClient and returns it
 func initializeScaleClient(d *schema.ResourceData, agentIndex int, agentCount int) (client.ScaleClient, error) {
 	sc := client.ScaleClient{}
 	var err error
@@ -77,7 +75,6 @@ func initializeScaleClient(d *schema.ResourceData, agentIndex int, agentCount in
 	return sc, nil
 }
 
-// scale VM availability sets
 func scaleVMAS(sc *client.ScaleClient, d *schema.ResourceData) (int, int, int, []string, error) {
 	var currentNodeCount, highestUsedIndex, vmNum int
 	windowsIndex := -1
@@ -90,7 +87,6 @@ func scaleVMAS(sc *client.ScaleClient, d *schema.ResourceData) (int, int, int, [
 	} else if len(vms.Values()) < 1 {
 		return highestUsedIndex, currentNodeCount, windowsIndex, indexToVM, fmt.Errorf("The provided resource group does not contain any vms")
 	}
-	index := 0
 	for _, vm := range vms.Values() {
 		vmTags := vm.Tags
 		poolName := *vmTags["poolName"]
@@ -114,14 +110,12 @@ func scaleVMAS(sc *client.ScaleClient, d *schema.ResourceData) (int, int, int, [
 		}
 
 		indexToVM = append(indexToVM, *vm.Name)
-		index++
 	}
 	currentNodeCount = len(indexToVM)
 
 	return highestUsedIndex, currentNodeCount, windowsIndex, indexToVM, nil
 }
 
-// scale VM scale sets
 func scaleVMSS(sc *client.ScaleClient) (int, int, int, error) {
 	var currentNodeCount, highestUsedIndex int
 	windowsIndex := -1
@@ -193,7 +187,6 @@ func scaleDownCluster(sc *client.ScaleClient, currentNodeCount int, indexToVM []
 	return saveScaledApimodel(sc, d)
 }
 
-// Scales up clusters by creating new nodes within an agent pool
 func scaleUpCluster(sc *client.ScaleClient, highestUsedIndex, currentNodeCount, windowsIndex int, d *schema.ResourceData) error {
 	sc.Cluster.Properties.AgentPoolProfiles = []*api.AgentPoolProfile{sc.AgentPool} // how does this work when there's multiple agent pools?
 

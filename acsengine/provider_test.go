@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/stretchr/testify/assert"
 )
 
 var testAccProviders map[string]terraform.ResourceProvider
@@ -74,9 +75,7 @@ func TestBase64Encode(t *testing.T) {
 	for _, tc := range cases {
 		output := base64Encode(tc.Input)
 
-		if output != tc.Output {
-			t.Fatalf("expected %s but got %s", output, tc.Output)
-		}
+		assert.Equal(t, output, tc.Output)
 	}
 }
 
@@ -101,9 +100,7 @@ func TestIgnoreCaseDiffSuppressFunc(t *testing.T) {
 	for _, tc := range cases {
 		diff := ignoreCaseDiffSuppressFunc("", tc.Old, tc.New, nil)
 
-		if diff != tc.Expected {
-			t.Fatalf("")
-		}
+		assert.Equal(t, diff, tc.Expected, "different from expected")
 	}
 
 }
@@ -126,9 +123,7 @@ func TestIsBase64Encoded(t *testing.T) {
 	for _, tc := range cases {
 		output := isBase64Encoded(tc.Input)
 
-		if output != tc.Output {
-			t.Fatalf("expected %t but got %t", output, tc.Output)
-		}
+		assert.Equal(t, output, tc.Output)
 	}
 }
 

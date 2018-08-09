@@ -1,12 +1,14 @@
 package acsengine
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
 
 func TestAzureRMNormalizeLocation(t *testing.T) {
 	s := azureRMNormalizeLocation("West US")
-	if s != "westus" {
-		t.Fatalf("expected location to equal westus, actual %s", s)
-	}
+	assert.Equal(t, s, "westus", "location not normalized correctly")
 }
 
 func TestAzureRMSuppressLocationDiff(t *testing.T) {
@@ -30,8 +32,6 @@ func TestAzureRMSuppressLocationDiff(t *testing.T) {
 	for _, tc := range cases {
 		diff := azureRMSuppressLocationDiff("", tc.Old, tc.New, nil)
 
-		if diff != tc.Expected {
-			t.Errorf("%s == %s - actual: %t, expected: %t", tc.Old, tc.New, diff, tc.Expected)
-		}
+		assert.Equal(t, diff, tc.Expected, "%s == %s", tc.Old, tc.New)
 	}
 }

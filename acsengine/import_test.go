@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/Azure/terraform-provider-acsengine/acsengine/utils"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestACSEngineK8sCluster_parseImportID(t *testing.T) {
@@ -17,12 +18,11 @@ func TestACSEngineK8sCluster_parseImportID(t *testing.T) {
 		t.Fatalf("parseImportID failed: %+v", err)
 	}
 
-	if azureID != azureIDInput {
-		t.Fatalf("parseImportID failed: azureID was %s but expected %s", azureID, azureIDInput)
-	}
+	assert.Equal(t, azureID, azureIDInput, "parseImportID failed")
 	if deploymentDirectory != deploymentDirectoryInput {
 		t.Fatalf("parseImportID failed: deploymentDirectory was %s but expected %s", deploymentDirectory, deploymentDirectoryInput)
 	}
+	assert.Equal(t, deploymentDirectory, deploymentDirectoryInput, "parseImportID failed")
 
 	if _, err = utils.ParseAzureResourceID(azureID); err != nil {
 		t.Fatalf("failed to parse azureID: %+v", err)

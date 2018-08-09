@@ -4,6 +4,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 // made it an acceptance test more because of the time it takes
@@ -59,22 +61,12 @@ func TestAccACSEngineK8sCluster_generateTemplateBasic(t *testing.T) {
 		}
 
 		// now I can test that the template and parameters look okay I guess...
-		if !strings.Contains(parameters, tc.AdminUsername) {
-			t.Fatalf("Expected the Azure RM Kubernetes cluster to have parameter '%s'", tc.AdminUsername)
-		}
-		if !strings.Contains(parameters, testClientID()) {
-			t.Fatalf("Expected the Azure RM Kubernetes cluster to have parameter '%s'", testClientID())
-		}
-		if !strings.Contains(parameters, vmSize) {
-			t.Fatalf("Expected the Azure RM Kubernetes cluster to have parameter '%s'", vmSize)
-		}
-		if !strings.Contains(parameters, strconv.Itoa(tc.AgentPoolCount)) {
-			t.Fatalf("Expected the Azure RM Kubernetes cluster to have parameter '%d'", tc.AgentPoolCount)
-		}
+		assert.Contains(t, parameters, tc.AdminUsername, "cluster admin username set incorrectly in parameters")
+		assert.Contains(t, parameters, testClientID(), "cluster client ID set incorrectly in parameters")
+		assert.Contains(t, parameters, vmSize, "cluster VM size set incorrectly in parameters")
+		assert.Contains(t, parameters, strconv.Itoa(tc.AgentPoolCount), "cluster agent pool count set incorrectly in parameters")
 
-		if !strings.Contains(template, agentPoolName+"Count") {
-			t.Fatalf("Expected the Azure RM Kubernetes cluster to have field '%s'", agentPoolName+"Count")
-		}
+		assert.Contains(t, template, agentPoolName+"Count", "cluster count set incorrectly in template")
 
 		if tc.ExpectError {
 			t.Fatalf("Expected the Kubernetes Cluster Agent Pool Name to trigger an error for '%s'", tc.Name)
@@ -136,12 +128,8 @@ func TestAccACSEngineK8sCluster_generateTemplateCustomized(t *testing.T) {
 			t.Fatalf("Template generation failed: %v", err)
 		}
 
-		if !strings.Contains(parameters, tc.AdminUsername) {
-			t.Fatalf("Expected the Azure RM Kubernetes cluster to have parameter '%s'", tc.AdminUsername)
-		}
-		if !strings.Contains(parameters, testClientID()) {
-			t.Fatalf("Expected the Azure RM Kubernetes cluster to have parameter '%s'", testClientID())
-		}
+		assert.Contains(t, parameters, tc.AdminUsername, "cluster admin username set incorrectly in parameters")
+		assert.Contains(t, parameters, testClientID(), "cluster client ID set incorrectly in parameters")
 		if !strings.Contains(parameters, tc.MasterVMSize) {
 			t.Fatalf("Expected the Azure RM Kubernetes cluster to have parameter '%s'", tc.MasterVMSize)
 		}
