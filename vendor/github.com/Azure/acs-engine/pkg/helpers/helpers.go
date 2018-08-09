@@ -6,6 +6,8 @@ import (
 	"crypto/rsa"
 	"encoding/json"
 	"io"
+	"os"
+	"runtime"
 	"strings"
 
 	"github.com/Azure/acs-engine/pkg/i18n"
@@ -69,7 +71,7 @@ func PointerToInt(i int) *int {
 	return &p
 }
 
-// EqualError is a ni;-safe method which reports whether errors a and b are considered equal.
+// EqualError is a nil-safe method which reports whether errors a and b are considered equal.
 // They're equal if both are nil, or both are not nil and a.Error() == b.Error().
 func EqualError(a, b error) bool {
 	return a == nil && b == nil || a != nil && b != nil && a.Error() == b.Error()
@@ -127,4 +129,16 @@ func AcceleratedNetworkingSupported(sku string) bool {
 	default:
 		return false
 	}
+}
+
+// GetHomeDir attempts to get the home dir from env
+func GetHomeDir() string {
+	if runtime.GOOS == "windows" {
+		home := os.Getenv("HOMEDRIVE") + os.Getenv("HOMEPATH")
+		if home == "" {
+			home = os.Getenv("USERPROFILE")
+		}
+		return home
+	}
+	return os.Getenv("HOME")
 }

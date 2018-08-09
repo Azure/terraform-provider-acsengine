@@ -22,7 +22,7 @@ const (
 	// AzureCniPluginVer specifies version of Azure CNI plugin, which has been mirrored from
 	// https://github.com/Azure/azure-container-networking/releases/download/${AZURE_PLUGIN_VER}/azure-vnet-cni-linux-amd64-${AZURE_PLUGIN_VER}.tgz
 	// to https://acs-mirror.azureedge.net/cni
-	AzureCniPluginVer = "v1.0.7"
+	AzureCniPluginVer = "v1.0.10"
 	// CNIPluginVer specifies the version of CNI implementation
 	// https://github.com/containernetworking/plugins
 	CNIPluginVer = "v0.7.1"
@@ -43,6 +43,7 @@ var (
 		CNIPluginsDownloadURL:            "https://acs-mirror.azureedge.net/cni/cni-plugins-amd64-" + CNIPluginVer + ".tgz",
 		VnetCNILinuxPluginsDownloadURL:   "https://acs-mirror.azureedge.net/cni/azure-vnet-cni-linux-amd64-" + AzureCniPluginVer + ".tgz",
 		VnetCNIWindowsPluginsDownloadURL: "https://acs-mirror.azureedge.net/cni/azure-vnet-cni-windows-amd64-" + AzureCniPluginVer + ".zip",
+		ContainerdDownloadURLBase:        "https://storage.googleapis.com/cri-containerd-release/",
 	}
 
 	//DefaultDCOSSpecConfig is the default DC/OS binary download URL.
@@ -68,7 +69,7 @@ var (
 		ImageOffer:     "UbuntuServer",
 		ImageSku:       "16.04-LTS",
 		ImagePublisher: "Canonical",
-		ImageVersion:   "16.04.201807240",
+		ImageVersion:   "16.04.201808060",
 	}
 
 	//DefaultRHELOSImageConfig is the RHEL Linux distribution.
@@ -188,6 +189,7 @@ var (
 			CNIPluginsDownloadURL:            DefaultKubernetesSpecConfig.CNIPluginsDownloadURL,
 			VnetCNILinuxPluginsDownloadURL:   DefaultKubernetesSpecConfig.VnetCNILinuxPluginsDownloadURL,
 			VnetCNIWindowsPluginsDownloadURL: DefaultKubernetesSpecConfig.VnetCNIWindowsPluginsDownloadURL,
+			ContainerdDownloadURLBase:        "https://mirror.azure.cn/kubernetes/containerd/",
 		},
 		DCOSSpecConfig: DCOSSpecConfig{
 			DCOS188BootstrapDownloadURL:     fmt.Sprintf(AzureChinaCloudDCOSBootstrapDownloadURL, "5df43052907c021eeb5de145419a3da1898c58a5"),
@@ -265,6 +267,36 @@ var (
 				MemoryRequests: "300Mi",
 				CPULimits:      "100m",
 				MemoryLimits:   "300Mi",
+			},
+		},
+	}
+
+	// DefaultBlobfuseFlexVolumeAddonsConfig is the default KeyVault FlexVolume Kubernetes addon Config
+	DefaultBlobfuseFlexVolumeAddonsConfig = api.KubernetesAddon{
+		Name:    DefaultBlobfuseFlexVolumeAddonName,
+		Enabled: helpers.PointerToBool(api.DefaultBlobfuseFlexVolumeAddonEnabled),
+		Containers: []api.KubernetesContainerSpec{
+			{
+				Name:           DefaultBlobfuseFlexVolumeAddonName,
+				CPURequests:    "50m",
+				MemoryRequests: "10Mi",
+				CPULimits:      "50m",
+				MemoryLimits:   "10Mi",
+			},
+		},
+	}
+
+	// DefaultSMBFlexVolumeAddonsConfig is the default KeyVault FlexVolume Kubernetes addon Config
+	DefaultSMBFlexVolumeAddonsConfig = api.KubernetesAddon{
+		Name:    DefaultSMBFlexVolumeAddonName,
+		Enabled: helpers.PointerToBool(api.DefaultSMBFlexVolumeAddonEnabled),
+		Containers: []api.KubernetesContainerSpec{
+			{
+				Name:           DefaultSMBFlexVolumeAddonName,
+				CPURequests:    "50m",
+				MemoryRequests: "10Mi",
+				CPULimits:      "50m",
+				MemoryLimits:   "10Mi",
 			},
 		},
 	}
@@ -351,11 +383,11 @@ var (
 		Containers: []api.KubernetesContainerSpec{
 			{
 				Name:           "omsagent",
-				Image:          "microsoft/oms:June21st",
+				Image:          "microsoft/oms:acsenginelogfixnew",
 				CPURequests:    "50m",
-				MemoryRequests: "100Mi",
+				MemoryRequests: "200Mi",
 				CPULimits:      "150m",
-				MemoryLimits:   "500Mi",
+				MemoryLimits:   "750Mi",
 			},
 		},
 	}
@@ -448,6 +480,8 @@ func setOrchestratorDefaults(cs *api.ContainerService) {
 				DefaultTillerAddonsConfig,
 				DefaultACIConnectorAddonsConfig,
 				DefaultClusterAutoscalerAddonsConfig,
+				DefaultBlobfuseFlexVolumeAddonsConfig,
+				DefaultSMBFlexVolumeAddonsConfig,
 				DefaultKeyVaultFlexVolumeAddonsConfig,
 				DefaultDashboardAddonsConfig,
 				DefaultReschedulerAddonsConfig,
@@ -512,6 +546,16 @@ func setOrchestratorDefaults(cs *api.ContainerService) {
 				// Provide default acs-engine config for Azure NetworkPolicy addon
 				o.KubernetesConfig.Addons = append(o.KubernetesConfig.Addons, DefaultAzureNetworkPolicyAddonsConfig)
 			}
+			bFFV := getAddonsIndexByName(o.KubernetesConfig.Addons, DefaultBlobfuseFlexVolumeAddonName)
+			if bFFV < 0 {
+				// Provide default acs-engine config for Blobfuse FlexVolume
+				o.KubernetesConfig.Addons = append(o.KubernetesConfig.Addons, DefaultBlobfuseFlexVolumeAddonsConfig)
+			}
+			sFV := getAddonsIndexByName(o.KubernetesConfig.Addons, DefaultSMBFlexVolumeAddonName)
+			if sFV < 0 {
+				// Provide default acs-engine config for SMB FlexVolume
+				o.KubernetesConfig.Addons = append(o.KubernetesConfig.Addons, DefaultSMBFlexVolumeAddonsConfig)
+			}
 			kv := getAddonsIndexByName(o.KubernetesConfig.Addons, DefaultKeyVaultFlexVolumeAddonName)
 			if kv < 0 {
 				// Provide default acs-engine config for KeyVault FlexVolume
@@ -538,7 +582,7 @@ func setOrchestratorDefaults(cs *api.ContainerService) {
 		}
 		if o.KubernetesConfig.ClusterSubnet == "" {
 			if o.IsAzureCNI() {
-				// When VNET integration is enabled, all masters, agents and pods share the same large subnet.
+				// When Azure CNI is enabled, all masters, agents and pods share the same large subnet.
 				o.KubernetesConfig.ClusterSubnet = DefaultKubernetesSubnet
 			} else {
 				o.KubernetesConfig.ClusterSubnet = DefaultKubernetesClusterSubnet
@@ -560,24 +604,24 @@ func setOrchestratorDefaults(cs *api.ContainerService) {
 			o.KubernetesConfig.ServiceCIDR = DefaultKubernetesServiceCIDR
 		}
 		// Enforce sane cloudprovider backoff defaults, if CloudProviderBackoff is true in KubernetesConfig
-		if o.KubernetesConfig.CloudProviderBackoff {
-			if o.KubernetesConfig.CloudProviderBackoffDuration == 0 {
-				o.KubernetesConfig.CloudProviderBackoffDuration = DefaultKubernetesCloudProviderBackoffDuration
-			}
-			if o.KubernetesConfig.CloudProviderBackoffExponent == 0 {
-				o.KubernetesConfig.CloudProviderBackoffExponent = DefaultKubernetesCloudProviderBackoffExponent
-			}
-			if o.KubernetesConfig.CloudProviderBackoffJitter == 0 {
-				o.KubernetesConfig.CloudProviderBackoffJitter = DefaultKubernetesCloudProviderBackoffJitter
-			}
-			if o.KubernetesConfig.CloudProviderBackoffRetries == 0 {
-				o.KubernetesConfig.CloudProviderBackoffRetries = DefaultKubernetesCloudProviderBackoffRetries
-			}
+		o.KubernetesConfig.CloudProviderBackoff = true
+		if o.KubernetesConfig.CloudProviderBackoffDuration == 0 {
+			o.KubernetesConfig.CloudProviderBackoffDuration = DefaultKubernetesCloudProviderBackoffDuration
+		}
+		if o.KubernetesConfig.CloudProviderBackoffExponent == 0 {
+			o.KubernetesConfig.CloudProviderBackoffExponent = DefaultKubernetesCloudProviderBackoffExponent
+		}
+		if o.KubernetesConfig.CloudProviderBackoffJitter == 0 {
+			o.KubernetesConfig.CloudProviderBackoffJitter = DefaultKubernetesCloudProviderBackoffJitter
+		}
+		if o.KubernetesConfig.CloudProviderBackoffRetries == 0 {
+			o.KubernetesConfig.CloudProviderBackoffRetries = DefaultKubernetesCloudProviderBackoffRetries
 		}
 		k8sSemVer, _ := semver.Make(k8sVersion)
 		minVersion, _ := semver.Make("1.6.6")
 		// Enforce sane cloudprovider rate limit defaults, if CloudProviderRateLimit is true in KubernetesConfig
 		// For k8s version greater or equal to 1.6.6, we will set the default CloudProviderRate* settings
+		o.KubernetesConfig.CloudProviderRateLimit = true
 		if o.KubernetesConfig.CloudProviderRateLimit && k8sSemVer.GTE(minVersion) {
 			if o.KubernetesConfig.CloudProviderRateLimitQPS == 0 {
 				o.KubernetesConfig.CloudProviderRateLimitQPS = DefaultKubernetesCloudProviderRateLimitQPS
@@ -627,6 +671,14 @@ func setOrchestratorDefaults(cs *api.ContainerService) {
 		aNP := getAddonsIndexByName(a.OrchestratorProfile.KubernetesConfig.Addons, AzureNetworkPolicyAddonName)
 		if a.OrchestratorProfile.KubernetesConfig.Addons[aNP].IsEnabled(a.OrchestratorProfile.KubernetesConfig.NetworkPlugin == NetworkPluginAzure && a.OrchestratorProfile.KubernetesConfig.NetworkPolicy == NetworkPolicyAzure) {
 			a.OrchestratorProfile.KubernetesConfig.Addons[aNP] = assignDefaultAddonVals(a.OrchestratorProfile.KubernetesConfig.Addons[aNP], DefaultAzureNetworkPolicyAddonsConfig)
+		}
+		bFFV := getAddonsIndexByName(a.OrchestratorProfile.KubernetesConfig.Addons, DefaultBlobfuseFlexVolumeAddonName)
+		if a.OrchestratorProfile.KubernetesConfig.Addons[bFFV].IsEnabled(api.DefaultBlobfuseFlexVolumeAddonEnabled) {
+			a.OrchestratorProfile.KubernetesConfig.Addons[bFFV] = assignDefaultAddonVals(a.OrchestratorProfile.KubernetesConfig.Addons[bFFV], DefaultBlobfuseFlexVolumeAddonsConfig)
+		}
+		sFV := getAddonsIndexByName(a.OrchestratorProfile.KubernetesConfig.Addons, DefaultSMBFlexVolumeAddonName)
+		if a.OrchestratorProfile.KubernetesConfig.Addons[sFV].IsEnabled(api.DefaultSMBFlexVolumeAddonEnabled) {
+			a.OrchestratorProfile.KubernetesConfig.Addons[sFV] = assignDefaultAddonVals(a.OrchestratorProfile.KubernetesConfig.Addons[sFV], DefaultSMBFlexVolumeAddonsConfig)
 		}
 		kv := getAddonsIndexByName(a.OrchestratorProfile.KubernetesConfig.Addons, DefaultKeyVaultFlexVolumeAddonName)
 		if a.OrchestratorProfile.KubernetesConfig.Addons[kv].IsEnabled(api.DefaultKeyVaultFlexVolumeAddonEnabled) {
@@ -1168,22 +1220,22 @@ func mapToString(valueMap map[string]string) string {
 func enforceK8sAddonOverrides(addons []api.KubernetesAddon, o *api.OrchestratorProfile) {
 	m := getAddonsIndexByName(o.KubernetesConfig.Addons, DefaultMetricsServerAddonName)
 	o.KubernetesConfig.Addons[m].Enabled = k8sVersionMetricsServerAddonEnabled(o)
-	aN := getAddonsIndexByName(o.KubernetesConfig.Addons, AzureCNINetworkMonitoringAddonName)
-	o.KubernetesConfig.Addons[aN].Enabled = azureCNINetworkMonitorAddonEnabled(o)
 	aNP := getAddonsIndexByName(o.KubernetesConfig.Addons, AzureNetworkPolicyAddonName)
 	o.KubernetesConfig.Addons[aNP].Enabled = azureNetworkPolicyAddonEnabled(o)
+	aN := getAddonsIndexByName(o.KubernetesConfig.Addons, AzureCNINetworkMonitoringAddonName)
+	o.KubernetesConfig.Addons[aN].Enabled = azureCNINetworkMonitorAddonEnabled(o)
 }
 
 func k8sVersionMetricsServerAddonEnabled(o *api.OrchestratorProfile) *bool {
 	return helpers.PointerToBool(common.IsKubernetesVersionGe(o.OrchestratorVersion, "1.9.0"))
 }
 
-func azureCNINetworkMonitorAddonEnabled(o *api.OrchestratorProfile) *bool {
-	return helpers.PointerToBool(o.IsAzureCNI())
-}
-
 func azureNetworkPolicyAddonEnabled(o *api.OrchestratorProfile) *bool {
 	return helpers.PointerToBool(o.KubernetesConfig.NetworkPlugin == NetworkPluginAzure && o.KubernetesConfig.NetworkPolicy == NetworkPolicyAzure)
+}
+
+func azureCNINetworkMonitorAddonEnabled(o *api.OrchestratorProfile) *bool {
+	return helpers.PointerToBool(o.IsAzureCNI())
 }
 
 func generateEtcdEncryptionKey() string {

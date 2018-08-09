@@ -58,6 +58,11 @@ func kubernetesAddonSettingsInit(profile *api.Properties) []kubernetesFeatureSet
 			profile.OrchestratorProfile.KubernetesConfig.IsTillerEnabled(),
 		},
 		{
+			"kubernetesmasteraddons-aad-pod-identity-deployment.yaml",
+			"aad-pod-identity-deployment.yaml",
+			profile.OrchestratorProfile.KubernetesConfig.IsAADPodIdentityEnabled(),
+		},
+		{
 			"kubernetesmasteraddons-aci-connector-deployment.yaml",
 			"aci-connector-deployment.yaml",
 			profile.OrchestratorProfile.KubernetesConfig.IsACIConnectorEnabled(),
@@ -110,7 +115,7 @@ func kubernetesAddonSettingsInit(profile *api.Properties) []kubernetesFeatureSet
 		{
 			"kubernetesmasteraddons-omsagent-daemonset.yaml",
 			"omsagent-daemonset.yaml",
-			profile.OrchestratorProfile.IsContainerMonitoringEnabled(),
+			profile.OrchestratorProfile.KubernetesConfig.IsContainerMonitoringEnabled(),
 		},
 		{
 			"azure-cni-networkmonitor.yaml",
@@ -121,6 +126,16 @@ func kubernetesAddonSettingsInit(profile *api.Properties) []kubernetesFeatureSet
 			"kubernetesmaster-audit-policy.yaml",
 			"audit-policy.yaml",
 			common.IsKubernetesVersionGe(profile.OrchestratorProfile.OrchestratorVersion, "1.8.0"),
+		},
+		{
+			"kubernetesmasteraddons-blobfuse-flexvolume-installer.yaml",
+			"blobfuse-flexvolume-installer.yaml",
+			profile.OrchestratorProfile.KubernetesConfig.IsBlobfuseFlexVolumeEnabled(),
+		},
+		{
+			"kubernetesmasteraddons-smb-flexvolume-installer.yaml",
+			"smb-flexvolume-installer.yaml",
+			profile.OrchestratorProfile.KubernetesConfig.IsSMBFlexVolumeEnabled(),
 		},
 		{
 			"kubernetesmasteraddons-keyvault-flexvolume-installer.yaml",

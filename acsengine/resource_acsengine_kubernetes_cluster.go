@@ -3,6 +3,7 @@ package acsengine
 // TO DO
 // - move as much of upgrade and scale into the client package I made and make them struct methods
 // - change import (and maybe other things?) to depend on deployment template which I should be able to get from DeploymentExtended in azure-sdk-for-go
+// - use log instead of fmt, figure out why it's not printing
 // - Keep improving documentation
 // - add code coverage
 // - make code more unit test-able and write more unit tests (plus clean up ones I have to use mock objects more?)
@@ -10,6 +11,9 @@ package acsengine
 // - refactor: better organization of functions, get rid of code duplication, inheritance where it makes sense, better function/variable naming
 // - ask about additions to acs-engine: doesn't seem to allow tagging deployment, weird index problem
 // - create a new struct for api.ContainerService so I can write methods for it?
+// - use assert functions where I can so that tests are uniform
+// - chang sp because of silly commit
+// - make sure everything that can't be updated has ForceNew: true
 
 import (
 	"fmt"
@@ -55,6 +59,7 @@ func resourceArmACSEngineKubernetesCluster() *schema.Resource {
 						"admin_username": {
 							Type:     schema.TypeString,
 							Required: true,
+							ForceNew: true,
 						},
 						"ssh": {
 							Type:     schema.TypeList,
@@ -65,6 +70,7 @@ func resourceArmACSEngineKubernetesCluster() *schema.Resource {
 									"key_data": {
 										Type:     schema.TypeString,
 										Required: true,
+										ForceNew: true,
 									},
 								},
 							},
@@ -82,10 +88,12 @@ func resourceArmACSEngineKubernetesCluster() *schema.Resource {
 						"admin_username": {
 							Type:     schema.TypeString,
 							Required: true,
+							ForceNew: true,
 						},
 						"admin_password": {
 							Type:      schema.TypeString,
 							Required:  true,
+							ForceNew:  true,
 							Sensitive: true,
 						},
 					},
@@ -101,10 +109,12 @@ func resourceArmACSEngineKubernetesCluster() *schema.Resource {
 						"client_id": {
 							Type:     schema.TypeString,
 							Required: true,
+							ForceNew: true,
 						},
 						"client_secret": {
 							Type:      schema.TypeString,
 							Required:  true,
+							ForceNew:  true,
 							Sensitive: true,
 						},
 					},

@@ -1,6 +1,5 @@
     "etcdDiskSizeGB": "[parameters('etcdDiskSizeGB')]",
     "etcdDownloadURLBase": "[parameters('etcdDownloadURLBase')]",
-    "etcdVersion": "[parameters('etcdVersion')]",
     "maxVMsPerPool": 100,
 {{ if not IsOpenShift }}
     "apiServerCertificate": "[parameters('apiServerCertificate')]",
@@ -88,27 +87,33 @@
     "kubernetesCcmImageSpec": "[parameters('kubernetesCcmImageSpec')]",
     "kubernetesAddonManagerSpec": "[parameters('kubernetesAddonManagerSpec')]",
     "kubernetesAddonResizerSpec": "[parameters('kubernetesAddonResizerSpec')]",
+{{if .OrchestratorProfile.KubernetesConfig.IsDashboardEnabled}}
     "kubernetesDashboardSpec": "[parameters('kubernetesDashboardSpec')]",
     "kubernetesDashboardCPURequests": "[parameters('kubernetesDashboardCPURequests')]",
     "kubernetesDashboardMemoryRequests": "[parameters('kubernetesDashboardMemoryRequests')]",
     "kubernetesDashboardCPULimit": "[parameters('kubernetesDashboardCPULimit')]",
     "kubernetesDashboardMemoryLimit": "[parameters('kubernetesDashboardMemoryLimit')]",
+{{end}}
     "kubernetesExecHealthzSpec": "[parameters('kubernetesExecHealthzSpec')]",
     "kubernetesDNSSidecarSpec": "[parameters('kubernetesDNSSidecarSpec')]",
     "kubernetesHeapsterSpec": "[parameters('kubernetesHeapsterSpec')]",
     "kubernetesMetricsServerSpec": "[parameters('kubernetesMetricsServerSpec')]",
+{{if IsNVIDIADevicePluginEnabled}}
     "kubernetesNVIDIADevicePluginSpec": "[parameters('kubernetesNVIDIADevicePluginSpec')]",
     "kubernetesNVIDIADevicePluginCPURequests": "[parameters('kubernetesNVIDIADevicePluginCPURequests')]",
     "kubernetesNVIDIADevicePluginMemoryRequests": "[parameters('kubernetesNVIDIADevicePluginMemoryRequests')]",
     "kubernetesNVIDIADevicePluginCPULimit": "[parameters('kubernetesNVIDIADevicePluginCPULimit')]",
     "kubernetesNVIDIADevicePluginMemoryLimit": "[parameters('kubernetesNVIDIADevicePluginMemoryLimit')]",
+{{end}}
     "kubernetesTillerSpec": "[parameters('kubernetesTillerSpec')]",
     "kubernetesTillerCPURequests": "[parameters('kubernetesTillerCPURequests')]",
     "kubernetesTillerMemoryRequests": "[parameters('kubernetesTillerMemoryRequests')]",
     "kubernetesTillerCPULimit": "[parameters('kubernetesTillerCPULimit')]",
     "kubernetesTillerMemoryLimit": "[parameters('kubernetesTillerMemoryLimit')]",
     "kubernetesTillerMaxHistory": "[parameters('kubernetesTillerMaxHistory')]",
+    "kubernetesAADPodIdentityEnabled": "[parameters('kubernetesAADPodIdentityEnabled')]",
     "kubernetesACIConnectorEnabled": "[parameters('kubernetesACIConnectorEnabled')]",
+{{if .OrchestratorProfile.KubernetesConfig.IsACIConnectorEnabled}} 
     "kubernetesACIConnectorSpec": "[parameters('kubernetesACIConnectorSpec')]",
     "kubernetesACIConnectorNodeName": "[parameters('kubernetesACIConnectorNodeName')]",
     "kubernetesACIConnectorOS": "[parameters('kubernetesACIConnectorOS')]",
@@ -118,6 +123,9 @@
     "kubernetesACIConnectorMemoryRequests": "[parameters('kubernetesACIConnectorMemoryRequests')]",
     "kubernetesACIConnectorCPULimit": "[parameters('kubernetesACIConnectorCPULimit')]",
     "kubernetesACIConnectorMemoryLimit": "[parameters('kubernetesACIConnectorMemoryLimit')]",
+{{end}}
+    "kubernetesClusterAutoscalerEnabled": "[parameters('kubernetesClusterAutoscalerEnabled')]",
+{{if .OrchestratorProfile.KubernetesConfig.IsClusterAutoscalerEnabled}}
     "kubernetesClusterAutoscalerSpec": "[parameters('kubernetesClusterAutoscalerSpec')]",
     "kubernetesClusterAutoscalerAzureCloud": "[parameters('kubernetesClusterAutoscalerAzureCloud')]",
     "kubernetesClusterAutoscalerCPULimit": "[parameters('kubernetesClusterAutoscalerCPULimit')]",
@@ -126,26 +134,20 @@
     "kubernetesClusterAutoscalerMemoryRequests": "[parameters('kubernetesClusterAutoscalerMemoryRequests')]",
     "kubernetesClusterAutoscalerMinNodes": "[parameters('kubernetesClusterAutoscalerMinNodes')]",
     "kubernetesClusterAutoscalerMaxNodes": "[parameters('kubernetesClusterAutoscalerMaxNodes')]",
-    "kubernetesClusterAutoscalerEnabled": "[parameters('kubernetesClusterAutoscalerEnabled')]",
     "kubernetesClusterAutoscalerUseManagedIdentity": "[parameters('kubernetesClusterAutoscalerUseManagedIdentity')]",
+{{end}}
+{{if .OrchestratorProfile.KubernetesConfig.IsKeyVaultFlexVolumeEnabled}}
     "kubernetesKeyVaultFlexVolumeInstallerCPURequests": "[parameters('kubernetesKeyVaultFlexVolumeInstallerCPURequests')]",
     "kubernetesKeyVaultFlexVolumeInstallerMemoryRequests": "[parameters('kubernetesKeyVaultFlexVolumeInstallerMemoryRequests')]",
     "kubernetesKeyVaultFlexVolumeInstallerCPULimit": "[parameters('kubernetesKeyVaultFlexVolumeInstallerCPULimit')]",
     "kubernetesKeyVaultFlexVolumeInstallerMemoryLimit": "[parameters('kubernetesKeyVaultFlexVolumeInstallerMemoryLimit')]",
+{{end}}
     "kubernetesReschedulerSpec": "[parameters('kubernetesReschedulerSpec')]",
     "kubernetesReschedulerCPURequests": "[parameters('kubernetesReschedulerCPURequests')]",
     "kubernetesReschedulerMemoryRequests": "[parameters('kubernetesReschedulerMemoryRequests')]",
     "kubernetesReschedulerCPULimit": "[parameters('kubernetesReschedulerCPULimit')]",
     "kubernetesReschedulerMemoryLimit": "[parameters('kubernetesReschedulerMemoryLimit')]",
     "kubernetesPodInfraContainerSpec": "[parameters('kubernetesPodInfraContainerSpec')]",
-    "cloudProviderBackoff": "[parameters('cloudProviderBackoff')]",
-    "cloudProviderBackoffRetries": "[parameters('cloudProviderBackoffRetries')]",
-    "cloudProviderBackoffExponent": "[parameters('cloudProviderBackoffExponent')]",
-    "cloudProviderBackoffDuration": "[parameters('cloudProviderBackoffDuration')]",
-    "cloudProviderBackoffJitter": "[parameters('cloudProviderBackoffJitter')]",
-    "cloudProviderRatelimit": "[parameters('cloudProviderRatelimit')]",
-    "cloudProviderRatelimitQPS": "[parameters('cloudProviderRatelimitQPS')]",
-    "cloudProviderRatelimitBucket": "[parameters('cloudProviderRatelimitBucket')]",
     "useManagedIdentityExtension": "{{ UseManagedIdentity }}",
     "useInstanceMetadata": "{{ UseInstanceMetadata }}",
     "kubernetesKubeDNSSpec": "[parameters('kubernetesKubeDNSSpec')]",
@@ -153,6 +155,7 @@
     "networkPlugin": "[parameters('networkPlugin')]",
     "networkPolicy": "[parameters('networkPolicy')]",
     "containerRuntime": "[parameters('containerRuntime')]",
+    "containerdDownloadURLBase": "[parameters('containerdDownloadURLBase')]",
     "cniPluginsURL":"[parameters('cniPluginsURL')]",
     "vnetCniLinuxPluginsURL":"[parameters('vnetCniLinuxPluginsURL')]",
     "vnetCniWindowsPluginsURL":"[parameters('vnetCniWindowsPluginsURL')]",
@@ -162,6 +165,7 @@
     "vnetCidr": "[parameters('vnetCidr')]",
     "gcHighThreshold":"[parameters('gcHighThreshold')]",
     "gcLowThreshold":"[parameters('gcLowThreshold')]",
+{{if .OrchestratorProfile.KubernetesConfig.IsContainerMonitoringEnabled}}
     "omsAgentVersion": "[parameters('omsAgentVersion')]",
     "omsAgentDockerProviderVersion": "[parameters('omsAgentDockerProviderVersion')]",
     "omsAgentImage": "[parameters('omsAgentImage')]",
@@ -171,6 +175,7 @@
     "kubernetesOMSAgentMemoryRequests": "[parameters('kubernetesOMSAgentMemoryRequests')]",
     "kubernetesOMSAgentCPULimit": "[parameters('kubernetesOMSAgentCPULimit')]",
     "kubernetesOMSAgentMemoryLimit": "[parameters('kubernetesOMSAgentMemoryLimit')]",
+{{end}}
 {{if EnableDataEncryptionAtRest}}
     "etcdEncryptionKey": "[parameters('etcdEncryptionKey')]",
 {{end}}
@@ -201,7 +206,6 @@
     "masterOffset": "[parameters('masterOffset')]",
 {{end}}
     "apiVersionDefault": "2016-03-30",
-    "apiVersionAcceleratedNetworking": "2018-04-01",
     "apiVersionLinkDefault": "2015-01-01",
     "locations": [
          "[resourceGroup().location]",
@@ -267,18 +271,18 @@
             {{ if not UseManagedIdentity}}
     "servicePrincipalObjectId": "[parameters('servicePrincipalObjectId')]",
             {{end}}
-    "provisionScriptParametersCommon": "[concat('ADMINUSER=',variables('username'),' DOCKER_ENGINE_VERSION=',variables('dockerEngineVersion'),' DOCKER_REPO=',variables('dockerEngineDownloadRepo'),' TENANT_ID=',variables('tenantID'),' HYPERKUBE_URL=',variables('kubernetesHyperkubeSpec'),' APISERVER_PUBLIC_KEY=',variables('apiserverCertificate'),' SUBSCRIPTION_ID=',variables('subscriptionId'),' RESOURCE_GROUP=',variables('resourceGroup'),' LOCATION=',variables('location'),' VM_TYPE=',variables('vmType'),' SUBNET=',variables('subnetName'),' NETWORK_SECURITY_GROUP=',variables('nsgName'),' VIRTUAL_NETWORK=',variables('virtualNetworkName'),' VIRTUAL_NETWORK_RESOURCE_GROUP=',variables('virtualNetworkResourceGroupName'),' ROUTE_TABLE=',variables('routeTableName'),' PRIMARY_AVAILABILITY_SET=',variables('primaryAvailabilitySetName'),' PRIMARY_SCALE_SET=',variables('primaryScaleSetName'),' SERVICE_PRINCIPAL_CLIENT_ID=',variables('servicePrincipalClientId'),' SERVICE_PRINCIPAL_CLIENT_SECRET=',variables('singleQuote'),variables('servicePrincipalClientSecret'),variables('singleQuote'),' KUBELET_PRIVATE_KEY=',variables('clientPrivateKey'),' TARGET_ENVIRONMENT=',variables('targetEnvironment'),' NETWORK_PLUGIN=',variables('networkPlugin'),' VNET_CNI_PLUGINS_URL=',variables('vnetCniLinuxPluginsURL'),' CNI_PLUGINS_URL=',variables('cniPluginsURL'),' CLOUDPROVIDER_BACKOFF=',variables('cloudProviderBackoff'),' CLOUDPROVIDER_BACKOFF_RETRIES=',variables('cloudProviderBackoffRetries'),' CLOUDPROVIDER_BACKOFF_EXPONENT=',variables('cloudProviderBackoffExponent'),' CLOUDPROVIDER_BACKOFF_DURATION=',variables('cloudProviderBackoffDuration'),' CLOUDPROVIDER_BACKOFF_JITTER=',variables('cloudProviderBackoffJitter'),' CLOUDPROVIDER_RATELIMIT=',variables('cloudProviderRatelimit'),' CLOUDPROVIDER_RATELIMIT_QPS=',variables('cloudProviderRatelimitQPS'),' CLOUDPROVIDER_RATELIMIT_BUCKET=',variables('cloudProviderRatelimitBucket'),' USE_MANAGED_IDENTITY_EXTENSION=',variables('useManagedIdentityExtension'),' USE_INSTANCE_METADATA=',variables('useInstanceMetadata'),' CONTAINER_RUNTIME=',variables('containerRuntime'),' KUBECONFIG_SERVER=',variables('kubeconfigServer'),' KMS_PROVIDER_VAULT_NAME=',variables('clusterKeyVaultName'), ' EnableEncryptionWithExternalKms=true')]",
+    "provisionScriptParametersCommon": "[concat('ADMINUSER=',variables('username'),' DOCKER_ENGINE_VERSION=',variables('dockerEngineVersion'),' DOCKER_REPO=',variables('dockerEngineDownloadRepo'),' TENANT_ID=',variables('tenantID'),' HYPERKUBE_URL=',variables('kubernetesHyperkubeSpec'),' APISERVER_PUBLIC_KEY=',variables('apiserverCertificate'),' SUBSCRIPTION_ID=',variables('subscriptionId'),' RESOURCE_GROUP=',variables('resourceGroup'),' LOCATION=',variables('location'),' VM_TYPE=',variables('vmType'),' SUBNET=',variables('subnetName'),' NETWORK_SECURITY_GROUP=',variables('nsgName'),' VIRTUAL_NETWORK=',variables('virtualNetworkName'),' VIRTUAL_NETWORK_RESOURCE_GROUP=',variables('virtualNetworkResourceGroupName'),' ROUTE_TABLE=',variables('routeTableName'),' PRIMARY_AVAILABILITY_SET=',variables('primaryAvailabilitySetName'),' PRIMARY_SCALE_SET=',variables('primaryScaleSetName'),' SERVICE_PRINCIPAL_CLIENT_ID=',variables('servicePrincipalClientId'),' SERVICE_PRINCIPAL_CLIENT_SECRET=',variables('singleQuote'),variables('servicePrincipalClientSecret'),variables('singleQuote'),' KUBELET_PRIVATE_KEY=',variables('clientPrivateKey'),' TARGET_ENVIRONMENT=',variables('targetEnvironment'),' NETWORK_PLUGIN=',variables('networkPlugin'),' VNET_CNI_PLUGINS_URL=',variables('vnetCniLinuxPluginsURL'),' CNI_PLUGINS_URL=',variables('cniPluginsURL'),' CLOUDPROVIDER_BACKOFF=',parameters('cloudproviderConfig').cloudProviderBackoff,' CLOUDPROVIDER_BACKOFF_RETRIES=',parameters('cloudproviderConfig').cloudProviderBackoffRetries,' CLOUDPROVIDER_BACKOFF_EXPONENT=',parameters('cloudproviderConfig').cloudProviderBackoffExponent,' CLOUDPROVIDER_BACKOFF_DURATION=',parameters('cloudproviderConfig').cloudProviderBackoffDuration,' CLOUDPROVIDER_BACKOFF_JITTER=',parameters('cloudproviderConfig').cloudProviderBackoffJitter,' CLOUDPROVIDER_RATELIMIT=',parameters('cloudproviderConfig').cloudProviderRatelimit,' CLOUDPROVIDER_RATELIMIT_QPS=',parameters('cloudproviderConfig').cloudProviderRatelimitQPS,' CLOUDPROVIDER_RATELIMIT_BUCKET=',parameters('cloudproviderConfig').cloudProviderRatelimitBucket,' USE_MANAGED_IDENTITY_EXTENSION=',variables('useManagedIdentityExtension'),' USE_INSTANCE_METADATA=',variables('useInstanceMetadata'),' CONTAINER_RUNTIME=',variables('containerRuntime'),' CONTAINERD_DOWNLOAD_URL_BASE=',variables('containerdDownloadURLBase'),' POD_INFRA_CONTAINER_SPEC=',variables('kubernetesPodInfraContainerSpec'),' KUBECONFIG_SERVER=',variables('kubeconfigServer'),' KMS_PROVIDER_VAULT_NAME=',variables('clusterKeyVaultName'), ' EnableEncryptionWithExternalKms=true')]",
         {{else}}
-    "provisionScriptParametersCommon": "[concat('ADMINUSER=',variables('username'),' DOCKER_ENGINE_VERSION=',variables('dockerEngineVersion'),' DOCKER_REPO=',variables('dockerEngineDownloadRepo'),' TENANT_ID=',variables('tenantID'),' HYPERKUBE_URL=',variables('kubernetesHyperkubeSpec'),' APISERVER_PUBLIC_KEY=',variables('apiserverCertificate'),' SUBSCRIPTION_ID=',variables('subscriptionId'),' RESOURCE_GROUP=',variables('resourceGroup'),' LOCATION=',variables('location'),' VM_TYPE=',variables('vmType'),' SUBNET=',variables('subnetName'),' NETWORK_SECURITY_GROUP=',variables('nsgName'),' VIRTUAL_NETWORK=',variables('virtualNetworkName'),' VIRTUAL_NETWORK_RESOURCE_GROUP=',variables('virtualNetworkResourceGroupName'),' ROUTE_TABLE=',variables('routeTableName'),' PRIMARY_AVAILABILITY_SET=',variables('primaryAvailabilitySetName'),' PRIMARY_SCALE_SET=',variables('primaryScaleSetName'),' SERVICE_PRINCIPAL_CLIENT_ID=',variables('servicePrincipalClientId'),' SERVICE_PRINCIPAL_CLIENT_SECRET=',variables('singleQuote'),variables('servicePrincipalClientSecret'),variables('singleQuote'),' KUBELET_PRIVATE_KEY=',variables('clientPrivateKey'),' TARGET_ENVIRONMENT=',variables('targetEnvironment'),' NETWORK_PLUGIN=',variables('networkPlugin'),' VNET_CNI_PLUGINS_URL=',variables('vnetCniLinuxPluginsURL'),' CNI_PLUGINS_URL=',variables('cniPluginsURL'),' CLOUDPROVIDER_BACKOFF=',variables('cloudProviderBackoff'),' CLOUDPROVIDER_BACKOFF_RETRIES=',variables('cloudProviderBackoffRetries'),' CLOUDPROVIDER_BACKOFF_EXPONENT=',variables('cloudProviderBackoffExponent'),' CLOUDPROVIDER_BACKOFF_DURATION=',variables('cloudProviderBackoffDuration'),' CLOUDPROVIDER_BACKOFF_JITTER=',variables('cloudProviderBackoffJitter'),' CLOUDPROVIDER_RATELIMIT=',variables('cloudProviderRatelimit'),' CLOUDPROVIDER_RATELIMIT_QPS=',variables('cloudProviderRatelimitQPS'),' CLOUDPROVIDER_RATELIMIT_BUCKET=',variables('cloudProviderRatelimitBucket'),' USE_MANAGED_IDENTITY_EXTENSION=',variables('useManagedIdentityExtension'),' USE_INSTANCE_METADATA=',variables('useInstanceMetadata'),' CONTAINER_RUNTIME=',variables('containerRuntime'),' KUBECONFIG_SERVER=',variables('kubeconfigServer'))]",
+    "provisionScriptParametersCommon": "[concat('ADMINUSER=',variables('username'),' DOCKER_ENGINE_VERSION=',variables('dockerEngineVersion'),' DOCKER_REPO=',variables('dockerEngineDownloadRepo'),' TENANT_ID=',variables('tenantID'),' HYPERKUBE_URL=',variables('kubernetesHyperkubeSpec'),' APISERVER_PUBLIC_KEY=',variables('apiserverCertificate'),' SUBSCRIPTION_ID=',variables('subscriptionId'),' RESOURCE_GROUP=',variables('resourceGroup'),' LOCATION=',variables('location'),' VM_TYPE=',variables('vmType'),' SUBNET=',variables('subnetName'),' NETWORK_SECURITY_GROUP=',variables('nsgName'),' VIRTUAL_NETWORK=',variables('virtualNetworkName'),' VIRTUAL_NETWORK_RESOURCE_GROUP=',variables('virtualNetworkResourceGroupName'),' ROUTE_TABLE=',variables('routeTableName'),' PRIMARY_AVAILABILITY_SET=',variables('primaryAvailabilitySetName'),' PRIMARY_SCALE_SET=',variables('primaryScaleSetName'),' SERVICE_PRINCIPAL_CLIENT_ID=',variables('servicePrincipalClientId'),' SERVICE_PRINCIPAL_CLIENT_SECRET=',variables('singleQuote'),variables('servicePrincipalClientSecret'),variables('singleQuote'),' KUBELET_PRIVATE_KEY=',variables('clientPrivateKey'),' TARGET_ENVIRONMENT=',variables('targetEnvironment'),' NETWORK_PLUGIN=',variables('networkPlugin'),' VNET_CNI_PLUGINS_URL=',variables('vnetCniLinuxPluginsURL'),' CNI_PLUGINS_URL=',variables('cniPluginsURL'),' CLOUDPROVIDER_BACKOFF=',parameters('cloudproviderConfig').cloudProviderBackoff,' CLOUDPROVIDER_BACKOFF_RETRIES=',parameters('cloudproviderConfig').cloudProviderBackoffRetries,' CLOUDPROVIDER_BACKOFF_EXPONENT=',parameters('cloudproviderConfig').cloudProviderBackoffExponent,' CLOUDPROVIDER_BACKOFF_DURATION=',parameters('cloudproviderConfig').cloudProviderBackoffDuration,' CLOUDPROVIDER_BACKOFF_JITTER=',parameters('cloudproviderConfig').cloudProviderBackoffJitter,' CLOUDPROVIDER_RATELIMIT=',parameters('cloudproviderConfig').cloudProviderRatelimit,' CLOUDPROVIDER_RATELIMIT_QPS=',parameters('cloudproviderConfig').cloudProviderRatelimitQPS,' CLOUDPROVIDER_RATELIMIT_BUCKET=',parameters('cloudproviderConfig').cloudProviderRatelimitBucket,' USE_MANAGED_IDENTITY_EXTENSION=',variables('useManagedIdentityExtension'),' USE_INSTANCE_METADATA=',variables('useInstanceMetadata'),' CONTAINER_RUNTIME=',variables('containerRuntime'),' CONTAINERD_DOWNLOAD_URL_BASE=',variables('containerdDownloadURLBase'),' POD_INFRA_CONTAINER_SPEC=',variables('kubernetesPodInfraContainerSpec'),' KUBECONFIG_SERVER=',variables('kubeconfigServer'))]",
         {{end}}
     {{else}}
         {{if EnableEncryptionWithExternalKms}}
             {{ if not UseManagedIdentity}}
     "servicePrincipalObjectId": "[parameters('servicePrincipalObjectId')]",
             {{end}}
-    "provisionScriptParametersCommon": "[concat('ADMINUSER=',variables('username'),' DOCKER_ENGINE_VERSION=',variables('dockerEngineVersion'),' DOCKER_REPO=',variables('dockerEngineDownloadRepo'),' TENANT_ID=',variables('tenantID'),' HYPERKUBE_URL=',variables('kubernetesHyperkubeSpec'),' APISERVER_PUBLIC_KEY=',variables('apiserverCertificate'),' SUBSCRIPTION_ID=',variables('subscriptionId'),' RESOURCE_GROUP=',variables('resourceGroup'),' LOCATION=',variables('location'),' VM_TYPE=',variables('vmType'),' SUBNET=',variables('subnetName'),' NETWORK_SECURITY_GROUP=',variables('nsgName'),' VIRTUAL_NETWORK=',variables('virtualNetworkName'),' VIRTUAL_NETWORK_RESOURCE_GROUP=',variables('virtualNetworkResourceGroupName'),' ROUTE_TABLE=',variables('routeTableName'),' PRIMARY_AVAILABILITY_SET=',variables('primaryAvailabilitySetName'),' PRIMARY_SCALE_SET=',variables('primaryScaleSetName'),' SERVICE_PRINCIPAL_CLIENT_ID=',variables('servicePrincipalClientId'),' SERVICE_PRINCIPAL_CLIENT_SECRET=',variables('singleQuote'),variables('servicePrincipalClientSecret'),variables('singleQuote'),' KUBELET_PRIVATE_KEY=',variables('clientPrivateKey'),' TARGET_ENVIRONMENT=',variables('targetEnvironment'),' NETWORK_PLUGIN=',variables('networkPlugin'),' VNET_CNI_PLUGINS_URL=',variables('vnetCniLinuxPluginsURL'),' CNI_PLUGINS_URL=',variables('cniPluginsURL'),' CLOUDPROVIDER_BACKOFF=',variables('cloudProviderBackoff'),' CLOUDPROVIDER_BACKOFF_RETRIES=',variables('cloudProviderBackoffRetries'),' CLOUDPROVIDER_BACKOFF_EXPONENT=',variables('cloudProviderBackoffExponent'),' CLOUDPROVIDER_BACKOFF_DURATION=',variables('cloudProviderBackoffDuration'),' CLOUDPROVIDER_BACKOFF_JITTER=',variables('cloudProviderBackoffJitter'),' CLOUDPROVIDER_RATELIMIT=',variables('cloudProviderRatelimit'),' CLOUDPROVIDER_RATELIMIT_QPS=',variables('cloudProviderRatelimitQPS'),' CLOUDPROVIDER_RATELIMIT_BUCKET=',variables('cloudProviderRatelimitBucket'),' USE_MANAGED_IDENTITY_EXTENSION=',variables('useManagedIdentityExtension'),' USE_INSTANCE_METADATA=',variables('useInstanceMetadata'),' CONTAINER_RUNTIME=',variables('containerRuntime'),' KMS_PROVIDER_VAULT_NAME=',variables('clusterKeyVaultName'), ' EnableEncryptionWithExternalKms=true')]",
+    "provisionScriptParametersCommon": "[concat('ADMINUSER=',variables('username'),' DOCKER_ENGINE_VERSION=',variables('dockerEngineVersion'),' DOCKER_REPO=',variables('dockerEngineDownloadRepo'),' TENANT_ID=',variables('tenantID'),' HYPERKUBE_URL=',variables('kubernetesHyperkubeSpec'),' APISERVER_PUBLIC_KEY=',variables('apiserverCertificate'),' SUBSCRIPTION_ID=',variables('subscriptionId'),' RESOURCE_GROUP=',variables('resourceGroup'),' LOCATION=',variables('location'),' VM_TYPE=',variables('vmType'),' SUBNET=',variables('subnetName'),' NETWORK_SECURITY_GROUP=',variables('nsgName'),' VIRTUAL_NETWORK=',variables('virtualNetworkName'),' VIRTUAL_NETWORK_RESOURCE_GROUP=',variables('virtualNetworkResourceGroupName'),' ROUTE_TABLE=',variables('routeTableName'),' PRIMARY_AVAILABILITY_SET=',variables('primaryAvailabilitySetName'),' PRIMARY_SCALE_SET=',variables('primaryScaleSetName'),' SERVICE_PRINCIPAL_CLIENT_ID=',variables('servicePrincipalClientId'),' SERVICE_PRINCIPAL_CLIENT_SECRET=',variables('singleQuote'),variables('servicePrincipalClientSecret'),variables('singleQuote'),' KUBELET_PRIVATE_KEY=',variables('clientPrivateKey'),' TARGET_ENVIRONMENT=',variables('targetEnvironment'),' NETWORK_PLUGIN=',variables('networkPlugin'),' VNET_CNI_PLUGINS_URL=',variables('vnetCniLinuxPluginsURL'),' CNI_PLUGINS_URL=',variables('cniPluginsURL'),' CLOUDPROVIDER_BACKOFF=',parameters('cloudproviderConfig').cloudProviderBackoff,' CLOUDPROVIDER_BACKOFF_RETRIES=',parameters('cloudproviderConfig').cloudProviderBackoffRetries,' CLOUDPROVIDER_BACKOFF_EXPONENT=',parameters('cloudproviderConfig').cloudProviderBackoffExponent,' CLOUDPROVIDER_BACKOFF_DURATION=',parameters('cloudproviderConfig').cloudProviderBackoffDuration,' CLOUDPROVIDER_BACKOFF_JITTER=',parameters('cloudproviderConfig').cloudProviderBackoffJitter,' CLOUDPROVIDER_RATELIMIT=',parameters('cloudproviderConfig').cloudProviderRatelimit,' CLOUDPROVIDER_RATELIMIT_QPS=',parameters('cloudproviderConfig').cloudProviderRatelimitQPS,' CLOUDPROVIDER_RATELIMIT_BUCKET=',parameters('cloudproviderConfig').cloudProviderRatelimitBucket,' USE_MANAGED_IDENTITY_EXTENSION=',variables('useManagedIdentityExtension'),' USE_INSTANCE_METADATA=',variables('useInstanceMetadata'),' CONTAINER_RUNTIME=',variables('containerRuntime'),' CONTAINERD_DOWNLOAD_URL_BASE=',variables('containerdDownloadURLBase'),' POD_INFRA_CONTAINER_SPEC=',variables('kubernetesPodInfraContainerSpec'),' KMS_PROVIDER_VAULT_NAME=',variables('clusterKeyVaultName'), ' EnableEncryptionWithExternalKms=true')]",
         {{else}}
-    "provisionScriptParametersCommon": "[concat('ADMINUSER=',variables('username'),' DOCKER_ENGINE_VERSION=',variables('dockerEngineVersion'),' DOCKER_REPO=',variables('dockerEngineDownloadRepo'),' TENANT_ID=',variables('tenantID'),' HYPERKUBE_URL=',variables('kubernetesHyperkubeSpec'),' APISERVER_PUBLIC_KEY=',variables('apiserverCertificate'),' SUBSCRIPTION_ID=',variables('subscriptionId'),' RESOURCE_GROUP=',variables('resourceGroup'),' LOCATION=',variables('location'),' VM_TYPE=',variables('vmType'),' SUBNET=',variables('subnetName'),' NETWORK_SECURITY_GROUP=',variables('nsgName'),' VIRTUAL_NETWORK=',variables('virtualNetworkName'),' VIRTUAL_NETWORK_RESOURCE_GROUP=',variables('virtualNetworkResourceGroupName'),' ROUTE_TABLE=',variables('routeTableName'),' PRIMARY_AVAILABILITY_SET=',variables('primaryAvailabilitySetName'),' PRIMARY_SCALE_SET=',variables('primaryScaleSetName'),' SERVICE_PRINCIPAL_CLIENT_ID=',variables('servicePrincipalClientId'),' SERVICE_PRINCIPAL_CLIENT_SECRET=',variables('singleQuote'),variables('servicePrincipalClientSecret'),variables('singleQuote'),' KUBELET_PRIVATE_KEY=',variables('clientPrivateKey'),' TARGET_ENVIRONMENT=',variables('targetEnvironment'),' NETWORK_PLUGIN=',variables('networkPlugin'),' VNET_CNI_PLUGINS_URL=',variables('vnetCniLinuxPluginsURL'),' CNI_PLUGINS_URL=',variables('cniPluginsURL'),' CLOUDPROVIDER_BACKOFF=',variables('cloudProviderBackoff'),' CLOUDPROVIDER_BACKOFF_RETRIES=',variables('cloudProviderBackoffRetries'),' CLOUDPROVIDER_BACKOFF_EXPONENT=',variables('cloudProviderBackoffExponent'),' CLOUDPROVIDER_BACKOFF_DURATION=',variables('cloudProviderBackoffDuration'),' CLOUDPROVIDER_BACKOFF_JITTER=',variables('cloudProviderBackoffJitter'),' CLOUDPROVIDER_RATELIMIT=',variables('cloudProviderRatelimit'),' CLOUDPROVIDER_RATELIMIT_QPS=',variables('cloudProviderRatelimitQPS'),' CLOUDPROVIDER_RATELIMIT_BUCKET=',variables('cloudProviderRatelimitBucket'),' USE_MANAGED_IDENTITY_EXTENSION=',variables('useManagedIdentityExtension'),' USE_INSTANCE_METADATA=',variables('useInstanceMetadata'),' CONTAINER_RUNTIME=',variables('containerRuntime'))]",
+    "provisionScriptParametersCommon": "[concat('ADMINUSER=',variables('username'),' DOCKER_ENGINE_VERSION=',variables('dockerEngineVersion'),' DOCKER_REPO=',variables('dockerEngineDownloadRepo'),' TENANT_ID=',variables('tenantID'),' HYPERKUBE_URL=',variables('kubernetesHyperkubeSpec'),' APISERVER_PUBLIC_KEY=',variables('apiserverCertificate'),' SUBSCRIPTION_ID=',variables('subscriptionId'),' RESOURCE_GROUP=',variables('resourceGroup'),' LOCATION=',variables('location'),' VM_TYPE=',variables('vmType'),' SUBNET=',variables('subnetName'),' NETWORK_SECURITY_GROUP=',variables('nsgName'),' VIRTUAL_NETWORK=',variables('virtualNetworkName'),' VIRTUAL_NETWORK_RESOURCE_GROUP=',variables('virtualNetworkResourceGroupName'),' ROUTE_TABLE=',variables('routeTableName'),' PRIMARY_AVAILABILITY_SET=',variables('primaryAvailabilitySetName'),' PRIMARY_SCALE_SET=',variables('primaryScaleSetName'),' SERVICE_PRINCIPAL_CLIENT_ID=',variables('servicePrincipalClientId'),' SERVICE_PRINCIPAL_CLIENT_SECRET=',variables('singleQuote'),variables('servicePrincipalClientSecret'),variables('singleQuote'),' KUBELET_PRIVATE_KEY=',variables('clientPrivateKey'),' TARGET_ENVIRONMENT=',variables('targetEnvironment'),' NETWORK_PLUGIN=',variables('networkPlugin'),' VNET_CNI_PLUGINS_URL=',variables('vnetCniLinuxPluginsURL'),' CNI_PLUGINS_URL=',variables('cniPluginsURL'),' CLOUDPROVIDER_BACKOFF=',parameters('cloudproviderConfig').cloudProviderBackoff,' CLOUDPROVIDER_BACKOFF_RETRIES=',parameters('cloudproviderConfig').cloudProviderBackoffRetries,' CLOUDPROVIDER_BACKOFF_EXPONENT=',parameters('cloudproviderConfig').cloudProviderBackoffExponent,' CLOUDPROVIDER_BACKOFF_DURATION=',parameters('cloudproviderConfig').cloudProviderBackoffDuration,' CLOUDPROVIDER_BACKOFF_JITTER=',parameters('cloudproviderConfig').cloudProviderBackoffJitter,' CLOUDPROVIDER_RATELIMIT=',parameters('cloudproviderConfig').cloudProviderRatelimit,' CLOUDPROVIDER_RATELIMIT_QPS=',parameters('cloudproviderConfig').cloudProviderRatelimitQPS,' CLOUDPROVIDER_RATELIMIT_BUCKET=',parameters('cloudproviderConfig').cloudProviderRatelimitBucket,' USE_MANAGED_IDENTITY_EXTENSION=',variables('useManagedIdentityExtension'),' USE_INSTANCE_METADATA=',variables('useInstanceMetadata'),' CONTAINER_RUNTIME=',variables('containerRuntime'),' CONTAINERD_DOWNLOAD_URL_BASE=',variables('containerdDownloadURLBase'),' POD_INFRA_CONTAINER_SPEC=',variables('kubernetesPodInfraContainerSpec'))]",
         {{end}}
     {{end}}
 {{end}}
@@ -340,15 +344,6 @@
     "kubeServiceCidr": "[parameters('kubeServiceCidr')]",
     "kubeClusterCidr": "[parameters('kubeClusterCidr')]",
     "dockerBridgeCidr": "[parameters('dockerBridgeCidr')]",
-{{if IsKubernetesVersionGe "1.6.0"}}
-    "registerWithTaints": "node-role.kubernetes.io/master=true:NoSchedule",
-{{else}}
-    {{if HasLinuxAgents}}
-    "registerSchedulable": "false",
-    {{else}}
-    "registerSchedulable": "true",
-    {{end}}
-{{end}}
 {{if not IsHostedMaster }}
     "nsgName": "[concat(variables('masterVMNamePrefix'), 'nsg')]",
 {{else}}

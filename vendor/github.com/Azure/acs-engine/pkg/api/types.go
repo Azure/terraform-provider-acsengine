@@ -252,16 +252,15 @@ type PrivateJumpboxProfile struct {
 }
 
 // CloudProviderConfig contains the KubernetesConfig properties specific to the Cloud Provider
-// TODO use this when strict JSON checking accommodates struct embedding
 type CloudProviderConfig struct {
-	CloudProviderBackoff         bool    `json:"cloudProviderBackoff,omitempty"`
-	CloudProviderBackoffRetries  int     `json:"cloudProviderBackoffRetries,omitempty"`
-	CloudProviderBackoffJitter   float64 `json:"cloudProviderBackoffJitter,omitempty"`
-	CloudProviderBackoffDuration int     `json:"cloudProviderBackoffDuration,omitempty"`
-	CloudProviderBackoffExponent float64 `json:"cloudProviderBackoffExponent,omitempty"`
-	CloudProviderRateLimit       bool    `json:"cloudProviderRateLimit,omitempty"`
-	CloudProviderRateLimitQPS    float64 `json:"cloudProviderRateLimitQPS,omitempty"`
-	CloudProviderRateLimitBucket int     `json:"cloudProviderRateLimitBucket,omitempty"`
+	CloudProviderBackoff         bool   `json:"cloudProviderBackoff,omitempty"`
+	CloudProviderBackoffRetries  int    `json:"cloudProviderBackoffRetries,omitempty"`
+	CloudProviderBackoffJitter   string `json:"cloudProviderBackoffJitter,omitempty"`
+	CloudProviderBackoffDuration int    `json:"cloudProviderBackoffDuration,omitempty"`
+	CloudProviderBackoffExponent string `json:"cloudProviderBackoffExponent,omitempty"`
+	CloudProviderRateLimit       bool   `json:"cloudProviderRateLimit,omitempty"`
+	CloudProviderRateLimitQPS    string `json:"cloudProviderRateLimitQPS,omitempty"`
+	CloudProviderRateLimitBucket int    `json:"cloudProviderRateLimitBucket,omitempty"`
 }
 
 // KubernetesConfigDeprecated are properties that are no longer operable and will be ignored
@@ -369,6 +368,16 @@ type OpenShiftConfig struct {
 	EnableAADAuthentication bool `json:"enableAADAuthentication,omitempty"`
 
 	ConfigBundles map[string][]byte `json:"configBundles,omitempty"`
+
+	PublicHostname string
+	RouterProfiles []OpenShiftRouterProfile
+}
+
+// OpenShiftRouterProfile represents an OpenShift router.
+type OpenShiftRouterProfile struct {
+	Name            string
+	PublicSubdomain string
+	FQDN            string
 }
 
 // MasterProfile represents the definition of the master cluster
@@ -878,9 +887,8 @@ func (o *OrchestratorProfile) IsMetricsServerEnabled() bool {
 }
 
 // IsContainerMonitoringEnabled checks if the container monitoring addon is enabled
-func (o *OrchestratorProfile) IsContainerMonitoringEnabled() bool {
+func (k *KubernetesConfig) IsContainerMonitoringEnabled() bool {
 	var containerMonitoringAddon KubernetesAddon
-	k := o.KubernetesConfig
 	for i := range k.Addons {
 		if k.Addons[i].Name == ContainerMonitoringAddonName {
 			containerMonitoringAddon = k.Addons[i]
@@ -898,6 +906,17 @@ func (k *KubernetesConfig) IsTillerEnabled() bool {
 		}
 	}
 	return tillerAddon.IsEnabled(DefaultTillerAddonEnabled)
+}
+
+// IsAADPodIdentityEnabled checks if the tiller addon is enabled
+func (k *KubernetesConfig) IsAADPodIdentityEnabled() bool {
+	var aadPodIdentityAddon KubernetesAddon
+	for i := range k.Addons {
+		if k.Addons[i].Name == DefaultAADPodIdentityAddonName {
+			aadPodIdentityAddon = k.Addons[i]
+		}
+	}
+	return aadPodIdentityAddon.IsEnabled(DefaultAADPodIdentityAddonEnabled)
 }
 
 // IsACIConnectorEnabled checks if the ACI Connector addon is enabled
@@ -920,6 +939,28 @@ func (k *KubernetesConfig) IsClusterAutoscalerEnabled() bool {
 		}
 	}
 	return clusterAutoscalerAddon.IsEnabled(DefaultClusterAutoscalerAddonEnabled)
+}
+
+// IsBlobfuseFlexVolumeEnabled checks if the Blobfuse FlexVolume addon is enabled
+func (k *KubernetesConfig) IsBlobfuseFlexVolumeEnabled() bool {
+	var bfFlexVolumeAddon KubernetesAddon
+	for i := range k.Addons {
+		if k.Addons[i].Name == DefaultBlobfuseFlexVolumeAddonName {
+			bfFlexVolumeAddon = k.Addons[i]
+		}
+	}
+	return bfFlexVolumeAddon.IsEnabled(DefaultBlobfuseFlexVolumeAddonEnabled)
+}
+
+// IsSMBFlexVolumeEnabled checks if the SMB FlexVolume addon is enabled
+func (k *KubernetesConfig) IsSMBFlexVolumeEnabled() bool {
+	var smbFlexVolumeAddon KubernetesAddon
+	for i := range k.Addons {
+		if k.Addons[i].Name == DefaultSMBFlexVolumeAddonName {
+			smbFlexVolumeAddon = k.Addons[i]
+		}
+	}
+	return smbFlexVolumeAddon.IsEnabled(DefaultSMBFlexVolumeAddonEnabled)
 }
 
 // IsKeyVaultFlexVolumeEnabled checks if the Key Vault FlexVolume addon is enabled

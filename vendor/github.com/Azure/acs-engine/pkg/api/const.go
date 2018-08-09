@@ -87,10 +87,16 @@ const publicAgentPoolSuffix = "-public"
 const (
 	// DefaultTillerAddonEnabled determines the acs-engine provided default for enabling tiller addon
 	DefaultTillerAddonEnabled = true
+	// DefaultAADPodIdentityAddonEnabled determines the acs-engine provided default for enabling aad-pod-identity addon
+	DefaultAADPodIdentityAddonEnabled = false
 	// DefaultACIConnectorAddonEnabled determines the acs-engine provided default for enabling aci connector addon
 	DefaultACIConnectorAddonEnabled = false
 	// DefaultClusterAutoscalerAddonEnabled determines the acs-engine provided default for enabling cluster autoscaler addon
 	DefaultClusterAutoscalerAddonEnabled = false
+	// DefaultBlobfuseFlexVolumeAddonEnabled determines the acs-engine provided default for enabling blobfuse flexvolume addon
+	DefaultBlobfuseFlexVolumeAddonEnabled = true
+	// DefaultSMBFlexVolumeAddonEnabled determines the acs-engine provided default for enabling smb flexvolume addon
+	DefaultSMBFlexVolumeAddonEnabled = true
 	// DefaultKeyVaultFlexVolumeAddonEnabled determines the acs-engine provided default for enabling key vault flexvolume addon
 	DefaultKeyVaultFlexVolumeAddonEnabled = false
 	// DefaultDashboardAddonEnabled determines the acs-engine provided default for enabling kubernetes-dashboard addon
@@ -113,10 +119,16 @@ const (
 	DefaultAzureCNINetworkMonitoringAddonEnabled = false
 	// DefaultTillerAddonName is the name of the tiller addon deployment
 	DefaultTillerAddonName = "tiller"
-	// DefaultACIConnectorAddonName is the name of the tiller addon deployment
+	// DefaultAADPodIdentityAddonName is the name of the aad-pod-identity addon deployment
+	DefaultAADPodIdentityAddonName = "aad-pod-identity"
+	// DefaultACIConnectorAddonName is the name of the aci-connector addon deployment
 	DefaultACIConnectorAddonName = "aci-connector"
 	// DefaultClusterAutoscalerAddonName is the name of the cluster autoscaler addon deployment
 	DefaultClusterAutoscalerAddonName = "cluster-autoscaler"
+	// DefaultBlobfuseFlexVolumeAddonName is the name of the blobfuse flexvolume addon
+	DefaultBlobfuseFlexVolumeAddonName = "blobfuse-flexvolume"
+	// DefaultSMBFlexVolumeAddonName is the name of the smb flexvolume addon
+	DefaultSMBFlexVolumeAddonName = "smb-flexvolume"
 	// DefaultKeyVaultFlexVolumeAddonName is the name of the key vault flexvolume addon deployment
 	DefaultKeyVaultFlexVolumeAddonName = "keyvault-flexvolume"
 	// DefaultDashboardAddonName is the name of the kubernetes-dashboard addon deployment
@@ -142,8 +154,13 @@ const (
 )
 
 const (
-	// AgentPoolProfileRoleEmpty is the empty role
+	// AgentPoolProfileRoleEmpty is the empty role.  Deprecated; only used in
+	// acs-engine.
 	AgentPoolProfileRoleEmpty AgentPoolProfileRole = ""
+	// AgentPoolProfileRoleCompute is the compute role
+	AgentPoolProfileRoleCompute AgentPoolProfileRole = "compute"
 	// AgentPoolProfileRoleInfra is the infra role
 	AgentPoolProfileRoleInfra AgentPoolProfileRole = "infra"
+	// AgentPoolProfileRoleMaster is the master role
+	AgentPoolProfileRoleMaster AgentPoolProfileRole = "master"
 )

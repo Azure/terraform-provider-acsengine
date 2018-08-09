@@ -1,0 +1,8 @@
+trigger: none
+
+phases:
+- phase: build_vhd
+  queue: Hosted Linux Preview
+  steps:
+  - script: make info
+    displayName: Building VHD

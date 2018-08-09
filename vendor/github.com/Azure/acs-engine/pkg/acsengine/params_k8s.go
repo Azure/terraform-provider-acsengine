@@ -55,6 +55,12 @@ func assignKubernetesParameters(properties *api.Properties, parametersMap params
 					addValue(parametersMap, "kubernetesTillerSpec", cloudSpecConfig.KubernetesSpecConfig.TillerImageBase+KubeConfigs[k8sVersion][DefaultTillerAddonName])
 				}
 			}
+			aadPodIdentityAddon := getAddonByName(properties.OrchestratorProfile.KubernetesConfig.Addons, DefaultAADPodIdentityAddonName)
+			c = getAddonContainersIndexByName(aadPodIdentityAddon.Containers, DefaultAADPodIdentityAddonName)
+			if c > -1 {
+				addValue(parametersMap, "kubernetesAADPodIdentityEnabled", helpers.IsTrueBoolPointer(aadPodIdentityAddon.Enabled))
+			}
+
 			aciConnectorAddon := getAddonByName(properties.OrchestratorProfile.KubernetesConfig.Addons, DefaultACIConnectorAddonName)
 			c = getAddonContainersIndexByName(aciConnectorAddon.Containers, DefaultACIConnectorAddonName)
 			if c > -1 {
@@ -91,6 +97,24 @@ func assignKubernetesParameters(properties *api.Properties, parametersMap params
 					addValue(parametersMap, "kubernetesClusterAutoscalerSpec", cloudSpecConfig.KubernetesSpecConfig.KubernetesImageBase+KubeConfigs[k8sVersion][DefaultClusterAutoscalerAddonName])
 				}
 			}
+			flexVolumeDriverConfig := map[string]string{}
+			bfFlexVolumeInstallerAddon := getAddonByName(properties.OrchestratorProfile.KubernetesConfig.Addons, DefaultBlobfuseFlexVolumeAddonName)
+			c = getAddonContainersIndexByName(bfFlexVolumeInstallerAddon.Containers, DefaultBlobfuseFlexVolumeAddonName)
+			if c > -1 {
+				flexVolumeDriverConfig["kubernetesBlobfuseFlexVolumeInstallerCPURequests"] = bfFlexVolumeInstallerAddon.Containers[c].CPURequests
+				flexVolumeDriverConfig["kubernetesBlobfuseFlexVolumeInstallerCPULimit"] = bfFlexVolumeInstallerAddon.Containers[c].CPULimits
+				flexVolumeDriverConfig["kubernetesBlobfuseFlexVolumeInstallerMemoryRequests"] = bfFlexVolumeInstallerAddon.Containers[c].MemoryRequests
+				flexVolumeDriverConfig["kubernetesBlobfuseFlexVolumeInstallerMemoryLimit"] = bfFlexVolumeInstallerAddon.Containers[c].MemoryLimits
+			}
+			smbFlexVolumeInstallerAddon := getAddonByName(properties.OrchestratorProfile.KubernetesConfig.Addons, DefaultSMBFlexVolumeAddonName)
+			c = getAddonContainersIndexByName(smbFlexVolumeInstallerAddon.Containers, DefaultSMBFlexVolumeAddonName)
+			if c > -1 {
+				flexVolumeDriverConfig["kubernetesSMBFlexVolumeInstallerCPURequests"] = smbFlexVolumeInstallerAddon.Containers[c].CPURequests
+				flexVolumeDriverConfig["kubernetesSMBFlexVolumeInstallerCPULimit"] = smbFlexVolumeInstallerAddon.Containers[c].CPULimits
+				flexVolumeDriverConfig["kubernetesSMBFlexVolumeInstallerMemoryRequests"] = smbFlexVolumeInstallerAddon.Containers[c].MemoryRequests
+				flexVolumeDriverConfig["kubernetesSMBFlexVolumeInstallerMemoryLimit"] = smbFlexVolumeInstallerAddon.Containers[c].MemoryLimits
+			}
+			addValue(parametersMap, "flexVolumeDriverConfig", flexVolumeDriverConfig)
 			kvFlexVolumeInstallerAddon := getAddonByName(properties.OrchestratorProfile.KubernetesConfig.Addons, DefaultKeyVaultFlexVolumeAddonName)
 			c = getAddonContainersIndexByName(kvFlexVolumeInstallerAddon.Containers, DefaultKeyVaultFlexVolumeAddonName)
 			if c > -1 {
@@ -177,14 +201,16 @@ func assignKubernetesParameters(properties *api.Properties, parametersMap params
 			}
 			addValue(parametersMap, "kubernetesKubeDNSSpec", cloudSpecConfig.KubernetesSpecConfig.KubernetesImageBase+KubeConfigs[k8sVersion]["dns"])
 			addValue(parametersMap, "kubernetesPodInfraContainerSpec", cloudSpecConfig.KubernetesSpecConfig.KubernetesImageBase+KubeConfigs[k8sVersion]["pause"])
-			addValue(parametersMap, "cloudProviderBackoff", strconv.FormatBool(properties.OrchestratorProfile.KubernetesConfig.CloudProviderBackoff))
-			addValue(parametersMap, "cloudProviderBackoffRetries", strconv.Itoa(properties.OrchestratorProfile.KubernetesConfig.CloudProviderBackoffRetries))
-			addValue(parametersMap, "cloudProviderBackoffExponent", strconv.FormatFloat(properties.OrchestratorProfile.KubernetesConfig.CloudProviderBackoffExponent, 'f', -1, 64))
-			addValue(parametersMap, "cloudProviderBackoffDuration", strconv.Itoa(properties.OrchestratorProfile.KubernetesConfig.CloudProviderBackoffDuration))
-			addValue(parametersMap, "cloudProviderBackoffJitter", strconv.FormatFloat(properties.OrchestratorProfile.KubernetesConfig.CloudProviderBackoffJitter, 'f', -1, 64))
-			addValue(parametersMap, "cloudProviderRatelimit", strconv.FormatBool(properties.OrchestratorProfile.KubernetesConfig.CloudProviderRateLimit))
-			addValue(parametersMap, "cloudProviderRatelimitQPS", strconv.FormatFloat(properties.OrchestratorProfile.KubernetesConfig.CloudProviderRateLimitQPS, 'f', -1, 64))
-			addValue(parametersMap, "cloudProviderRatelimitBucket", strconv.Itoa(properties.OrchestratorProfile.KubernetesConfig.CloudProviderRateLimitBucket))
+			addValue(parametersMap, "cloudproviderConfig", api.CloudProviderConfig{
+				CloudProviderBackoff:         properties.OrchestratorProfile.KubernetesConfig.CloudProviderBackoff,
+				CloudProviderBackoffRetries:  properties.OrchestratorProfile.KubernetesConfig.CloudProviderBackoffRetries,
+				CloudProviderBackoffJitter:   strconv.FormatFloat(properties.OrchestratorProfile.KubernetesConfig.CloudProviderBackoffJitter, 'f', -1, 64),
+				CloudProviderBackoffDuration: properties.OrchestratorProfile.KubernetesConfig.CloudProviderBackoffDuration,
+				CloudProviderBackoffExponent: strconv.FormatFloat(properties.OrchestratorProfile.KubernetesConfig.CloudProviderBackoffExponent, 'f', -1, 64),
+				CloudProviderRateLimit:       properties.OrchestratorProfile.KubernetesConfig.CloudProviderRateLimit,
+				CloudProviderRateLimitQPS:    strconv.FormatFloat(properties.OrchestratorProfile.KubernetesConfig.CloudProviderRateLimitQPS, 'f', -1, 64),
+				CloudProviderRateLimitBucket: properties.OrchestratorProfile.KubernetesConfig.CloudProviderRateLimitBucket,
+			})
 			addValue(parametersMap, "kubeClusterCidr", properties.OrchestratorProfile.KubernetesConfig.ClusterSubnet)
 			addValue(parametersMap, "kubernetesNonMasqueradeCidr", properties.OrchestratorProfile.KubernetesConfig.KubeletConfig["--non-masquerade-cidr"])
 			addValue(parametersMap, "kubernetesKubeletClusterDomain", properties.OrchestratorProfile.KubernetesConfig.KubeletConfig["--cluster-domain"])
@@ -192,6 +218,7 @@ func assignKubernetesParameters(properties *api.Properties, parametersMap params
 			addValue(parametersMap, "networkPolicy", properties.OrchestratorProfile.KubernetesConfig.NetworkPolicy)
 			addValue(parametersMap, "networkPlugin", properties.OrchestratorProfile.KubernetesConfig.NetworkPlugin)
 			addValue(parametersMap, "containerRuntime", properties.OrchestratorProfile.KubernetesConfig.ContainerRuntime)
+			addValue(parametersMap, "containerdDownloadURLBase", cloudSpecConfig.KubernetesSpecConfig.ContainerdDownloadURLBase)
 			addValue(parametersMap, "cniPluginsURL", cloudSpecConfig.KubernetesSpecConfig.CNIPluginsDownloadURL)
 			addValue(parametersMap, "vnetCniLinuxPluginsURL", cloudSpecConfig.KubernetesSpecConfig.VnetCNILinuxPluginsDownloadURL)
 			addValue(parametersMap, "vnetCniWindowsPluginsURL", cloudSpecConfig.KubernetesSpecConfig.VnetCNIWindowsPluginsDownloadURL)
