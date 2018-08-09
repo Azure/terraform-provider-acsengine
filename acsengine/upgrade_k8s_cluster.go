@@ -52,6 +52,8 @@ func upgradeCluster(d *schema.ResourceData, m interface{}, upgradeVersion string
 	return saveTemplates(d, uc.Cluster, uc.DeploymentDirectory)
 }
 
+// consider moving this to be
+// func (uc *UpgradeClient) initialize(...)
 func initializeUpgradeClient(d *schema.ResourceData, upgradeVersion string) (client.UpgradeClient, error) {
 	uc := client.UpgradeClient{}
 

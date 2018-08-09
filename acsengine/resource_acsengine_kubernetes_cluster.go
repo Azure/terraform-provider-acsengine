@@ -232,6 +232,7 @@ const (
 )
 
 func resourceACSEngineK8sClusterCreate(d *schema.ResourceData, m interface{}) error {
+	// CR: convert d and m to concrete types here
 	err := createClusterResourceGroup(d, m)
 	if err != nil {
 		return fmt.Errorf("Failed to create resource group: %+v", err)
@@ -258,10 +259,9 @@ func resourceACSEngineK8sClusterRead(d *schema.ResourceData, m interface{}) erro
 		d.SetId("")
 		return err
 	}
-	resourceGroup := id.ResourceGroup
 
-	if err = d.Set("resource_group", resourceGroup); err != nil {
-		return fmt.Errorf("Error setting `resource_group`: %+v", err)
+	if err = d.Set("resource_group", id.ResourceGroup); err != nil {
+		return fmt.Errorf("error setting `resource_group`: %+v", err)
 	}
 
 	cluster, err := loadContainerServiceFromApimodel(d, true, false)
@@ -269,6 +269,7 @@ func resourceACSEngineK8sClusterRead(d *schema.ResourceData, m interface{}) erro
 		return fmt.Errorf("error parsing API model: %+v", err)
 	}
 
+	// CR: use if statement; err != nil {
 	err = d.Set("name", cluster.Name)
 	if err != nil {
 		return fmt.Errorf("error setting `name`: %+v", err)
@@ -304,6 +305,7 @@ func resourceACSEngineK8sClusterRead(d *schema.ResourceData, m interface{}) erro
 func resourceACSEngineK8sClusterDelete(d *schema.ResourceData, m interface{}) error {
 	client := m.(*ArmClient)
 	rgClient := client.resourceGroupsClient
+	// CR: maybe just use this directly
 	ctx := client.StopContext
 
 	id, err := utils.ParseAzureResourceID(d.Id())
@@ -331,6 +333,8 @@ func resourceACSEngineK8sClusterDelete(d *schema.ResourceData, m interface{}) er
 		return fmt.Errorf("Error deleting Resource Group %q: %+v", resourceGroupName, err)
 	}
 
+	// CR: check deleteFuture.Result
+
 	return nil
 }
 
@@ -343,6 +347,7 @@ func resourceACSEngineK8sClusterUpdate(d *schema.ResourceData, m interface{}) er
 
 	d.Partial(true)
 
+	// CR: make sure everything else has ForceNew
 	// UPGRADE
 	if d.HasChange("kubernetes_version") {
 		old, new := d.GetChange("kubernetes_version")

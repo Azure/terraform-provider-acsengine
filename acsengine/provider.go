@@ -11,6 +11,8 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
 	"github.com/Azure/go-autorest/autorest/adal"
 	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/authentication"
+
+	// CR: azschema
 	azSchema "github.com/Azure/terraform-provider-acsengine/acsengine/helpers/schema"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
@@ -50,6 +52,7 @@ func Provider() terraform.ResourceProvider {
 				DefaultFunc: schema.EnvDefaultFunc("ARM_ENVIRONMENT", "public"),
 			},
 
+			// CR: see if this is supported, if not remove
 			"skip_credentials_validation": {
 				Type:        schema.TypeBool,
 				Optional:    true,
@@ -178,6 +181,7 @@ func registerProviderWithSubscription(ctx context.Context, providerName string, 
 
 func determineAzureResourceProvidersToRegister(providerList []resources.Provider) map[string]struct{} {
 	providers := map[string]struct{}{
+		// CR: the only required ones are Compute, Storage, Network, KeyVault
 		"Microsoft.Authorization":       {},
 		"Microsoft.Automation":          {},
 		"Microsoft.Cache":               {},

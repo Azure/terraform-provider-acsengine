@@ -245,6 +245,7 @@ func scaleUpCluster(sc *client.ScaleClient, highestUsedIndex, currentNodeCount, 
 	deploymentSuffix := random.Int31()
 
 	_, err = sc.Client.DeployTemplate(
+		// CR: client.StopSomething
 		context.Background(),
 		sc.ResourceGroupName,
 		fmt.Sprintf("%s-%d", sc.ResourceGroupName, deploymentSuffix),

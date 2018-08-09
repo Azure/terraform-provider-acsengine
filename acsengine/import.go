@@ -11,6 +11,7 @@ import (
 
 // the ID passed will be a string of format "AZURE_RESOURCE_ID*space*APIMODEL_DIRECTORY"
 func resourceACSEngineK8sClusterImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+	// CR: try using the equiv of az group deployment show to grab the template
 	client := m.(*ArmClient)
 	deployClient := client.deploymentsClient
 	ctx := client.StopContext

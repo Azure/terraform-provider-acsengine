@@ -57,14 +57,14 @@ func deployTemplate(d *schema.ResourceData, m interface{}, template, parameters 
 		return "", fmt.Errorf("failed to expand template and parameters: %+v", err)
 	}
 
-	properties := resources.DeploymentProperties{
-		Mode:       resources.Incremental,
-		Parameters: azureDeployParameters["parameters"],
-		Template:   azureDeployTemplate,
-	}
-
+	// CR: changed this
 	deployment := resources.Deployment{
-		Properties: &properties,
+		Properties: &resources.DeploymentProperties{
+			Mode: resources.Incremental,
+			// CR: check for existence
+			Parameters: azureDeployParameters["parameters"],
+			Template:   azureDeployTemplate,
+		},
 	}
 
 	future, err := deployClient.CreateOrUpdate(ctx, resourceGroup, name, deployment)
@@ -76,6 +76,9 @@ func deployTemplate(d *schema.ResourceData, m interface{}, template, parameters 
 	if err = future.WaitForCompletion(ctx, deployClient.Client); err != nil {
 		return "", fmt.Errorf("error creating deployment: %+v", err)
 	}
+
+	// CR: check Result to see detailed message
+	future.Result(deployClient)
 	fmt.Println("Deployment created (2)")
 
 	read, err := deployClient.Get(ctx, resourceGroup, name)
