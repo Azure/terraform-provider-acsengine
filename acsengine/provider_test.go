@@ -52,8 +52,8 @@ func TestDetermineAzureResourceProvidersToRegister(t *testing.T) {
 	if _, ok := providerMap[namespace]; ok {
 		t.Fatalf("%s should have been deleted", namespace)
 	}
-	if _, ok := providerMap["Microsoft.Authorization"]; !ok {
-		t.Fatalf("Microsoft.Authorization should be in provider map")
+	if _, ok := providerMap["Microsoft.Network"]; !ok {
+		t.Fatalf("Microsoft.Network should be in provider map")
 	}
 }
 

@@ -964,9 +964,8 @@ func testCheckACSEngineClusterExists(name string) resource.TestCheckFunc {
 
 		client := testAccProvider.Meta().(*ArmClient)
 		deployClient := client.deploymentsClient
-		ctx := client.StopContext
 
-		resp, err := deployClient.Get(ctx, resourceGroup, name) // is this the best way to test for cluster existence?
+		resp, err := deployClient.Get(client.StopContext, resourceGroup, name) // is this the best way to test for cluster existence?
 		if err != nil {
 			return fmt.Errorf("Bad: Get on deploymentsClient: %+v", err)
 		}
@@ -987,7 +986,6 @@ func testCheckACSEngineClusterExists(name string) resource.TestCheckFunc {
 func testCheckACSEngineClusterDestroy(s *terraform.State) error {
 	client := testAccProvider.Meta().(*ArmClient)
 	deployClient := client.deploymentsClient
-	ctx := client.StopContext
 
 	for _, rs := range s.RootModule().Resources { // for each resource
 		if rs.Type != "acsengine_kubernetes_cluster" {
@@ -997,7 +995,7 @@ func testCheckACSEngineClusterDestroy(s *terraform.State) error {
 		name := rs.Primary.Attributes["name"]
 		resourceGroup := rs.Primary.Attributes["resource_group"]
 
-		resp, err := deployClient.Get(ctx, resourceGroup, name)
+		resp, err := deployClient.Get(client.StopContext, resourceGroup, name)
 		if err != nil {
 			return nil
 		}

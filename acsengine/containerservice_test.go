@@ -89,6 +89,7 @@ func TestFlattenUnsetWindowsProfile(t *testing.T) {
 	if len(windowsProfile) != 0 {
 		t.Fatalf("flattenWindowsProfile failed: did not find zero Windows profiles")
 	}
+	assert.Equal(t, len(windowsProfile), 0, "did not find zero Windows profiles")
 }
 
 func TestFlattenServicePrincipal(t *testing.T) {
@@ -107,9 +108,7 @@ func TestFlattenServicePrincipal(t *testing.T) {
 		t.Fatalf("flattenServicePrincipal failed: %v", err)
 	}
 
-	if len(servicePrincipal) != 1 {
-		t.Fatalf("flattenServicePrincipal failed: did not find one master profile")
-	}
+	assert.Equal(t, len(servicePrincipal), 1, "did not find one service principal")
 	spPf := servicePrincipal[0].(map[string]interface{})
 	val, ok := spPf["client_id"]
 	assert.True(t, ok, "flattenServicePrincipal failed: Master count does not exist")
@@ -141,9 +140,7 @@ func TestFlattenDataSourceServicePrincipal(t *testing.T) {
 		t.Fatalf("flattenDataSourceServicePrincipal failed: %v", err)
 	}
 
-	if len(servicePrincipal) != 1 {
-		t.Fatalf("flattenDataSourceServicePrincipal failed: did not find one master profile")
-	}
+	assert.Equal(t, len(servicePrincipal), 1, "did not find one master profile")
 	spPf := servicePrincipal[0].(map[string]interface{})
 	val, ok := spPf["client_id"]
 	assert.True(t, ok, "flattenDataSourceServicePrincipal failed: Master count does not exist")
@@ -177,9 +174,7 @@ func TestFlattenMasterProfile(t *testing.T) {
 		t.Fatalf("flattenServicePrincipal failed: %v", err)
 	}
 
-	if len(masterProfile) != 1 {
-		t.Fatalf("flattenMasterProfile failed: did not find one master profile")
-	}
+	assert.Equal(t, len(masterProfile), 1, "did not find one master profile")
 	masterPf := masterProfile[0].(map[string]interface{})
 	val, ok := masterPf["count"]
 	assert.True(t, ok, "flattenMasterProfile failed: Master count does not exist")
@@ -208,9 +203,7 @@ func TestFlattenMasterProfileWithOSDiskSize(t *testing.T) {
 		t.Fatalf("flattenServicePrincipal failed: %v", err)
 	}
 
-	if len(masterProfile) != 1 {
-		t.Fatalf("flattenMasterProfile failed: did not find one master profile")
-	}
+	assert.Equal(t, len(masterProfile), 1, "did not find one master profile")
 	masterPf := masterProfile[0].(map[string]interface{})
 	val, ok := masterPf["count"]
 	assert.True(t, ok, "flattenMasterProfile failed: Master count does not exist")
@@ -252,23 +245,21 @@ func TestFlattenAgentPoolProfiles(t *testing.T) {
 		t.Fatalf("flattenAgentPoolProfiles failed: %v", err)
 	}
 
-	if len(agentPoolProfiles) < 1 {
-		t.Fatalf("flattenAgentPoolProfile failed: did not find any agent pool profiles")
-	}
+	assert.Equal(t, 2, len(agentPoolProfiles), "did not find correct number of agent pool profiles")
 	agentPf0 := agentPoolProfiles[0].(map[string]interface{})
 	val, ok := agentPf0["count"]
 	assert.True(t, ok, "agent pool count does not exist")
-	assert.Equal(t, val.(int), count)
+	assert.Equal(t, count, val.(int))
 	if val, ok := agentPf0["os_disk_size"]; ok {
 		t.Fatalf("agent pool OS disk size should not be set, but is %d", val.(int))
 	}
 	agentPf1 := agentPoolProfiles[1].(map[string]interface{})
 	val, ok = agentPf1["name"]
 	assert.True(t, ok, "flattenAgentPoolProfile failed: agent pool count does not exist")
-	assert.Equal(t, val.(string), name)
+	assert.Equal(t, name, val.(string))
 	val, ok = agentPf1["os_disk_size"]
 	assert.True(t, ok, "agent pool os disk size is not set when it should be")
-	assert.Equal(t, val.(int), osDiskSize)
+	assert.Equal(t, osDiskSize, val.(int))
 }
 
 func TestFlattenAgentPoolProfilesWithOSType(t *testing.T) {
@@ -293,23 +284,21 @@ func TestFlattenAgentPoolProfilesWithOSType(t *testing.T) {
 		t.Fatalf("flattenAgentPoolProfiles failed: %v", err)
 	}
 
-	if len(agentPoolProfiles) < 1 {
-		t.Fatalf("flattenAgentPoolProfile failed: did not find any agent pool profiles")
-	}
+	assert.Equal(t, 2, len(agentPoolProfiles), "did not find correct number of agent pool profiles")
 	agentPf0 := agentPoolProfiles[0].(map[string]interface{})
 	val, ok := agentPf0["count"]
 	assert.True(t, ok, "agent pool count does not exist")
-	assert.Equal(t, val.(int), count)
+	assert.Equal(t, count, val.(int))
 	if val, ok := agentPf0["os_type"]; ok {
 		t.Fatalf("agent pool OS type should not be set, but is %d", val.(int))
 	}
 	agentPf1 := agentPoolProfiles[1].(map[string]interface{})
 	val, ok = agentPf1["name"]
 	assert.True(t, ok, "flattenAgentPoolProfile failed: agent pool count does not exist")
-	assert.Equal(t, val.(string), name)
+	assert.Equal(t, name, val.(string))
 	val, ok = agentPf1["os_type"]
 	assert.True(t, ok, "'os_type' does not exist")
-	assert.Equal(t, val.(string), "Windows")
+	assert.Equal(t, "Windows", val.(string))
 }
 
 func TestFlattenUnsetAgentPoolProfiles(t *testing.T) {
@@ -419,11 +408,96 @@ func TestExpandAgentPoolProfiles(t *testing.T) {
 	if profiles[0].OSType != api.Linux {
 		t.Fatalf("The first agent pool profile has OS type %s when it should be %s", profiles[0].OSType, api.Linux)
 	}
+	assert.Equal(t, profiles[0].OSType, api.Linux, "wrong OS type")
 	assert.Equal(t, profiles[1].Count, agentPool2Count)
 	assert.Equal(t, profiles[1].OSDiskSizeGB, agentPool2osDiskSize)
 	if profiles[1].OSType != api.Windows {
 		t.Fatalf("The first agent pool profile has OS type %s when it should be %s", profiles[0].OSType, api.Windows)
 	}
+}
+
+func TestSetContainerService(t *testing.T) {
+	name := "testcluster"
+	location := "southcentralus"
+	resourceGroup := "testrg"
+	masterDNSPrefix := "creativeMasterDNSPrefix"
+
+	d := mockClusterResourceData(name, location, resourceGroup, masterDNSPrefix)
+
+	cluster, err := setContainerService(d)
+	if err != nil {
+		t.Fatalf("setContainerService failed: %+v", err)
+	}
+
+	if cluster.Name != "testcluster" {
+		t.Fatalf("cluster name was not set correctly: was %s but should be testcluster", cluster.Name)
+	}
+	version := cluster.Properties.OrchestratorProfile.OrchestratorVersion
+	if version != "1.10.0" {
+		t.Fatalf("cluster Kubernetes version was not set correctly: was '%s' but it should be '1.10.0'", version)
+	}
+	dnsPrefix := cluster.Properties.MasterProfile.DNSPrefix
+	if dnsPrefix != masterDNSPrefix {
+		t.Fatalf("master DNS prefix was not set correctly: was %s but it should be 'masterDNSPrefix'", dnsPrefix)
+	}
+	if cluster.Properties.AgentPoolProfiles[0].Count != 1 {
+		t.Fatalf("agent pool profile is not set correctly")
+	}
+}
+
+func TestLoadContainerServiceFromApimodel(t *testing.T) {
+	name := "testcluster"
+	location := "southcentralus"
+
+	d := mockClusterResourceData(name, location, "testrg", "creativeMasterDNSPrefix") // I need to add a test apimodel in here
+
+	apimodel, err := loadContainerServiceFromApimodel(d, true, false)
+	if err != nil {
+		t.Fatalf("failed to load container service from api model: %+v", err)
+	}
+
+	assert.Equal(t, apimodel.Name, name, "cluster name '%s' not found", name)
+	assert.Equal(t, apimodel.Location, location, "cluster location '%s' not found", location)
+}
+
+func TestSetProfiles(t *testing.T) {
+	dnsPrefix := "lessCreativeMasterDNSPrefix"
+	d := mockClusterResourceData("name1", "westus", "testrg", "creativeMasterDNSPrefix")
+	cluster := mockContainerService("name2", "southcentralus", dnsPrefix)
+
+	if err := setProfiles(d, cluster); err != nil {
+		t.Fatalf("setProfiles failed: %+v", err)
+	}
+	v, ok := d.GetOk("master_profile.0.dns_name_prefix")
+	assert.True(t, ok, "failed to get 'master_profile.0.dns_name_prefix'")
+	assert.Equal(t, v.(string), dnsPrefix, "'master_profile.0.dns_name_prefix' is not set correctly")
+}
+
+// These need to test linux profile...
+func TestSetResourceProfiles(t *testing.T) {
+	dnsPrefix := "lessCreativeMasterDNSPrefix"
+	d := mockClusterResourceData("name1", "westus", "testrg", "creativeMasterDNSPrefix")
+	cluster := mockContainerService("name2", "southcentralus", dnsPrefix)
+
+	if err := setResourceProfiles(d, cluster); err != nil {
+		t.Fatalf("setProfiles failed: %+v", err)
+	}
+	v, ok := d.GetOk("master_profile.0.dns_name_prefix")
+	assert.True(t, ok, "failed to get 'master_profile.0.dns_name_prefix'")
+	assert.Equal(t, v.(string), dnsPrefix, "'master_profile.0.dns_name_prefix' is not set correctly")
+}
+
+func TestSetDataSourceProfiles(t *testing.T) {
+	dnsPrefix := "lessCreativeMasterDNSPrefix"
+	d := mockClusterResourceData("name1", "westus", "testrg", "creativeMasterDNSPrefix")
+	cluster := mockContainerService("name2", "southcentralus", dnsPrefix)
+
+	if err := setDataSourceProfiles(d, cluster); err != nil {
+		t.Fatalf("setProfiles failed: %+v", err)
+	}
+	v, ok := d.GetOk("master_profile.0.dns_name_prefix")
+	assert.True(t, ok, "failed to get 'master_profile.0.dns_name_prefix'")
+	assert.Equal(t, v.(string), dnsPrefix, "'master_profile.0.dns_name_prefix' is not set correctly")
 }
 
 func testFlattenLinuxProfile(adminUsername string) []interface{} {
@@ -586,88 +660,4 @@ func testCertificateProfile() *api.CertificateProfile {
 	profile := &api.CertificateProfile{}
 
 	return profile
-}
-
-func TestInitializeContainerService(t *testing.T) {
-	name := "testcluster"
-	location := "southcentralus"
-	resourceGroup := "testrg"
-	masterDNSPrefix := "creativeMasterDNSPrefix"
-
-	d := mockClusterResourceData(name, location, resourceGroup, masterDNSPrefix)
-
-	cluster, err := initializeContainerService(d)
-	if err != nil {
-		t.Fatalf("initializeContainerService failed: %+v", err)
-	}
-
-	if cluster.Name != "testcluster" {
-		t.Fatalf("cluster name was not set correctly: was %s but should be testcluster", cluster.Name)
-	}
-	version := cluster.Properties.OrchestratorProfile.OrchestratorVersion
-	if version != "1.10.0" {
-		t.Fatalf("cluster Kubernetes version was not set correctly: was '%s' but it should be '1.10.0'", version)
-	}
-	dnsPrefix := cluster.Properties.MasterProfile.DNSPrefix
-	if dnsPrefix != masterDNSPrefix {
-		t.Fatalf("master DNS prefix was not set correctly: was %s but it should be 'masterDNSPrefix'", dnsPrefix)
-	}
-	if cluster.Properties.AgentPoolProfiles[0].Count != 1 {
-		t.Fatalf("agent pool profile is not set correctly")
-	}
-}
-
-func TestLoadContainerServiceFromApimodel(t *testing.T) {
-	name := "testcluster"
-	location := "southcentralus"
-
-	d := mockClusterResourceData(name, location, "testrg", "creativeMasterDNSPrefix") // I need to add a test apimodel in here
-
-	apimodel, err := loadContainerServiceFromApimodel(d, true, false)
-	if err != nil {
-		t.Fatalf("failed to load container service from api model: %+v", err)
-	}
-
-	assert.Equal(t, apimodel.Name, name, "cluster name '%s' not found", name)
-	assert.Equal(t, apimodel.Location, location, "cluster location '%s' not found", location)
-}
-
-func TestSetProfiles(t *testing.T) {
-	dnsPrefix := "lessCreativeMasterDNSPrefix"
-	d := mockClusterResourceData("name1", "westus", "testrg", "creativeMasterDNSPrefix")
-	cluster := mockContainerService("name2", "southcentralus", dnsPrefix)
-
-	if err := setProfiles(d, cluster); err != nil {
-		t.Fatalf("setProfiles failed: %+v", err)
-	}
-	v, ok := d.GetOk("master_profile.0.dns_name_prefix")
-	assert.True(t, ok, "failed to get 'master_profile.0.dns_name_prefix'")
-	assert.Equal(t, v.(string), dnsPrefix, "'master_profile.0.dns_name_prefix' is not set correctly")
-}
-
-// These need to test linux profile...
-func TestSetResourceProfiles(t *testing.T) {
-	dnsPrefix := "lessCreativeMasterDNSPrefix"
-	d := mockClusterResourceData("name1", "westus", "testrg", "creativeMasterDNSPrefix")
-	cluster := mockContainerService("name2", "southcentralus", dnsPrefix)
-
-	if err := setResourceProfiles(d, cluster); err != nil {
-		t.Fatalf("setProfiles failed: %+v", err)
-	}
-	v, ok := d.GetOk("master_profile.0.dns_name_prefix")
-	assert.True(t, ok, "failed to get 'master_profile.0.dns_name_prefix'")
-	assert.Equal(t, v.(string), dnsPrefix, "'master_profile.0.dns_name_prefix' is not set correctly")
-}
-
-func TestSetDataSourceProfiles(t *testing.T) {
-	dnsPrefix := "lessCreativeMasterDNSPrefix"
-	d := mockClusterResourceData("name1", "westus", "testrg", "creativeMasterDNSPrefix")
-	cluster := mockContainerService("name2", "southcentralus", dnsPrefix)
-
-	if err := setDataSourceProfiles(d, cluster); err != nil {
-		t.Fatalf("setProfiles failed: %+v", err)
-	}
-	v, ok := d.GetOk("master_profile.0.dns_name_prefix")
-	assert.True(t, ok, "failed to get 'master_profile.0.dns_name_prefix'")
-	assert.Equal(t, v.(string), dnsPrefix, "'master_profile.0.dns_name_prefix' is not set correctly")
 }

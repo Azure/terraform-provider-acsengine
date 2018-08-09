@@ -13,7 +13,6 @@ import (
 func resourceACSEngineK8sClusterImport(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
 	client := m.(*ArmClient)
 	deployClient := client.deploymentsClient
-	ctx := client.StopContext
 
 	azureID, deploymentDirectory, err := parseImportID(d.Id())
 	if err != nil {
@@ -30,7 +29,7 @@ func resourceACSEngineK8sClusterImport(d *schema.ResourceData, m interface{}) ([
 	}
 	resourceGroup := id.ResourceGroup
 
-	read, err := deployClient.Get(ctx, resourceGroup, name)
+	read, err := deployClient.Get(client.StopContext, resourceGroup, name)
 	if err != nil {
 		return nil, fmt.Errorf("error getting deployment: %+v", err)
 	}
