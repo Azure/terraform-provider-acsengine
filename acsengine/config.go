@@ -29,7 +29,6 @@ type ArmClient struct {
 
 	StopContext context.Context
 
-	// Resources
 	deploymentsClient    resources.DeploymentsClient
 	providersClient      resources.ProvidersClient
 	resourceGroupsClient resources.GroupsClient
@@ -111,7 +110,6 @@ func getAuthorizationToken(c *authentication.Config, oauthConfig *adal.OAuthConf
 	}
 
 	if c.IsCloudShell {
-		// load the refreshed tokens from the Azure CLI
 		err := c.LoadTokensFromAzureCLI()
 		if err != nil {
 			return nil, fmt.Errorf("Error loading the refreshed CloudShell tokens: %+v", err)
@@ -141,7 +139,6 @@ func getArmClient(c *authentication.Config) (*ArmClient, error) {
 		}
 	}
 
-	// client declarations:
 	client := ArmClient{
 		clientID:                 c.ClientID,
 		tenantID:                 c.TenantID,
@@ -156,12 +153,10 @@ func getArmClient(c *authentication.Config) (*ArmClient, error) {
 		return nil, err
 	}
 
-	// OAuthConfigForTenant returns a pointer, which can be nil.
 	if oauthConfig == nil {
 		return nil, fmt.Errorf("Unable to configure OAuthConfig for tenant %s", c.TenantID)
 	}
 
-	// Resource Manager endpoints
 	endpoint := env.ResourceManagerEndpoint
 	auth, err := getAuthorizationToken(c, oauthConfig, endpoint)
 	if err != nil {

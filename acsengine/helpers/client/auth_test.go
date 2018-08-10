@@ -1,6 +1,12 @@
 package client
 
-import "testing"
+import (
+	"fmt"
+	"os"
+	"testing"
+
+	"github.com/Azure/acs-engine/pkg/api"
+)
 
 func TestValidateAuthArgs(t *testing.T) {
 	cases := []struct {
@@ -18,6 +24,7 @@ func TestValidateAuthArgs(t *testing.T) {
 		{
 			RawSubscriptionID: "12345678-9000-1000-1100-120000000000",
 			RawClientID:       "12345678-9000-1000-1100-120000000000",
+			AuthMethod:        "",
 			ExpectError:       false,
 		},
 		{
@@ -36,11 +43,18 @@ func TestValidateAuthArgs(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		auth := AuthArgs{}
-		AddAuthArgs(&auth)
+		id := fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Resources/deployments/%s", os.Getenv("ARM_SUBSCRIPTION_ID"), "rg", "clusterName")
+		cluster := &api.ContainerService{
+			Properties: &api.Properties{
+				ServicePrincipalProfile: &api.ServicePrincipalProfile{
+					ClientID: tc.RawClientID,
+					Secret:   tc.ClientSecret,
+				},
+			},
+		}
+		auth := NewAuthArgs()
+		auth.AddAuthArgs(cluster, id)
 		auth.RawSubscriptionID = tc.RawSubscriptionID
-		auth.RawClientID = tc.RawClientID
-		auth.ClientSecret = tc.ClientSecret
 		auth.AuthMethod = tc.AuthMethod
 		err := auth.ValidateAuthArgs()
 		if err == nil && tc.ExpectError {

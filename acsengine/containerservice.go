@@ -10,18 +10,6 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
-// type containerService struct {
-// 	*api.ContainerService
-// }
-
-// type resourceContainerService struct {
-// 	containerService
-// }
-
-// type dataContainerService struct {
-// 	containerService
-// }
-
 func flattenLinuxProfile(profile api.LinuxProfile) ([]interface{}, error) {
 	adminUsername := profile.AdminUsername
 	ssh := profile.SSH
@@ -381,6 +369,8 @@ func loadContainerServiceFromApimodel(d *schema.ResourceData, validate, isUpdate
 	if err != nil {
 		return &api.ContainerService{}, fmt.Errorf("error loading container service from apimodel bytes: %+v", err)
 	}
+
+	// make sure the location is normalized
 
 	return cluster, nil
 }

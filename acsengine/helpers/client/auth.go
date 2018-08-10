@@ -3,13 +3,16 @@ package client
 import (
 	"fmt"
 
+	"github.com/Azure/acs-engine/pkg/api"
 	"github.com/Azure/acs-engine/pkg/armhelpers"
 	"github.com/Azure/go-autorest/autorest/azure"
+	"github.com/Azure/terraform-provider-acsengine/acsengine/utils"
 	"github.com/satori/go.uuid"
 )
 
 const (
-	emptyID = "00000000-0000-0000-0000-000000000000"
+	defaultAuthMethod = "client_secret"
+	emptyID           = "00000000-0000-0000-0000-000000000000"
 )
 
 // AuthArgs includes various authentication arguments for Azure client
@@ -27,15 +30,56 @@ type AuthArgs struct {
 	language        string
 }
 
-// AddAuthArgs initializes all string fields in an AuthArgs struct
-func AddAuthArgs(a *AuthArgs) {
+// NewAuthArgs returns a new authorization arguments struct
+func NewAuthArgs() *AuthArgs {
+	return &AuthArgs{}
+}
+
+// AddAuthArgs initializes auth args (which can be changed)
+func (a *AuthArgs) AddAuthArgs(cluster *api.ContainerService, azureID string) error {
 	a.RawAzureEnvironment = "AzurePublicCloud"
-	a.RawSubscriptionID = ""
-	a.AuthMethod = "device"
-	a.RawClientID = ""
-	a.CertificatePath = ""
-	a.PrivateKeyPath = ""
 	a.language = "en-us"
+
+	id, err := utils.ParseAzureResourceID(azureID)
+	if err != nil {
+		return fmt.Errorf("error parsing resource ID: %+v", err)
+	}
+	a.RawSubscriptionID = id.SubscriptionID
+	a.AuthMethod = defaultAuthMethod
+	a.RawClientID = cluster.Properties.ServicePrincipalProfile.ClientID
+	a.ClientSecret = cluster.Properties.ServicePrincipalProfile.Secret
+	if err = a.ValidateAuthArgs(); err != nil {
+		return fmt.Errorf("error validating auth args: %+v", err)
+	}
+	return nil
+}
+
+// GetClient returns an Azure client using the auth args and auth method provided
+func (a *AuthArgs) GetClient() (*armhelpers.AzureClient, error) {
+	var c *armhelpers.AzureClient
+	env, err := azure.EnvironmentFromName(a.RawAzureEnvironment)
+	if err != nil {
+		return nil, err
+	}
+	switch a.AuthMethod {
+	case "device":
+		c, err = armhelpers.NewAzureClientWithDeviceAuth(env, a.SubscriptionID.String())
+	case defaultAuthMethod:
+		c, err = armhelpers.NewAzureClientWithClientSecret(env, a.SubscriptionID.String(), a.ClientID.String(), a.ClientSecret)
+	case "client_certificate":
+		c, err = armhelpers.NewAzureClientWithClientCertificateFile(env, a.SubscriptionID.String(), a.ClientID.String(), a.CertificatePath, a.PrivateKeyPath)
+	default:
+		return nil, fmt.Errorf("ERROR: auth method unsupported. method=%q", a.AuthMethod)
+	}
+	if err != nil {
+		return nil, err
+	}
+	err = c.EnsureProvidersRegistered(a.SubscriptionID.String())
+	if err != nil {
+		return nil, err
+	}
+	c.AddAcceptLanguages([]string{a.language})
+	return c, nil
 }
 
 // ValidateAuthArgs handles error checking for auth args
@@ -50,7 +94,7 @@ func (a *AuthArgs) ValidateAuthArgs() error {
 		return err
 	}
 
-	if a.AuthMethod == "client_secret" {
+	if a.AuthMethod == defaultAuthMethod {
 		if a.ClientID.String() == emptyID || a.ClientSecret == "" {
 			return fmt.Errorf("Client ID and client secret must be specified")
 		}
@@ -69,32 +113,4 @@ func (a *AuthArgs) ValidateAuthArgs() error {
 		return fmt.Errorf("failed to parse a valid Azure cloud environment")
 	}
 	return nil
-}
-
-// GetClient returns an Azure client using the auth args and auth method provided
-func (a *AuthArgs) GetClient() (*armhelpers.AzureClient, error) {
-	var c *armhelpers.AzureClient
-	env, err := azure.EnvironmentFromName(a.RawAzureEnvironment)
-	if err != nil {
-		return nil, err
-	}
-	switch a.AuthMethod {
-	case "device":
-		c, err = armhelpers.NewAzureClientWithDeviceAuth(env, a.SubscriptionID.String())
-	case "client_secret":
-		c, err = armhelpers.NewAzureClientWithClientSecret(env, a.SubscriptionID.String(), a.ClientID.String(), a.ClientSecret)
-	case "client_certificate":
-		c, err = armhelpers.NewAzureClientWithClientCertificateFile(env, a.SubscriptionID.String(), a.ClientID.String(), a.CertificatePath, a.PrivateKeyPath)
-	default:
-		return nil, fmt.Errorf("ERROR: auth method unsupported. method=%q", a.AuthMethod)
-	}
-	if err != nil {
-		return nil, err
-	}
-	err = c.EnsureProvidersRegistered(a.SubscriptionID.String())
-	if err != nil {
-		return nil, err
-	}
-	c.AddAcceptLanguages([]string{a.language})
-	return c, nil
 }

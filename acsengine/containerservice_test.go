@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/Azure/acs-engine/pkg/api"
+	"github.com/Azure/terraform-provider-acsengine/acsengine/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,7 +17,7 @@ func TestFlattenLinuxProfile(t *testing.T) {
 
 	adminUsername := "adminUser"
 	keyData := "public key data"
-	profile := testExpandLinuxProfile(adminUsername, keyData)
+	profile := utils.ExpandLinuxProfile(adminUsername, keyData)
 
 	linuxProfile, err := flattenLinuxProfile(profile)
 	if err != nil {
@@ -57,7 +58,7 @@ func TestFlattenWindowsProfile(t *testing.T) {
 
 	adminUsername := "adminUser"
 	adminPassword := "password"
-	profile := testExpandWindowsProfile(adminUsername, adminPassword)
+	profile := utils.ExpandWindowsProfile(adminUsername, adminPassword)
 
 	windowsProfile, err := flattenWindowsProfile(&profile)
 	if err != nil {
@@ -101,7 +102,7 @@ func TestFlattenServicePrincipal(t *testing.T) {
 
 	clientID := "client id"
 	clientSecret := "secret"
-	profile := testExpandServicePrincipal(clientID, clientSecret)
+	profile := utils.ExpandServicePrincipal(clientID, clientSecret)
 
 	servicePrincipal, err := flattenServicePrincipal(profile)
 	if err != nil {
@@ -133,7 +134,7 @@ func TestFlattenDataSourceServicePrincipal(t *testing.T) {
 
 	clientID := "client id"
 	clientSecret := "secret"
-	profile := testExpandServicePrincipal(clientID, clientSecret)
+	profile := utils.ExpandServicePrincipal(clientID, clientSecret)
 
 	servicePrincipal, err := flattenDataSourceServicePrincipal(profile)
 	if err != nil {
@@ -167,7 +168,7 @@ func TestFlattenMasterProfile(t *testing.T) {
 	dnsNamePrefix := "testPrefix"
 	vmSize := "Standard_D2_v2"
 	fqdn := "abcdefg"
-	profile := testExpandMasterProfile(count, dnsNamePrefix, vmSize, fqdn, 0)
+	profile := utils.ExpandMasterProfile(count, dnsNamePrefix, vmSize, fqdn, 0)
 
 	masterProfile, err := flattenMasterProfile(profile, "southcentralus")
 	if err != nil {
@@ -196,7 +197,7 @@ func TestFlattenMasterProfileWithOSDiskSize(t *testing.T) {
 	vmSize := "Standard_D2_v2"
 	fqdn := "abcdefg"
 	osDiskSize := 30
-	profile := testExpandMasterProfile(count, dnsNamePrefix, vmSize, fqdn, osDiskSize)
+	profile := utils.ExpandMasterProfile(count, dnsNamePrefix, vmSize, fqdn, osDiskSize)
 
 	masterProfile, err := flattenMasterProfile(profile, "southcentralus")
 	if err != nil {
@@ -234,10 +235,10 @@ func TestFlattenAgentPoolProfiles(t *testing.T) {
 	vmSize := "Standard_D2_v2"
 	osDiskSize := 200
 
-	profile1 := testExpandAgentPoolProfile(name, count, vmSize, 0, false)
+	profile1 := utils.ExpandAgentPoolProfile(name, count, vmSize, 0, false)
 
 	name = "agentpool2"
-	profile2 := testExpandAgentPoolProfile(name, count, vmSize, osDiskSize, false)
+	profile2 := utils.ExpandAgentPoolProfile(name, count, vmSize, osDiskSize, false)
 
 	profiles := []*api.AgentPoolProfile{profile1, profile2}
 	agentPoolProfiles, err := flattenAgentPoolProfiles(profiles)
@@ -273,10 +274,10 @@ func TestFlattenAgentPoolProfilesWithOSType(t *testing.T) {
 	count := 1
 	vmSize := "Standard_D2_v2"
 
-	profile1 := testExpandAgentPoolProfile(name, count, vmSize, 0, false)
+	profile1 := utils.ExpandAgentPoolProfile(name, count, vmSize, 0, false)
 
 	name = "agentpool2"
-	profile2 := testExpandAgentPoolProfile(name, count, vmSize, 0, true)
+	profile2 := utils.ExpandAgentPoolProfile(name, count, vmSize, 0, true)
 
 	profiles := []*api.AgentPoolProfile{profile1, profile2}
 	agentPoolProfiles, err := flattenAgentPoolProfiles(profiles)
@@ -316,7 +317,7 @@ func TestExpandLinuxProfile(t *testing.T) {
 	d := r.TestResourceData()
 
 	adminUsername := "azureuser"
-	linuxProfiles := testFlattenLinuxProfile(adminUsername)
+	linuxProfiles := utils.FlattenLinuxProfile(adminUsername)
 	d.Set("linux_profile", &linuxProfiles)
 
 	linuxProfile, err := expandLinuxProfile(d)
@@ -333,7 +334,7 @@ func TestExpandWindowsProfile(t *testing.T) {
 
 	adminUsername := "azureuser"
 	adminPassword := "password"
-	windowsProfiles := testFlattenWindowsProfile(adminUsername, adminPassword)
+	windowsProfiles := utils.FlattenWindowsProfile(adminUsername, adminPassword)
 	d.Set("windows_profile", &windowsProfiles)
 
 	windowsProfile, err := expandWindowsProfile(d)
@@ -350,7 +351,7 @@ func TestExpandServicePrincipal(t *testing.T) {
 	d := r.TestResourceData()
 
 	clientID := testClientID()
-	servicePrincipals := testFlattenServicePrincipal()
+	servicePrincipals := utils.FlattenServicePrincipal()
 	d.Set("service_principal", servicePrincipals)
 
 	servicePrincipal, err := expandServicePrincipal(d)
@@ -367,7 +368,7 @@ func TestExpandMasterProfile(t *testing.T) {
 
 	dnsPrefix := "masterDNSPrefix"
 	vmSize := "Standard_D2_v2"
-	masterProfiles := testFlattenMasterProfile(1, dnsPrefix, vmSize)
+	masterProfiles := utils.FlattenMasterProfile(1, dnsPrefix, vmSize)
 	d.Set("master_profile", &masterProfiles)
 
 	masterProfile, err := expandMasterProfile(d)
@@ -390,9 +391,9 @@ func TestExpandAgentPoolProfiles(t *testing.T) {
 	agentPool2osDiskSize := 30
 
 	agentPoolProfiles := []interface{}{}
-	agentPoolProfile0 := testFlattenAgentPoolProfiles(agentPool1Name, agentPool1Count, "Standard_D2_v2", 0, false)
+	agentPoolProfile0 := utils.FlattenAgentPoolProfiles(agentPool1Name, agentPool1Count, "Standard_D2_v2", 0, false)
 	agentPoolProfiles = append(agentPoolProfiles, agentPoolProfile0)
-	agentPoolProfile1 := testFlattenAgentPoolProfiles(agentPool2Name, agentPool2Count, "Standard_D2_v2", agentPool2osDiskSize, true)
+	agentPoolProfile1 := utils.FlattenAgentPoolProfiles(agentPool2Name, agentPool2Count, "Standard_D2_v2", agentPool2osDiskSize, true)
 	agentPoolProfiles = append(agentPoolProfiles, agentPoolProfile1)
 	d.Set("agent_pool_profiles", &agentPoolProfiles)
 
@@ -463,7 +464,7 @@ func TestLoadContainerServiceFromApimodel(t *testing.T) {
 func TestSetProfiles(t *testing.T) {
 	dnsPrefix := "lessCreativeMasterDNSPrefix"
 	d := mockClusterResourceData("name1", "westus", "testrg", "creativeMasterDNSPrefix")
-	cluster := mockContainerService("name2", "southcentralus", dnsPrefix)
+	cluster := utils.MockContainerService("name2", "southcentralus", dnsPrefix)
 
 	if err := setProfiles(d, cluster); err != nil {
 		t.Fatalf("setProfiles failed: %+v", err)
@@ -477,7 +478,7 @@ func TestSetProfiles(t *testing.T) {
 func TestSetResourceProfiles(t *testing.T) {
 	dnsPrefix := "lessCreativeMasterDNSPrefix"
 	d := mockClusterResourceData("name1", "westus", "testrg", "creativeMasterDNSPrefix")
-	cluster := mockContainerService("name2", "southcentralus", dnsPrefix)
+	cluster := utils.MockContainerService("name2", "southcentralus", dnsPrefix)
 
 	if err := setResourceProfiles(d, cluster); err != nil {
 		t.Fatalf("setProfiles failed: %+v", err)
@@ -490,7 +491,7 @@ func TestSetResourceProfiles(t *testing.T) {
 func TestSetDataSourceProfiles(t *testing.T) {
 	dnsPrefix := "lessCreativeMasterDNSPrefix"
 	d := mockClusterResourceData("name1", "westus", "testrg", "creativeMasterDNSPrefix")
-	cluster := mockContainerService("name2", "southcentralus", dnsPrefix)
+	cluster := utils.MockContainerService("name2", "southcentralus", dnsPrefix)
 
 	if err := setDataSourceProfiles(d, cluster); err != nil {
 		t.Fatalf("setProfiles failed: %+v", err)
@@ -498,162 +499,6 @@ func TestSetDataSourceProfiles(t *testing.T) {
 	v, ok := d.GetOk("master_profile.0.dns_name_prefix")
 	assert.True(t, ok, "failed to get 'master_profile.0.dns_name_prefix'")
 	assert.Equal(t, v.(string), dnsPrefix, "'master_profile.0.dns_name_prefix' is not set correctly")
-}
-
-func testFlattenLinuxProfile(adminUsername string) []interface{} {
-	sshKeys := []interface{}{}
-	keys := map[string]interface{}{
-		"key_data": testSSHPublicKey(),
-	}
-	sshKeys = append(sshKeys, keys)
-	values := map[string]interface{}{
-		"admin_username": adminUsername,
-		"ssh":            sshKeys,
-	}
-	linuxProfiles := []interface{}{}
-	linuxProfiles = append(linuxProfiles, values)
-
-	return linuxProfiles
-}
-
-func testFlattenWindowsProfile(adminUsername string, adminPassword string) []interface{} {
-	values := map[string]interface{}{
-		"admin_username": adminUsername,
-		"admin_password": adminPassword,
-	}
-	windowsProfiles := []interface{}{}
-	windowsProfiles = append(windowsProfiles, values)
-
-	return windowsProfiles
-}
-
-func testFlattenServicePrincipal() []interface{} {
-	servicePrincipals := []interface{}{}
-
-	spValues := map[string]interface{}{
-		"client_id":     testClientID(),
-		"client_secret": testClientSecret(),
-	}
-
-	servicePrincipals = append(servicePrincipals, spValues)
-
-	return servicePrincipals
-}
-
-func testFlattenMasterProfile(count int, dnsNamePrefix string, vmSize string) []interface{} {
-	masterProfiles := []interface{}{}
-
-	masterProfile := make(map[string]interface{}, 5)
-
-	masterProfile["count"] = count
-	masterProfile["dns_name_prefix"] = dnsNamePrefix
-	masterProfile["vm_size"] = vmSize
-	masterProfile["fqdn"] = "f/q/d/n"
-
-	masterProfiles = append(masterProfiles, masterProfile)
-
-	return masterProfiles
-}
-
-func testFlattenAgentPoolProfiles(name string, count int, vmSize string, osDiskSizeGB int, windows bool) map[string]interface{} {
-	agentPoolValues := map[string]interface{}{
-		"name":    name,
-		"count":   count,
-		"vm_size": vmSize,
-	}
-	if osDiskSizeGB != 0 {
-		agentPoolValues["os_disk_size"] = osDiskSizeGB
-	}
-	if windows {
-		agentPoolValues["os_type"] = string(api.Windows)
-	} else {
-		agentPoolValues["os_type"] = string(api.Linux)
-	}
-
-	return agentPoolValues
-}
-
-func testExpandLinuxProfile(adminUsername string, keyData string) api.LinuxProfile {
-	sshPublicKeys := []api.PublicKey{
-		{KeyData: keyData},
-	}
-	profile := api.LinuxProfile{
-		AdminUsername: adminUsername,
-		SSH: struct {
-			PublicKeys []api.PublicKey `json:"publicKeys"`
-		}{
-			PublicKeys: sshPublicKeys,
-		},
-	}
-
-	return profile
-}
-
-func testExpandWindowsProfile(adminUsername string, adminPassword string) api.WindowsProfile {
-	profile := api.WindowsProfile{
-		AdminUsername: adminUsername,
-		AdminPassword: adminPassword,
-	}
-
-	return profile
-}
-
-func testExpandServicePrincipal(clientID string, clientSecret string) api.ServicePrincipalProfile {
-	profile := api.ServicePrincipalProfile{
-		ClientID: clientID,
-		Secret:   clientSecret,
-	}
-
-	return profile
-}
-
-func testExpandMasterProfile(count int, dnsPrefix string, vmSize string, fqdn string, osDiskSize int) api.MasterProfile {
-	profile := api.MasterProfile{
-		Count:     count,
-		DNSPrefix: dnsPrefix,
-		VMSize:    vmSize,
-		FQDN:      fqdn,
-	}
-
-	if osDiskSize != 0 {
-		profile.OSDiskSizeGB = osDiskSize
-	}
-
-	return profile
-}
-
-func testExpandAgentPoolProfile(name string, count int, vmSize string, osDiskSizeGB int, isWindows bool) *api.AgentPoolProfile {
-	profile := &api.AgentPoolProfile{
-		Name:   name,
-		Count:  count,
-		VMSize: vmSize,
-	}
-
-	if osDiskSizeGB > 0 {
-		profile.OSDiskSizeGB = osDiskSizeGB
-	}
-
-	if isWindows {
-		profile.OSType = api.Windows
-	}
-
-	return profile
-}
-
-func testExpandCertificateProfile() api.CertificateProfile {
-	certificateProfile := api.CertificateProfile{
-		CaCertificate:         "apple",
-		CaPrivateKey:          "banana",
-		APIServerCertificate:  "blueberry",
-		APIServerPrivateKey:   "grape",
-		ClientCertificate:     "blackberry",
-		ClientPrivateKey:      "pomegranate",
-		EtcdClientCertificate: "strawberry",
-		EtcdClientPrivateKey:  "plum",
-		EtcdPeerCertificates:  []string{"peach"},
-		EtcdPeerPrivateKeys:   []string{"pear"},
-	}
-	return certificateProfile
 }
 
 func testCertificateProfile() *api.CertificateProfile {

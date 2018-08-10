@@ -42,11 +42,10 @@ func TestValidateKubernetesVersion(t *testing.T) {
 }
 
 func TestGetKubeConfig(t *testing.T) {
-	// I should have mockContainerService
 	name := "cluster"
 	location := "southcentralus"
 	prefix := "masterDNSPrefix"
-	cluster := mockContainerService(name, location, prefix)
+	cluster := utils.MockContainerService(name, location, prefix)
 
 	kubeconfig, err := getKubeConfig(cluster)
 	if err != nil {
