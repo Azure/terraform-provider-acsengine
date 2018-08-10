@@ -428,8 +428,8 @@ func ACSEngineK8sClusterAPIModel(name string, location string, dnsPrefix string)
 			}
 		  },
 		  "servicePrincipalProfile": {
-			"clientId": "1234",
-			"secret": "1234"
+			"clientId": "12345678-9000-1000-1100-120000000000",
+			"secret": "12345678-9000-1000-1100-120000000000"
 		  },
 		  "certificateProfile": {
 			"caCertificate": "test ca cert\n",

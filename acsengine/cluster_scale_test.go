@@ -1,33 +1,12 @@
 package acsengine
 
 import (
-	"fmt"
-	"os"
 	"testing"
 
 	"github.com/Azure/acs-engine/pkg/api"
 	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/client"
 	"github.com/stretchr/testify/assert"
 )
-
-func TestSetScaleClient(t *testing.T) {
-	resourceGroup := "clusterResourceGroup"
-	masterDNSPrefix := "masterDNSPrefix"
-	d := mockClusterResourceData("clusterName", "southcentralus", resourceGroup, masterDNSPrefix)
-	id := fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Resources/deployments/%s", os.Getenv("ARM_SUBSCRIPTION_ID"), resourceGroup, masterDNSPrefix)
-	d.SetId(id)
-
-	agentIndex := 0
-	desiredAgentCount := 2
-	sc, err := setScaleClient(d, agentIndex, desiredAgentCount)
-	if err != nil {
-		t.Fatalf("setScaleClient failed: %+v", err)
-	}
-
-	assert.Equal(t, sc.ResourceGroupName, resourceGroup, "Resource group is not named correctly")
-	assert.Equal(t, sc.DesiredAgentCount, desiredAgentCount, "Desired agent count is not set correctly")
-	assert.Equal(t, sc.AuthArgs.SubscriptionID.String(), os.Getenv("ARM_SUBSCRIPTION_ID"), "Subscription ID is not set correctly")
-}
 
 func TestSetCountForTemplate(t *testing.T) {
 	cases := []struct {

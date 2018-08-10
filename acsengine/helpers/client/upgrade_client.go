@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Azure/acs-engine/pkg/api"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -20,6 +21,28 @@ type UpgradeClient struct {
 // NewUpgradeClient returns a new UpgradeClient
 func NewUpgradeClient() *UpgradeClient {
 	return &UpgradeClient{}
+}
+
+// SetUpgradeClient sets acs-engine upgrade client fields
+func (uc *UpgradeClient) SetUpgradeClient(cluster *api.ContainerService, azureID, upgradeVersion string) error {
+	if err := uc.ACSEngineClient.SetACSEngineClient(cluster, azureID); err != nil {
+		return fmt.Errorf("failed to initialize ACSEngineClient: %+v", err)
+	}
+
+	uc.UpgradeVersion = upgradeVersion
+	uc.TimeoutInMinutes = -1
+	if err := uc.Validate(); err != nil {
+		return fmt.Errorf(": %+v", err)
+	}
+
+	uc.Cluster.Properties.OrchestratorProfile.OrchestratorVersion = uc.UpgradeVersion
+
+	uc.AgentPoolsToUpgrade = []string{}
+	for _, agentPool := range uc.Cluster.Properties.AgentPoolProfiles {
+		uc.AgentPoolsToUpgrade = append(uc.AgentPoolsToUpgrade, agentPool.Name)
+	}
+
+	return nil
 }
 
 // Validate checks that required client fields are set

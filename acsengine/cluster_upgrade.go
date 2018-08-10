@@ -11,8 +11,13 @@ import (
 
 // Upgrades a cluster to a higher Kubernetes version
 func upgradeCluster(d *schema.ResourceData, upgradeVersion string) error {
-	uc, err := setUpgradeClient(d, upgradeVersion)
+	cluster, err := loadContainerServiceFromApimodel(d, true, true)
 	if err != nil {
+		return fmt.Errorf("error parsing the api model: %+v", err)
+	}
+
+	uc := client.NewUpgradeClient()
+	if err := uc.SetUpgradeClient(cluster, d.Id(), upgradeVersion); err != nil {
 		return fmt.Errorf("error initializing upgrade client: %+v", err)
 	}
 
@@ -43,27 +48,4 @@ func upgradeCluster(d *schema.ResourceData, upgradeVersion string) error {
 	}
 
 	return saveTemplates(d, uc.Cluster, uc.DeploymentDirectory)
-}
-
-func setUpgradeClient(d *schema.ResourceData, upgradeVersion string) (*client.UpgradeClient, error) {
-	uc := client.NewUpgradeClient()
-
-	if err := setACSEngineClient(d, &uc.ACSEngineClient); err != nil {
-		return uc, fmt.Errorf("failed to initialize ACSEngineClient: %+v", err)
-	}
-
-	uc.UpgradeVersion = upgradeVersion
-	uc.TimeoutInMinutes = -1
-	if err := uc.Validate(); err != nil {
-		return uc, fmt.Errorf(": %+v", err)
-	}
-
-	uc.Cluster.Properties.OrchestratorProfile.OrchestratorVersion = uc.UpgradeVersion
-
-	uc.AgentPoolsToUpgrade = []string{}
-	for _, agentPool := range uc.Cluster.Properties.AgentPoolProfiles {
-		uc.AgentPoolsToUpgrade = append(uc.AgentPoolsToUpgrade, agentPool.Name)
-	}
-
-	return uc, nil
 }

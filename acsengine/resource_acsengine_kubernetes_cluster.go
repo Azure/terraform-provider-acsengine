@@ -315,19 +315,6 @@ func resourceACSEngineK8sClusterRead(d *schema.ResourceData, m interface{}) erro
 		return err
 	}
 
-	// the ID changes with each deployment because scale and upgrade change it
-	// client := m.(*ArmClient)
-	// read, err := client.deploymentsClient.Get(client.StopContext, id.ResourceGroup, id.Path["deployment"])
-	// if err != nil {
-	// 	return fmt.Errorf("error getting deployment: %+v", err)
-	// }
-	// if read.ID == nil {
-	// 	return fmt.Errorf("Cannot read ACS Engine Kubernetes cluster deployment %s (resource group %s) ID", id.ResourceGroup, id.Path["deployment"])
-	// }
-	// log.Printf("*read.ID: %s", *read.ID)
-	// log.Printf("deployment template: %+v", read.Properties.Template)
-	//
-
 	return nil
 }
 
