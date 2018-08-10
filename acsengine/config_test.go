@@ -6,6 +6,7 @@ import (
 
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSetUserAgent(t *testing.T) {
@@ -16,9 +17,7 @@ func TestSetUserAgent(t *testing.T) {
 	}
 
 	setUserAgent(client)
-	if client.UserAgent != tfVersion {
-		t.Fatalf("client.UserAgent- actual: %s, expected: %s", client.UserAgent, tfVersion)
-	}
+	assert.Equal(t, tfVersion, client.UserAgent, "client.UserAgent value is incorrect")
 }
 
 func TestSetEmptyUserAgent(t *testing.T) {
@@ -27,7 +26,5 @@ func TestSetEmptyUserAgent(t *testing.T) {
 	setUserAgent(client)
 
 	tfVersion := fmt.Sprintf("HashiCorp-Terraform-v%s", terraform.VersionString())
-	if client.UserAgent != tfVersion {
-		t.Fatalf("client.UserAgent- actual: %s, expected: %s", client.UserAgent, tfVersion)
-	}
+	assert.Equal(t, tfVersion, client.UserAgent, "client.UserAgent value is incorrect")
 }

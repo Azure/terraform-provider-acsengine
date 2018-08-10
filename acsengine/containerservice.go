@@ -375,6 +375,11 @@ func loadContainerServiceFromApimodel(d *schema.ResourceData, validate, isUpdate
 	return cluster, nil
 }
 
+// really needs to be implemented
+func loadContainerServiceFromDeploymentParameters(d *schema.ResourceData) (*api.ContainerService, error) {
+	return nil, nil
+}
+
 func setAPIModel(d *schema.ResourceData, cluster *api.ContainerService) error {
 	locale, err := i18n.LoadTranslations()
 	if err != nil {

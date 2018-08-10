@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestACSEngineK8sCluster_parseImportID(t *testing.T) {
+func TestParseImportID(t *testing.T) {
 	azureIDInput := "/subscriptions/1234/resourceGroups/testrg/providers/Microsoft.Resources/deployments/deploymentName"
 	deploymentDirectoryInput := "_output/dnsPrefix"
 	id := fmt.Sprintf("%s %s", azureIDInput, deploymentDirectoryInput)
@@ -29,7 +29,7 @@ func TestACSEngineK8sCluster_parseImportID(t *testing.T) {
 	}
 }
 
-func TestACSEngineK8sCluster_parseInvalidImportID(t *testing.T) {
+func TestParseInvalidImportID(t *testing.T) {
 	cases := []struct {
 		ImportID string
 	}{

@@ -24,11 +24,11 @@ func TestFlattenLinuxProfile(t *testing.T) {
 		t.Fatalf("flattenLinuxProfile failed: %v", err)
 	}
 
-	assert.Equal(t, len(linuxProfile), 1, "did not find linux profile")
+	assert.Equal(t, 1, len(linuxProfile), "did not find linux profile")
 	linuxPf := linuxProfile[0].(map[string]interface{})
 	val, ok := linuxPf["admin_username"]
 	assert.True(t, ok, "flattenLinuxProfile failed: Master count does not exist")
-	assert.Equal(t, val, adminUsername)
+	assert.Equal(t, adminUsername, val)
 }
 
 func TestFlattenUnsetLinuxProfile(t *testing.T) {
@@ -42,9 +42,7 @@ func TestFlattenUnsetLinuxProfile(t *testing.T) {
 			},
 		},
 	}
-	_, err := flattenLinuxProfile(profile)
-
-	if err == nil {
+	if _, err := flattenLinuxProfile(profile); err == nil {
 		t.Fatalf("flattenLinuxProfile should have failed with unset values")
 	}
 }
@@ -65,11 +63,11 @@ func TestFlattenWindowsProfile(t *testing.T) {
 		t.Fatalf("flattenWindowsProfile failed: %v", err)
 	}
 
-	assert.Equal(t, len(windowsProfile), 1, "did not find windows profile")
+	assert.Equal(t, 1, len(windowsProfile), "did not find windows profile")
 	windowsPf := windowsProfile[0].(map[string]interface{})
 	val, ok := windowsPf["admin_username"]
 	assert.True(t, ok, "flattenWindowsProfile failed: admin username does not exist")
-	assert.Equal(t, val, adminUsername)
+	assert.Equal(t, adminUsername, val)
 }
 
 func TestFlattenUnsetWindowsProfile(t *testing.T) {
@@ -87,10 +85,7 @@ func TestFlattenUnsetWindowsProfile(t *testing.T) {
 		t.Fatalf("flattenWindowsProfile failed: %v", err)
 	}
 
-	if len(windowsProfile) != 0 {
-		t.Fatalf("flattenWindowsProfile failed: did not find zero Windows profiles")
-	}
-	assert.Equal(t, len(windowsProfile), 0, "did not find zero Windows profiles")
+	assert.Equal(t, 0, len(windowsProfile), "did not find zero Windows profiles")
 }
 
 func TestFlattenServicePrincipal(t *testing.T) {
@@ -109,18 +104,16 @@ func TestFlattenServicePrincipal(t *testing.T) {
 		t.Fatalf("flattenServicePrincipal failed: %v", err)
 	}
 
-	assert.Equal(t, len(servicePrincipal), 1, "did not find one service principal")
+	assert.Equal(t, 1, len(servicePrincipal), "did not find one service principal")
 	spPf := servicePrincipal[0].(map[string]interface{})
 	val, ok := spPf["client_id"]
 	assert.True(t, ok, "flattenServicePrincipal failed: Master count does not exist")
-	assert.Equal(t, val, clientID)
+	assert.Equal(t, clientID, val)
 }
 
 func TestFlattenUnsetServicePrincipal(t *testing.T) {
 	profile := api.ServicePrincipalProfile{}
-	_, err := flattenServicePrincipal(profile)
-
-	if err == nil {
+	if _, err := flattenServicePrincipal(profile); err == nil {
 		t.Fatalf("flattenServicePrincipal should have failed with unset values")
 	}
 }
@@ -141,18 +134,16 @@ func TestFlattenDataSourceServicePrincipal(t *testing.T) {
 		t.Fatalf("flattenDataSourceServicePrincipal failed: %v", err)
 	}
 
-	assert.Equal(t, len(servicePrincipal), 1, "did not find one master profile")
+	assert.Equal(t, 1, len(servicePrincipal), "did not find one master profile")
 	spPf := servicePrincipal[0].(map[string]interface{})
 	val, ok := spPf["client_id"]
 	assert.True(t, ok, "flattenDataSourceServicePrincipal failed: Master count does not exist")
-	assert.Equal(t, val, clientID)
+	assert.Equal(t, clientID, val)
 }
 
 func TestFlattenUnsetDataSourceServicePrincipal(t *testing.T) {
 	profile := api.ServicePrincipalProfile{}
-	_, err := flattenDataSourceServicePrincipal(profile)
-
-	if err == nil {
+	if _, err := flattenDataSourceServicePrincipal(profile); err == nil {
 		t.Fatalf("flattenServicePrincipal should have failed with unset values")
 	}
 }
@@ -179,7 +170,7 @@ func TestFlattenMasterProfile(t *testing.T) {
 	masterPf := masterProfile[0].(map[string]interface{})
 	val, ok := masterPf["count"]
 	assert.True(t, ok, "flattenMasterProfile failed: Master count does not exist")
-	assert.Equal(t, val, int(count))
+	assert.Equal(t, int(count), val)
 	if val, ok := masterPf["os_disk_size"]; ok {
 		t.Fatalf("OS disk size should not be set but value is %d", val.(int))
 	}
@@ -204,21 +195,19 @@ func TestFlattenMasterProfileWithOSDiskSize(t *testing.T) {
 		t.Fatalf("flattenServicePrincipal failed: %v", err)
 	}
 
-	assert.Equal(t, len(masterProfile), 1, "did not find one master profile")
+	assert.Equal(t, 1, len(masterProfile), "did not find one master profile")
 	masterPf := masterProfile[0].(map[string]interface{})
 	val, ok := masterPf["count"]
 	assert.True(t, ok, "flattenMasterProfile failed: Master count does not exist")
-	assert.Equal(t, val, int(count))
+	assert.Equal(t, int(count), val)
 	val, ok = masterPf["os_disk_size"]
 	assert.True(t, ok, "OS disk size should was not set correctly")
-	assert.Equal(t, val.(int), osDiskSize)
+	assert.Equal(t, osDiskSize, val.(int))
 }
 
 func TestFlattenUnsetMasterProfile(t *testing.T) {
 	profile := api.MasterProfile{}
-	_, err := flattenMasterProfile(profile, "")
-
-	if err == nil {
+	if _, err := flattenMasterProfile(profile, ""); err == nil {
 		t.Fatalf("flattenMasterProfile should have failed with unset values")
 	}
 }
@@ -305,9 +294,7 @@ func TestFlattenAgentPoolProfilesWithOSType(t *testing.T) {
 func TestFlattenUnsetAgentPoolProfiles(t *testing.T) {
 	profile := &api.AgentPoolProfile{}
 	profiles := []*api.AgentPoolProfile{profile}
-	_, err := flattenAgentPoolProfiles(profiles)
-
-	if err == nil {
+	if _, err := flattenAgentPoolProfiles(profiles); err == nil {
 		t.Fatalf("flattenAgentPoolProfiles should have failed with unset values")
 	}
 }
@@ -325,7 +312,7 @@ func TestExpandLinuxProfile(t *testing.T) {
 		t.Fatalf("expand linux profile failed: %v", err)
 	}
 
-	assert.Equal(t, linuxProfile.AdminUsername, "azureuser")
+	assert.Equal(t, "azureuser", linuxProfile.AdminUsername)
 }
 
 func TestExpandWindowsProfile(t *testing.T) {
@@ -342,8 +329,8 @@ func TestExpandWindowsProfile(t *testing.T) {
 		t.Fatalf("expand Windows profile failed: %v", err)
 	}
 
-	assert.Equal(t, windowsProfile.AdminUsername, adminUsername)
-	assert.Equal(t, windowsProfile.AdminPassword, adminPassword)
+	assert.Equal(t, adminUsername, windowsProfile.AdminUsername)
+	assert.Equal(t, adminPassword, windowsProfile.AdminPassword)
 }
 
 func TestExpandServicePrincipal(t *testing.T) {
@@ -359,7 +346,7 @@ func TestExpandServicePrincipal(t *testing.T) {
 		t.Fatalf("expand service principal failed: %v", err)
 	}
 
-	assert.Equal(t, servicePrincipal.ClientID, clientID)
+	assert.Equal(t, clientID, servicePrincipal.ClientID)
 }
 
 func TestExpandMasterProfile(t *testing.T) {
@@ -376,8 +363,8 @@ func TestExpandMasterProfile(t *testing.T) {
 		t.Fatalf("expand master profile failed: %v", err)
 	}
 
-	assert.Equal(t, masterProfile.DNSPrefix, dnsPrefix)
-	assert.Equal(t, masterProfile.VMSize, vmSize)
+	assert.Equal(t, dnsPrefix, masterProfile.DNSPrefix)
+	assert.Equal(t, vmSize, masterProfile.VMSize)
 }
 
 func TestExpandAgentPoolProfiles(t *testing.T) {
@@ -403,18 +390,13 @@ func TestExpandAgentPoolProfiles(t *testing.T) {
 	}
 
 	assert.Equal(t, len(profiles), 2)
-	assert.Equal(t, profiles[0].Name, agentPool1Name)
-	assert.Equal(t, profiles[0].Count, agentPool1Count)
-	assert.Equal(t, profiles[0].OSDiskSizeGB, 0)
-	if profiles[0].OSType != api.Linux {
-		t.Fatalf("The first agent pool profile has OS type %s when it should be %s", profiles[0].OSType, api.Linux)
-	}
-	assert.Equal(t, profiles[0].OSType, api.Linux, "wrong OS type")
-	assert.Equal(t, profiles[1].Count, agentPool2Count)
-	assert.Equal(t, profiles[1].OSDiskSizeGB, agentPool2osDiskSize)
-	if profiles[1].OSType != api.Windows {
-		t.Fatalf("The first agent pool profile has OS type %s when it should be %s", profiles[0].OSType, api.Windows)
-	}
+	assert.Equal(t, agentPool1Name, profiles[0].Name)
+	assert.Equal(t, agentPool1Count, profiles[0].Count)
+	assert.Equal(t, 0, profiles[0].OSDiskSizeGB)
+	assert.Equal(t, api.Linux, profiles[0].OSType, "first agent pool OS type is incorrect")
+	assert.Equal(t, agentPool2Count, profiles[1].Count)
+	assert.Equal(t, agentPool2osDiskSize, profiles[1].OSDiskSizeGB)
+	assert.Equal(t, api.Windows, profiles[1].OSType, "second agent pool OS type is incorrect")
 }
 
 func TestSetContainerService(t *testing.T) {
@@ -430,20 +412,12 @@ func TestSetContainerService(t *testing.T) {
 		t.Fatalf("setContainerService failed: %+v", err)
 	}
 
-	if cluster.Name != "testcluster" {
-		t.Fatalf("cluster name was not set correctly: was %s but should be testcluster", cluster.Name)
-	}
+	assert.Equal(t, "testcluster", cluster.Name, "cluster name was not set correctly")
 	version := cluster.Properties.OrchestratorProfile.OrchestratorVersion
-	if version != "1.10.0" {
-		t.Fatalf("cluster Kubernetes version was not set correctly: was '%s' but it should be '1.10.0'", version)
-	}
+	assert.Equal(t, "1.10.0", version, "cluster Kubernetes version was not set correctly")
 	dnsPrefix := cluster.Properties.MasterProfile.DNSPrefix
-	if dnsPrefix != masterDNSPrefix {
-		t.Fatalf("master DNS prefix was not set correctly: was %s but it should be 'masterDNSPrefix'", dnsPrefix)
-	}
-	if cluster.Properties.AgentPoolProfiles[0].Count != 1 {
-		t.Fatalf("agent pool profile is not set correctly")
-	}
+	assert.Equal(t, masterDNSPrefix, dnsPrefix, "master DNS prefix was not set correctly")
+	assert.Equal(t, 1, cluster.Properties.AgentPoolProfiles[0].Count, "agent pool profile is not set correctly")
 }
 
 func TestLoadContainerServiceFromApimodel(t *testing.T) {
@@ -457,8 +431,8 @@ func TestLoadContainerServiceFromApimodel(t *testing.T) {
 		t.Fatalf("failed to load container service from api model: %+v", err)
 	}
 
-	assert.Equal(t, apimodel.Name, name, "cluster name '%s' not found", name)
-	assert.Equal(t, apimodel.Location, location, "cluster location '%s' not found", location)
+	assert.Equal(t, name, apimodel.Name, "cluster name '%s' not found", name)
+	assert.Equal(t, location, apimodel.Location, "cluster location '%s' not found", location)
 }
 
 func TestSetProfiles(t *testing.T) {
@@ -471,7 +445,7 @@ func TestSetProfiles(t *testing.T) {
 	}
 	v, ok := d.GetOk("master_profile.0.dns_name_prefix")
 	assert.True(t, ok, "failed to get 'master_profile.0.dns_name_prefix'")
-	assert.Equal(t, v.(string), dnsPrefix, "'master_profile.0.dns_name_prefix' is not set correctly")
+	assert.Equal(t, dnsPrefix, v.(string), "'master_profile.0.dns_name_prefix' is not set correctly")
 }
 
 // These need to test linux profile...
@@ -485,7 +459,7 @@ func TestSetResourceProfiles(t *testing.T) {
 	}
 	v, ok := d.GetOk("master_profile.0.dns_name_prefix")
 	assert.True(t, ok, "failed to get 'master_profile.0.dns_name_prefix'")
-	assert.Equal(t, v.(string), dnsPrefix, "'master_profile.0.dns_name_prefix' is not set correctly")
+	assert.Equal(t, dnsPrefix, v.(string), "'master_profile.0.dns_name_prefix' is not set correctly")
 }
 
 func TestSetDataSourceProfiles(t *testing.T) {
@@ -498,7 +472,7 @@ func TestSetDataSourceProfiles(t *testing.T) {
 	}
 	v, ok := d.GetOk("master_profile.0.dns_name_prefix")
 	assert.True(t, ok, "failed to get 'master_profile.0.dns_name_prefix'")
-	assert.Equal(t, v.(string), dnsPrefix, "'master_profile.0.dns_name_prefix' is not set correctly")
+	assert.Equal(t, dnsPrefix, v.(string), "'master_profile.0.dns_name_prefix' is not set correctly")
 }
 
 func testCertificateProfile() *api.CertificateProfile {

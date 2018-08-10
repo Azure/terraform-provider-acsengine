@@ -386,7 +386,7 @@ func resourceACSEngineK8sClusterUpdate(d *schema.ResourceData, m interface{}) er
 				return fmt.Errorf("")
 			}
 			count := v.(int)
-			if err = scaleCluster(d, i, count); err != nil {
+			if err = scaleCluster(d, c, i, count); err != nil {
 				return fmt.Errorf("error scaling agent pool: %+v", err)
 			}
 		}

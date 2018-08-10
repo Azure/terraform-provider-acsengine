@@ -15,7 +15,6 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/retry"
-	// nodeutil "k8s.io/kubernetes/pkg/api/v1/node"
 )
 
 func TestValidateKubernetesVersion(t *testing.T) {
@@ -68,21 +67,21 @@ func TestFlattenKubeConfig(t *testing.T) {
 	if err != nil {
 		t.Fatalf("flattenKubeConfig failed: %+v", err)
 	}
-	assert.Equal(t, len(kubeConfigs), 1, "incorrect number of kube configs")
+	assert.Equal(t, 1, len(kubeConfigs), "incorrect number of kube configs")
 	kubeConfig := kubeConfigs[0].(map[string]interface{})
 	v, ok := kubeConfig["cluster_ca_certificate"]
 	assert.True(t, ok, "'cluster_ca_certificate' not found")
 	caCert := v.(string)
-	assert.Equal(t, caCert, base64Encode("0123"), "'cluster_ca_certificate' not set correctly")
+	assert.Equal(t, base64Encode("0123"), caCert, "'cluster_ca_certificate' not set correctly")
 	if v, ok := kubeConfig["host"]; ok {
 		server := v.(string)
 		expected := fmt.Sprintf("https://%s.%s.cloudapp.azure.com", "masterfqdn", "southcentralus")
-		assert.Equal(t, server, expected, "master fqdn is not set correctly")
+		assert.Equal(t, expected, server, "master fqdn is not set correctly")
 	}
 	if v, ok := kubeConfig["username"]; ok {
 		user := v.(string)
 		expected := fmt.Sprintf("%s-admin", "masterfqdn")
-		assert.Equal(t, user, expected, "username is not set correctly")
+		assert.Equal(t, expected, user, "username is not set correctly")
 	}
 }
 
@@ -149,7 +148,7 @@ func clusterIsRunning(is *terraform.InstanceState, name string) error {
 
 func checkNodes(api corev1.CoreV1Interface) error {
 	retryErr := utils.RetryOnFailure(retry.DefaultRetry, func() error {
-		fmt.Println("trying to get nodes...")
+		fmt.Println("[INFO] trying to get nodes...") // log
 		nodes, err := api.Nodes().List(metav1.ListOptions{})
 		if err != nil {
 			fmt.Printf("Reason for error: %+v\n", errors.ReasonForError(err))
@@ -159,7 +158,7 @@ func checkNodes(api corev1.CoreV1Interface) error {
 			return fmt.Errorf("not enough nodes found (there should be a at least one master and agent pool): only %d found", len(nodes.Items))
 		}
 		for _, node := range nodes.Items {
-			fmt.Printf("Node: %s\n", node.Name)
+			fmt.Printf("[INFO] Node: %s\n", node.Name) // log
 		}
 		return nil
 	})

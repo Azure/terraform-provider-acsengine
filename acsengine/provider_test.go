@@ -49,12 +49,10 @@ func TestDetermineAzureResourceProvidersToRegister(t *testing.T) {
 	providerList := []resources.Provider{provider, provider2}
 
 	providerMap := determineAzureResourceProvidersToRegister(providerList)
-	if _, ok := providerMap[namespace]; ok {
-		t.Fatalf("%s should have been deleted", namespace)
-	}
-	if _, ok := providerMap["Microsoft.Network"]; !ok {
-		t.Fatalf("Microsoft.Network should be in provider map")
-	}
+	_, ok := providerMap[namespace]
+	assert.False(t, ok, "%s should have been deleted", namespace)
+	_, ok = providerMap["Microsoft.Network"]
+	assert.True(t, ok, "Microsoft.Network should be in provider map")
 }
 
 func TestBase64Encode(t *testing.T) {
@@ -75,7 +73,7 @@ func TestBase64Encode(t *testing.T) {
 	for _, tc := range cases {
 		output := base64Encode(tc.Input)
 
-		assert.Equal(t, output, tc.Output)
+		assert.Equal(t, tc.Output, output)
 	}
 }
 
@@ -100,7 +98,7 @@ func TestIgnoreCaseDiffSuppressFunc(t *testing.T) {
 	for _, tc := range cases {
 		diff := ignoreCaseDiffSuppressFunc("", tc.Old, tc.New, nil)
 
-		assert.Equal(t, diff, tc.Expected, "different from expected")
+		assert.Equal(t, tc.Expected, diff, "different from expected")
 	}
 
 }
@@ -123,7 +121,7 @@ func TestIsBase64Encoded(t *testing.T) {
 	for _, tc := range cases {
 		output := isBase64Encoded(tc.Input)
 
-		assert.Equal(t, output, tc.Output)
+		assert.Equal(t, tc.Output, output)
 	}
 }
 

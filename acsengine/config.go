@@ -45,22 +45,18 @@ func (c *ArmClient) configureClient(client *autorest.Client, auth autorest.Autho
 func withRequestLogging() autorest.SendDecorator {
 	return func(s autorest.Sender) autorest.Sender {
 		return autorest.SenderFunc(func(r *http.Request) (*http.Response, error) {
-			// dump request to wire format
 			if dump, err := httputil.DumpRequestOut(r, true); err == nil {
 				log.Printf("[DEBUG] AzureRM Request: \n%s\n", dump)
 			} else {
-				// fallback to basic message
 				log.Printf("[DEBUG] AzureRM Request: %s to %s\n", r.Method, r.URL)
 			}
 
 			resp, err := s.Do(r)
 			if resp != nil {
-				// dump response to wire format
 				var dump []byte
 				if dump, err = httputil.DumpResponse(resp, true); err == nil {
 					log.Printf("[DEBUG] AzureRM Response for %s: \n%s\n", r.URL, dump)
 				} else {
-					// fallback to basic message
 					log.Printf("[DEBUG] AzureRM Response: %s for %s\n", resp.Status, r.URL)
 				}
 			} else {

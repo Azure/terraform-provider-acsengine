@@ -9,7 +9,6 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
-// Upgrades a cluster to a higher Kubernetes version
 func upgradeCluster(d *schema.ResourceData, upgradeVersion string) error {
 	cluster, err := loadContainerServiceFromApimodel(d, true, true)
 	if err != nil {

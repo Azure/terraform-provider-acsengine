@@ -18,7 +18,7 @@ func TestValidateMaximumNumberOfARMTags(t *testing.T) {
 
 	_, es := validateAzureRMTags(tagsMap, "tags")
 
-	assert.Equal(t, len(es), 1, "Expected one validation error for too many tags")
+	assert.Equal(t, 1, len(es), "Expected one validation error for too many tags")
 
 	assert.Contains(t, es[0].Error(), "a maximum of 15 tags", "Wrong validation error message for too many tags")
 }
@@ -29,9 +29,7 @@ func TestValidateARMTagMaxKeyLength(t *testing.T) {
 	tagsMap[tooLongKey] = "value"
 
 	_, es := validateAzureRMTags(tagsMap, "tags")
-	if len(es) != 1 {
-		t.Fatal("Expected one validation error for a key which is > 512 chars")
-	}
+	assert.Equal(t, 1, len(es), "Expected one validation error for a value which is > 512 chars")
 
 	assert.Contains(t, es[0].Error(), "maximum length for a tag key", "Wrong validation error message maximum tag key length")
 
@@ -159,7 +157,7 @@ func TestFlattenTagsEmpty(t *testing.T) {
 		t.Fatalf("flattenTags failed: %v", err)
 	}
 
-	assert.Equal(t, len(output), 0)
+	assert.Equal(t, 0, len(output))
 }
 
 // func TestGetTags(t *testing.T) {

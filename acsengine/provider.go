@@ -200,10 +200,6 @@ func determineAzureResourceProvidersToRegister(providerList []resources.Provider
 	return providers
 }
 
-// registerAzureResourceProvidersWithSubscription uses the providers client to register
-// all Azure resource providers which the Terraform provider may require (regardless of
-// whether they are actually used by the configuration or not). It was confirmed by Microsoft
-// that this is the approach their own internal tools also take.
 func registerAzureResourceProvidersWithSubscription(ctx context.Context, providerList []resources.Provider, client resources.ProvidersClient) error {
 	providers := determineAzureResourceProvidersToRegister(providerList)
 
@@ -231,9 +227,6 @@ func ignoreCaseDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool
 	return azschema.IgnoreCaseDiffSuppressFunc(k, old, new, d)
 }
 
-// base64Encode encodes data if the input isn't already encoded using
-// base64.StdEncoding.EncodeToString. If the input is already base64 encoded,
-// return the original input unchanged.
 func base64Encode(data string) string {
 	// Check whether the data is already Base64 encoded; don't double-encode
 	if isBase64Encoded(data) {

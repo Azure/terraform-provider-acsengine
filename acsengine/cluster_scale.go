@@ -1,7 +1,6 @@
 package acsengine
 
 import (
-	"context"
 	"fmt"
 	"log"
 
@@ -14,7 +13,7 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
-func scaleCluster(d *schema.ResourceData, agentIndex, agentCount int) error {
+func scaleCluster(d *schema.ResourceData, c *ArmClient, agentIndex, agentCount int) error {
 	cluster, err := loadContainerServiceFromApimodel(d, true, true)
 	if err != nil {
 		return fmt.Errorf("error parsing the api model: %+v", err)
@@ -26,9 +25,9 @@ func scaleCluster(d *schema.ResourceData, agentIndex, agentCount int) error {
 	}
 
 	var currentNodeCount, highestUsedIndex, windowsIndex int
-	var indexToVM []string
+	var vms []string
 	if sc.AgentPool.IsAvailabilitySets() {
-		if highestUsedIndex, currentNodeCount, windowsIndex, indexToVM, err = sc.ScaleVMAS(); err != nil {
+		if highestUsedIndex, currentNodeCount, windowsIndex, vms, err = sc.ScaleVMAS(); err != nil {
 			return fmt.Errorf("failed to scale availability set: %+v", err)
 		}
 
@@ -37,7 +36,7 @@ func scaleCluster(d *schema.ResourceData, agentIndex, agentCount int) error {
 			return nil
 		}
 		if currentNodeCount > sc.DesiredAgentCount {
-			return scaleDownCluster(sc, currentNodeCount, indexToVM, d)
+			return scaleDownCluster(d, sc, currentNodeCount, vms)
 		}
 	} else {
 		if highestUsedIndex, currentNodeCount, windowsIndex, err = sc.ScaleVMSS(); err != nil {
@@ -45,19 +44,15 @@ func scaleCluster(d *schema.ResourceData, agentIndex, agentCount int) error {
 		}
 	}
 
-	return scaleUpCluster(sc, highestUsedIndex, currentNodeCount, windowsIndex, d)
+	return scaleUpCluster(d, c, sc, highestUsedIndex, currentNodeCount, windowsIndex)
 }
 
-// Scales down a cluster by draining and deleting the nodes given as input
-func scaleDownCluster(sc *client.ScaleClient, currentNodeCount int, indexToVM []string, d *schema.ResourceData) error {
+func scaleDownCluster(d *schema.ResourceData, sc *client.ScaleClient, currentNodeCount int, vms []string) error {
 	if sc.MasterFQDN == "" {
 		return fmt.Errorf("Master FQDN is required to scale down a Kubernetes cluster's agent pool")
 	}
 
-	vmsToDelete := make([]string, 0)
-	for i := currentNodeCount - 1; i >= sc.DesiredAgentCount; i-- {
-		vmsToDelete = append(vmsToDelete, indexToVM[i])
-	}
+	vmsToDelete := vmsToDeleteList(vms, currentNodeCount, sc.DesiredAgentCount)
 
 	kubeconfig, err := acsengine.GenerateKubeConfig(sc.Cluster.Properties, sc.Location)
 	if err != nil {
@@ -85,10 +80,10 @@ func scaleDownCluster(sc *client.ScaleClient, currentNodeCount int, indexToVM []
 		return fmt.Errorf(errorMessage)
 	}
 
-	return saveScaledApimodel(sc, d)
+	return saveScaledApimodel(d, sc)
 }
 
-func scaleUpCluster(sc *client.ScaleClient, highestUsedIndex, currentNodeCount, windowsIndex int, d *schema.ResourceData) error {
+func scaleUpCluster(d *schema.ResourceData, c *ArmClient, sc *client.ScaleClient, highestUsedIndex, currentNodeCount, windowsIndex int) error {
 	sc.Cluster.Properties.AgentPoolProfiles = []*api.AgentPoolProfile{sc.AgentPool} // how does this work when there's multiple agent pools?
 
 	ctx := acsengine.Context{
@@ -122,7 +117,7 @@ func scaleUpCluster(sc *client.ScaleClient, highestUsedIndex, currentNodeCount, 
 	}
 
 	_, err = sc.Client.DeployTemplate(
-		context.Background(),
+		c.StopContext,
 		sc.ResourceGroupName,
 		sc.DeploymentName,
 		templateJSON,
@@ -130,19 +125,13 @@ func scaleUpCluster(sc *client.ScaleClient, highestUsedIndex, currentNodeCount, 
 	if err != nil {
 		return fmt.Errorf("error deploying scaled template: %+v", err)
 	}
-	// I could get deployment here, check for existence and get new ID
+	log.Printf("[INFO] Deployment '%s' successful", sc.DeploymentName)
 
-	return saveScaledApimodel(sc, d)
+	return saveScaledApimodel(d, sc)
 }
 
-func saveScaledApimodel(sc *client.ScaleClient, d *schema.ResourceData) error {
-	var err error
-	sc.Cluster, err = loadContainerServiceFromApimodel(d, false, true)
-	if err != nil {
-		return fmt.Errorf("failed to load container service from apimodel: %+v", err)
-	}
+func saveScaledApimodel(d *schema.ResourceData, sc *client.ScaleClient) error {
 	sc.Cluster.Properties.AgentPoolProfiles[sc.AgentPoolIndex].Count = sc.DesiredAgentCount
-
 	return saveTemplates(d, sc.Cluster, sc.DeploymentDirectory)
 }
 
@@ -158,4 +147,12 @@ func setWindowsIndex(sc *client.ScaleClient, windowsIndex int, templateJSON map[
 	if windowsIndex != -1 {
 		templateJSON["variables"].(map[string]interface{})[sc.AgentPool.Name+"Index"] = windowsIndex
 	}
+}
+
+func vmsToDeleteList(vms []string, currentNodeCount, desiredNodeCount int) []string {
+	vmsToDelete := make([]string, 0)
+	for i := currentNodeCount - 1; i >= desiredNodeCount; i-- {
+		vmsToDelete = append(vmsToDelete, vms[i])
+	}
+	return vmsToDelete
 }

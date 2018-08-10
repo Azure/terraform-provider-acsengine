@@ -88,7 +88,7 @@ func TestResourceGroupNameDiffSuppress(t *testing.T) {
 	for _, tc := range cases {
 		diff := resourceAzurermResourceGroupNameDiffSuppress("", tc.Old, tc.New, nil)
 
-		assert.Equal(t, diff, tc.Expected, "resource name difference evaluated incorrectly")
+		assert.Equal(t, tc.Expected, diff, "resource name difference evaluated incorrectly")
 	}
 
 }

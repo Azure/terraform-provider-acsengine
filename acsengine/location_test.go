@@ -8,7 +8,7 @@ import (
 
 func TestAzureRMNormalizeLocation(t *testing.T) {
 	s := azureRMNormalizeLocation("West US")
-	assert.Equal(t, s, "westus", "location not normalized correctly")
+	assert.Equal(t, "westus", s, "location not normalized correctly")
 }
 
 func TestAzureRMSuppressLocationDiff(t *testing.T) {
@@ -32,6 +32,6 @@ func TestAzureRMSuppressLocationDiff(t *testing.T) {
 	for _, tc := range cases {
 		diff := azureRMSuppressLocationDiff("", tc.Old, tc.New, nil)
 
-		assert.Equal(t, diff, tc.Expected, "%s == %s", tc.Old, tc.New)
+		assert.Equal(t, tc.Expected, diff, "%s == %s", tc.Old, tc.New)
 	}
 }

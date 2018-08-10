@@ -48,6 +48,20 @@ func dataSourceACSEngineKubernetesCluster() *schema.Resource {
 				},
 			},
 
+			// this will usually not be set, how do I deal with that?
+			"windows_profile": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"admin_username": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
+
 			"service_principal": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -156,8 +170,6 @@ func dataSourceACSEngineKubernetesCluster() *schema.Resource {
 
 			"kube_config_raw": kubeConfigRawSchema(),
 
-			// I can't think of what else to do right now than make this required, maybe make it a path to file??
-			// Can I get this info some other way?
 			"api_model": {
 				Type:      schema.TypeString,
 				Required:  true,
@@ -198,7 +210,6 @@ func dataSourceACSEngineK8sClusterRead(d *schema.ResourceData, m interface{}) er
 		return fmt.Errorf("Error setting resource group: %+v", err)
 	}
 
-	// so this knows what resource to get this from?
 	cluster, err := loadContainerServiceFromApimodel(d, true, false)
 	if err != nil {
 		return fmt.Errorf("Error parsing API model: %+v", err)
