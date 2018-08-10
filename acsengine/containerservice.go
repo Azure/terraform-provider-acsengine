@@ -2,10 +2,13 @@ package acsengine
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"log"
 
 	"github.com/Azure/acs-engine/pkg/api"
 	"github.com/Azure/acs-engine/pkg/api/common"
+	"github.com/Azure/acs-engine/pkg/api/vlabs"
 	"github.com/Azure/acs-engine/pkg/i18n"
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -373,6 +376,136 @@ func loadContainerServiceFromApimodel(d *schema.ResourceData, validate, isUpdate
 	// make sure the location is normalized
 
 	return cluster, nil
+}
+
+// hard to get everything from deployment because
+// I need to be able to get the cluster with only the resource id, which has resource group name, location, and deployment name
+// service principal and certificate keys are not given in parameters
+// this might be possible to get with key vault but then I need to ask for key vault credentials. This could be an optional part of the configuration,
+// but that creates a dependence on the configuration whereas in an ideal world the configuration would be generated when you run `terraform import`.
+// Using a key vault means that people who wish to import their resources need to have their clusters set up that way.
+// If I try to use the deployment parameters to create and manage a cluster, then I may need to ask for a key vault, or certs and keys as input, which
+// sounds like a pain.
+// certsAlreadyPresent in acsengine is called at in setDefaultCerts which is called in setPropertiesDefaults, which is called generateTemplate. If any
+// certificate or key is missing, certsAlreadyPresent returns false and new certs are generated.
+
+// really needs to be implemented
+func loadContainerServiceFromDeploymentParameters(c *ArmClient, name, resourceGroup string, validate, isUpdate bool) (*api.ContainerService, error) {
+	deployClient := c.deploymentsClient
+	read, err := deployClient.Get(c.StopContext, resourceGroup, name)
+	if err != nil {
+		return nil, fmt.Errorf("error getting deployment: %+v", err)
+	}
+	if read.ID == nil {
+		return nil, fmt.Errorf("Cannot read ACS Engine Kubernetes cluster deployment %s (resource group %s) ID", name, resourceGroup)
+	}
+	fmt.Printf("[INFO] cluster %q ID: %q\n", name, *read.ID)
+
+	parameters := read.Properties.Parameters
+	if parameters == nil {
+		return nil, fmt.Errorf("deployment parameters are not set")
+	}
+	data, err := json.MarshalIndent(parameters, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("deployment parameters: %s", string(data))
+
+	// need to get
+	// deployment name
+	if read.Name == nil {
+		return nil, fmt.Errorf("")
+	}
+	// resource group
+	// kubernetes version
+	// location
+	// linux profile
+	// service principal
+	// master profile
+	// agent pool profiles
+	// kube config
+	// api model if I use that for state in other places
+	// tags
+	// windows profile but I will ignore that for now
+
+	cluster := &vlabs.ContainerService{
+		Name:     *read.Name,
+		Location: "",
+		Properties: &vlabs.Properties{
+			OrchestratorProfile: &vlabs.OrchestratorProfile{
+				OrchestratorType:    "Kubernetes",
+				OrchestratorVersion: "",
+			},
+			MasterProfile:           &vlabs.MasterProfile{},
+			AgentPoolProfiles:       []*vlabs.AgentPoolProfile{},
+			LinuxProfile:            &vlabs.LinuxProfile{},
+			ServicePrincipalProfile: &vlabs.ServicePrincipalProfile{
+				// ClientID:
+				// Secret:
+			},
+			CertificateProfile: &vlabs.CertificateProfile{
+				// CaCertificate:
+			},
+		},
+	}
+
+	// for now I only need this to work for non-update
+	if e := cluster.Properties.Validate(isUpdate); validate && e != nil {
+		return nil, e
+	}
+
+	unversioned := api.ConvertVLabsContainerService(cluster)
+
+	return unversioned, nil
+}
+
+func getLinuxProfileParameters(parameters map[string]interface{}) (*api.LinuxProfile, error) {
+	linuxProfile := &api.LinuxProfile{}
+	if v, ok := parameters["linuxAdminUsername"]; ok {
+		adminUsername := v.(map[string]interface{})
+		linuxProfile.AdminUsername = adminUsername["value"].(string)
+	}
+	if v, ok := parameters["sshRSAPublicKey"]; ok {
+		adminUsername := v.(map[string]interface{})
+		publicKeys := []api.PublicKey{
+			{KeyData: adminUsername["value"].(string)},
+		}
+		linuxProfile.SSH.PublicKeys = publicKeys
+	}
+
+	return linuxProfile, nil
+}
+
+func getServicePrincipalParameters(parameters map[string]interface{}) (*api.ServicePrincipalProfile, error) {
+	servicePrincipal := &api.ServicePrincipalProfile{}
+	// if v, ok := parameters["servicePrincipalClientId"]; ok {
+
+	// }
+	return servicePrincipal, nil
+}
+
+func getMasterParameters(parameters map[string]interface{}) (*api.MasterProfile, error) {
+	masterProfile := &api.MasterProfile{}
+	// masterProfile.Count := parameters["master"] // for some reason the deployment doesn't include master count :(
+	if v, ok := parameters["masterEndpointDNSNamePrefix"]; ok {
+		dnsPrefix := v.(map[string]interface{})
+		masterProfile.DNSPrefix = dnsPrefix["value"].(string)
+	}
+	if v, ok := parameters["masterVMSize"]; ok {
+		vmSize := v.(map[string]interface{})
+		masterProfile.VMSize = vmSize["value"].(string)
+	}
+	if v, ok := parameters["masterOSDiskSizeGB"]; ok {
+		vmSize := v.(map[string]interface{})
+		masterProfile.OSDiskSizeGB = vmSize["value"].(int)
+	}
+	// fqdn
+	return masterProfile, nil
+}
+
+func getAgentPoolParameters(parameters map[string]interface{}) ([]*api.AgentPoolProfile, error) {
+	agentPoolProfiles := []*api.AgentPoolProfile{}
+	return agentPoolProfiles, nil
 }
 
 func setAPIModel(d *schema.ResourceData, cluster *api.ContainerService) error {

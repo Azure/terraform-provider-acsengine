@@ -14,7 +14,9 @@ package acsengine
 // - use assert functions where I can so that tests are uniform, I've accidentally been writing expected and actual in wrong order too
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
 	"strconv"
 
 	"github.com/Azure/acs-engine/pkg/api"
@@ -314,6 +316,11 @@ func resourceACSEngineK8sClusterRead(d *schema.ResourceData, m interface{}) erro
 	if err = setKubeConfig(d, cluster); err != nil {
 		return err
 	}
+
+	//
+	data, err := json.MarshalIndent(cluster, "", "  ")
+	log.Printf("cluster struct: %s", string(data))
+	//
 
 	return nil
 }
