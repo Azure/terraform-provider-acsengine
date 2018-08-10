@@ -3,6 +3,7 @@ package acsengine
 import (
 	"context"
 	"fmt"
+	"log"
 	"path"
 
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
@@ -79,7 +80,7 @@ func createDeployment(ctx context.Context, client *ArmClient, resourceGroup stri
 	if err != nil {
 		return fmt.Errorf("error creating deployment: %+v", err)
 	}
-	fmt.Println("Deployment created (1)")
+	fmt.Println("[INFO] Deployment created (1)") // log
 
 	if err = future.WaitForCompletion(client.StopContext, deployClient.Client); err != nil {
 		return fmt.Errorf("error creating deployment: %+v", err)
@@ -89,6 +90,8 @@ func createDeployment(ctx context.Context, client *ArmClient, resourceGroup stri
 		return fmt.Errorf("error getting deployment result")
 	}
 	// check response status code
+	log.Println("[INFO] Deployment successful")
+
 	return nil
 }
 

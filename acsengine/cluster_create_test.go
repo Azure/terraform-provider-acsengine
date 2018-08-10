@@ -2,15 +2,13 @@ package acsengine
 
 import (
 	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/Azure/terraform-provider-acsengine/acsengine/utils"
 	"github.com/stretchr/testify/assert"
 )
 
-// made it an acceptance test more because of the time it takes
-func TestAccACSEngineK8sCluster_generateTemplateBasic(t *testing.T) {
+func TestGenerateTemplateBasic(t *testing.T) {
 	cases := []struct {
 		Name           string
 		ResourceGroup  string
@@ -69,13 +67,11 @@ func TestAccACSEngineK8sCluster_generateTemplateBasic(t *testing.T) {
 
 		assert.Contains(t, template, agentPoolName+"Count", "cluster count set incorrectly in template")
 
-		if tc.ExpectError {
-			t.Fatalf("Expected the Kubernetes Cluster Agent Pool Name to trigger an error for '%s'", tc.Name)
-		}
+		assert.False(t, tc.ExpectError, "Expected the Kubernetes Cluster Agent Pool Name to trigger an error for '%s'", tc.Name)
 	}
 }
 
-func TestAccACSEngineK8sCluster_generateTemplateCustomized(t *testing.T) {
+func TestGenerateTemplateCustomized(t *testing.T) {
 	cases := []struct {
 		Name           string
 		ResourceGroup  string
@@ -131,22 +127,12 @@ func TestAccACSEngineK8sCluster_generateTemplateCustomized(t *testing.T) {
 
 		assert.Contains(t, parameters, tc.AdminUsername, "cluster admin username set incorrectly in parameters")
 		assert.Contains(t, parameters, testClientID(), "cluster client ID set incorrectly in parameters")
-		if !strings.Contains(parameters, tc.MasterVMSize) {
-			t.Fatalf("Expected the Azure RM Kubernetes cluster to have parameter '%s'", tc.MasterVMSize)
-		}
-		if !strings.Contains(parameters, tc.AgentVMSize) {
-			t.Fatalf("Expected the Azure RM Kubernetes cluster to have parameter '%s'", tc.AgentVMSize)
-		}
-		if !strings.Contains(parameters, strconv.Itoa(tc.AgentPoolCount)) {
-			t.Fatalf("Expected the Azure RM Kubernetes cluster to have parameter '%d'", tc.AgentPoolCount)
-		}
+		assert.Contains(t, parameters, tc.MasterVMSize, "Expected the Azure RM Kubernetes cluster to have parameter '%s'", tc.MasterVMSize)
+		assert.Contains(t, parameters, tc.AgentVMSize, "Expected the Azure RM Kubernetes cluster to have parameter '%s'", tc.AgentVMSize)
+		assert.Contains(t, parameters, strconv.Itoa(tc.AgentPoolCount), "Expected the Azure RM Kubernetes cluster to have parameter '%d'", tc.AgentPoolCount)
 
-		if !strings.Contains(template, agentPoolName+"Count") {
-			t.Fatalf("Expected the Azure RM Kubernetes cluster to have field '%s'", agentPoolName+"Count")
-		}
+		assert.Contains(t, template, agentPoolName+"Count", "Expected the Azure RM Kubernetes cluster to have field '%s'", agentPoolName+"Count")
 
-		if tc.ExpectError {
-			t.Fatalf("Expected the Kubernetes Cluster Agent Pool Name to trigger an error for '%s'", tc.Name)
-		}
+		assert.False(t, tc.ExpectError, "Expected the Kubernetes Cluster Agent Pool Name to trigger an error for '%s'", tc.Name)
 	}
 }
