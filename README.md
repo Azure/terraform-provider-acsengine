@@ -10,7 +10,8 @@ This started out as a fork of [terraform-providers/terraform-provider-azurerm](h
 
 ## User Guides
 
-* [Usage](docs/acsengine_kubernetes_cluster.md) - details about Kubernetes resource schema and how to configure a cluster
+* [Usage](docs/acsengine_kubernetes_cluster.md) - details about acs-engine Kubernetes cluster resource schema and how to configure a cluster
+* [Data Source Usage](docs/acsengine_kubernetes_cluster.md) - details about how to get data about an existing acs-engine Kubernetes cluster resource
 * [Scaling clusters](docs/scaling-agent-pools.md) - shows how to scale a cluster's agent pool count
 * [Upgrading clusters](docs/upgrading-clusters.md) - shows how to upgrade a cluster's Kubernetes version
 * [Terraform state](docs/state.md) - notes on how the state of the cluster is stored and resource creation
@@ -88,11 +89,9 @@ resource "acsengine_kubernetes_cluster" "test" {
 }
 ```
 
-Further usage documentation can be found in the `docs` directory.
+Further usage documentation can be found in the `docs` directory. This also contains an `examples` directory for more specific cases.
 
 ## Developing the Provider
-
-<!-- move more of this into developing.md -->
 
 If you wish to work on the provider, you'll first need [Go](http://www.golang.org) installed on your machine (version 1.10+ is *required*). You'll also need to correctly setup a [GOPATH](http://golang.org/doc/code.html#GOPATH), as well as adding `$GOPATH/bin` to your `$PATH`.
 
@@ -105,15 +104,7 @@ $ $GOPATH/bin/terraform-provider-acsengine
 ...
 ```
 
-In order to run the provider unit tests, you can simply run `make test`.
-
-```sh
-$ make test
-```
-
-In order to run the full suite of Acceptance tests, run `make testacc`. This will take some time.
-
-The following ENV variables must be set in your shell prior to running acceptance tests:
+The following ENV variables must be set in your shell prior to running tests:
 
 * ARM_CLIENT_ID
 * ARM_CLIENT_SECRET
@@ -121,6 +112,14 @@ The following ENV variables must be set in your shell prior to running acceptanc
 * ARM_TENANT_ID
 * ARM_TEST_LOCATION
 * SSH_KEY_PUB
+
+In order to run the provider unit tests, you can simply run `make test`.
+
+```sh
+$ make test
+```
+
+In order to run the full suite of Acceptance tests, run `make testacc`. This will take some time.
 
 *Note:* Acceptance tests create real resources, and often cost money to run.
 

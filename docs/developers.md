@@ -19,7 +19,7 @@ The code for this project is organized as follows:
 
 We use Git for our version control system. The `master` branch is the home of current development. Releases will eventually be tagged...
 
-We accept changes to code via GitHub pull requests.
+We accept changes to code via GitHub pull requests. Look at [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on submitting a PR.
 
 ## Third Party Dependencies
 
@@ -43,12 +43,12 @@ There are Terraform acceptance tests which create, test, and destroy a cluster. 
 
 You will need to have the following environment variables set:
 
-* `CLIENT_ID`: Azure client ID
-* `CLIENT_SECRET`: Azure client secret
-* `SUBSCRIPTION_ID`: Azure subscription UUID
-* `TENANT_ID`: Azure tenant UUID
+* `ARM_CLIENT_ID`: Azure client ID
+* `ARM_CLIENT_SECRET`: Azure client secret
+* `ARM_SUBSCRIPTION_ID`: Azure subscription UUID
+* `ARM_TENANT_ID`: Azure tenant UUID
 * `SSH_KEY_PUB`: Public SSH key
 
-## Debugging
+<!-- ## Debugging
 
-Delve can be used for debugging... more on this later.
+Delve can be used for debugging... more on this later. -->

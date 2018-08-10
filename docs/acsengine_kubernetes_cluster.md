@@ -8,8 +8,6 @@ Manages ACS Engine Cluster
 
 ## Example Usage
 
-<!-- Try testing this exact configuration -->
-
 ```hcl
 resource "acsengine_kubernetes_cluster" "test" {
     name               = "testcluster"
@@ -57,12 +55,13 @@ resource "acsengine_kubernetes_cluster" "test" {
 
 The following arguments are supported:
 
-* `name` - (Required) The name of the cluster to create. Changing this forces a new resource to be created.
+* `name` - (Required) The name of the cluster to create, which will be the deployment name. Changing this forces a new resource to be created.
 * `resource_group` - (Required) Specifies the name of the resource group where the resource exist. A new resource group will be created with the cluster, which will also be deleted with the cluster. Changing this forces a new resource to be created.
 * `location` - (Required) The location where the cluster should be created. Changing this forces a new resource to be created.
 * `master_profile` - (Required) A master profile block as documented below.
 * `agent_pool_profiles` - (Required) One or more agent pool profile blocks as documented below.
 * `linux_profile` - (Required) A Linux profile block as documented below.
+* `windows_profile` - (Optional) A Windows profile block as documented below. This is required if any agent pools have `os_type` set to 'Windows'.
 * `service_principal` - (Required) A service principal block as documented below.
 * `kubernetes_version` - (Optional) The Kubernetes version running on the cluster.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
@@ -90,6 +89,11 @@ The following arguments are supported:
 `ssh` supports the following:
 
 * `key_data` - (Required) The public SSH key used to access the cluster.
+
+`windows_profile` supports the following:
+
+* `admin_username` - (Required) The Windows admin username.
+* `admin_password` - (Required) An Windows admin password.
 
 `service_principal` supports the following:
 
