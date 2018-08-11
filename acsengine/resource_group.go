@@ -51,7 +51,7 @@ func resourceAzurermResourceGroupNameDiffSuppress(k, old, new string, d *schema.
 	return strings.ToLower(old) == strings.ToLower(new)
 }
 
-func createClusterResourceGroup(d *schema.ResourceData, client *ArmClient) error {
+func createClusterResourceGroup(d *ResourceData, client *ArmClient) error {
 	rgClient := client.resourceGroupsClient
 
 	var v interface{}
@@ -70,7 +70,7 @@ func createClusterResourceGroup(d *schema.ResourceData, client *ArmClient) error
 	}
 	location = azureRMNormalizeLocation(v.(string))
 
-	tags := getTags(d)
+	tags := d.getTags()
 	parameters := resources.Group{
 		Location: &location,
 		Tags:     expandTags(tags),

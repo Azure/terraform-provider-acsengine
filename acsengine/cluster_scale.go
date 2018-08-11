@@ -10,17 +10,16 @@ import (
 	"github.com/Azure/acs-engine/pkg/i18n"
 	"github.com/Azure/acs-engine/pkg/operations"
 	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/client"
-	"github.com/hashicorp/terraform/helper/schema"
 )
 
-func scaleCluster(d *schema.ResourceData, c *ArmClient, agentIndex, agentCount int) error {
-	cluster, err := loadContainerServiceFromApimodel(d, true, true)
+func scaleCluster(d *ResourceData, c *ArmClient, agentIndex, agentCount int) error {
+	cluster, err := d.loadContainerServiceFromApimodel(true, true)
 	if err != nil {
 		return fmt.Errorf("error parsing the api model: %+v", err)
 	}
 
 	sc := client.NewScaleClient()
-	if err = sc.SetScaleClient(cluster, d.Id(), agentIndex, agentCount); err != nil {
+	if err = sc.SetScaleClient(cluster.ContainerService, d.Id(), agentIndex, agentCount); err != nil {
 		return fmt.Errorf("failed to initialize scale client: %+v", err)
 	}
 
@@ -36,7 +35,10 @@ func scaleCluster(d *schema.ResourceData, c *ArmClient, agentIndex, agentCount i
 			return nil
 		}
 		if currentNodeCount > sc.DesiredAgentCount {
-			return scaleDownCluster(d, sc, currentNodeCount, vms)
+			if err = scaleDownCluster(sc, currentNodeCount, vms); err != nil {
+				return fmt.Errorf("scaling down cluster failed: %+v", err)
+			}
+			return saveScaledApimodel(d, sc)
 		}
 	} else {
 		if highestUsedIndex, currentNodeCount, windowsIndex, err = sc.ScaleVMSS(); err != nil {
@@ -44,10 +46,13 @@ func scaleCluster(d *schema.ResourceData, c *ArmClient, agentIndex, agentCount i
 		}
 	}
 
-	return scaleUpCluster(d, c, sc, highestUsedIndex, currentNodeCount, windowsIndex)
+	if err = scaleUpCluster(c, sc, highestUsedIndex, currentNodeCount, windowsIndex); err != nil {
+		return fmt.Errorf("scaling cluster failed: %+v", err)
+	}
+	return saveScaledApimodel(d, sc)
 }
 
-func scaleDownCluster(d *schema.ResourceData, sc *client.ScaleClient, currentNodeCount int, vms []string) error {
+func scaleDownCluster(sc *client.ScaleClient, currentNodeCount int, vms []string) error {
 	if sc.MasterFQDN == "" {
 		return fmt.Errorf("Master FQDN is required to scale down a Kubernetes cluster's agent pool")
 	}
@@ -80,19 +85,22 @@ func scaleDownCluster(d *schema.ResourceData, sc *client.ScaleClient, currentNod
 		return fmt.Errorf(errorMessage)
 	}
 
-	return saveScaledApimodel(d, sc)
+	return nil
 }
 
-func scaleUpCluster(d *schema.ResourceData, c *ArmClient, sc *client.ScaleClient, highestUsedIndex, currentNodeCount, windowsIndex int) error {
+func scaleUpCluster(c *ArmClient, sc *client.ScaleClient, highestUsedIndex, currentNodeCount, windowsIndex int) error {
 	sc.Cluster.Properties.AgentPoolProfiles = []*api.AgentPoolProfile{sc.AgentPool} // how does this work when there's multiple agent pools?
 
-	ctx := acsengine.Context{
+	ctx := acsengine.Context{ // do I need this context?
 		Translator: &i18n.Translator{
 			Locale: sc.Locale,
 		},
 	}
 	// don't format parameters! It messes things up
-	template, parameters, _, err := formatTemplates(sc.Cluster, false)
+	cluster := Cluster{
+		ContainerService: sc.Cluster,
+	}
+	template, parameters, _, err := cluster.formatTemplates(false)
 	if err != nil {
 		return fmt.Errorf("failed to format templates: %+v", err)
 	}
@@ -127,12 +135,13 @@ func scaleUpCluster(d *schema.ResourceData, c *ArmClient, sc *client.ScaleClient
 	}
 	log.Printf("[INFO] Deployment '%s' successful", sc.DeploymentName)
 
-	return saveScaledApimodel(d, sc)
+	return nil
 }
 
-func saveScaledApimodel(d *schema.ResourceData, sc *client.ScaleClient) error {
+func saveScaledApimodel(d *ResourceData, sc *client.ScaleClient) error {
 	sc.Cluster.Properties.AgentPoolProfiles[sc.AgentPoolIndex].Count = sc.DesiredAgentCount
-	return saveTemplates(d, sc.Cluster, sc.DeploymentDirectory)
+	cluster := Cluster{ContainerService: sc.Cluster}
+	return cluster.saveTemplates(d, sc.DeploymentDirectory)
 }
 
 func setCountForTemplate(sc *client.ScaleClient, highestUsedIndex, currentNodeCount int) int {

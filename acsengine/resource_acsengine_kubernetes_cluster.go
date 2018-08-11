@@ -1,8 +1,7 @@
 package acsengine
 
 // TO DO
-// - move as much of upgrade and scale into the client package I made and make them struct methods
-// - change import (and maybe other things?) to depend on deployment template which I should be able to get from DeploymentExtended in azure-sdk-for-go
+// - consider renaming client package
 // - use log instead of fmt, figure out why it's not printing
 // - Keep improving documentation
 // - add code coverage
@@ -254,30 +253,39 @@ const (
 	apiVersion       = "vlabs"
 )
 
-func resourceACSEngineK8sClusterCreate(d *schema.ResourceData, m interface{}) error {
+func resourceACSEngineK8sClusterCreate(data *schema.ResourceData, m interface{}) error {
+	d := newResourceData(data)
 	client := m.(*ArmClient)
 
-	err := createClusterResourceGroup(d, client)
+	cluster, err := d.setContainerService()
 	if err != nil {
+		return fmt.Errorf("failed to set cluster: %+v", err)
+	}
+
+	if err := createClusterResourceGroup(d, client); err != nil {
 		return fmt.Errorf("failed to create resource group: %+v", err)
 	}
 
-	template, parameters, err := generateACSEngineTemplate(d, true)
+	template, parameters, err := generateACSEngineTemplate(cluster, true)
 	if err != nil {
 		return fmt.Errorf("failed to generate ACS Engine template: %+v", err)
 	}
+	if err = d.setStateAPIModel(&cluster); err != nil {
+		return fmt.Errorf("error setting API model: %+v", err)
+	}
 
-	id, err := deployTemplate(d, client, template, parameters)
+	id, err := deployTemplate(client, cluster.Name, cluster.ResourceGroup, template, parameters)
 	if err != nil {
 		return fmt.Errorf("failed to deploy template: %+v", err)
 	}
 
 	d.SetId(id)
 
-	return resourceACSEngineK8sClusterRead(d, m)
+	return resourceACSEngineK8sClusterRead(data, m)
 }
 
-func resourceACSEngineK8sClusterRead(d *schema.ResourceData, m interface{}) error {
+func resourceACSEngineK8sClusterRead(data *schema.ResourceData, m interface{}) error {
+	d := newResourceData(data)
 	id, err := utils.ParseAzureResourceID(d.Id())
 	if err != nil {
 		d.SetId("")
@@ -288,7 +296,7 @@ func resourceACSEngineK8sClusterRead(d *schema.ResourceData, m interface{}) erro
 		return fmt.Errorf("error setting `resource_group`: %+v", err)
 	}
 
-	cluster, err := loadContainerServiceFromApimodel(d, true, false)
+	cluster, err := d.loadContainerServiceFromApimodel(true, false)
 	if err != nil {
 		return fmt.Errorf("error parsing API model: %+v", err)
 	}
@@ -303,15 +311,15 @@ func resourceACSEngineK8sClusterRead(d *schema.ResourceData, m interface{}) erro
 		return fmt.Errorf("error setting `kubernetes_version`: %+v", err)
 	}
 
-	if err = setResourceProfiles(d, cluster); err != nil {
+	if err = d.setResourceStateProfiles(&cluster); err != nil {
 		return err
 	}
 
-	if err = setTags(d, cluster.Tags); err != nil {
+	if err = d.setTags(cluster.Tags); err != nil {
 		return err
 	}
 
-	if err = setKubeConfig(d, cluster); err != nil {
+	if err = d.setKubeConfig(&cluster); err != nil {
 		return err
 	}
 
@@ -354,14 +362,10 @@ func resourceACSEngineK8sClusterDelete(d *schema.ResourceData, m interface{}) er
 	return nil
 }
 
-func resourceACSEngineK8sClusterUpdate(d *schema.ResourceData, m interface{}) error {
-	_, err := utils.ParseAzureResourceID(d.Id())
-	if err != nil {
-		d.SetId("")
-		return err
-	}
-
+func resourceACSEngineK8sClusterUpdate(data *schema.ResourceData, m interface{}) error {
+	d := newResourceData(data)
 	c := m.(*ArmClient)
+	var err error
 
 	d.Partial(true)
 
@@ -381,12 +385,11 @@ func resourceACSEngineK8sClusterUpdate(d *schema.ResourceData, m interface{}) er
 	for i := 0; i < len(agentPoolProfiles); i++ {
 		profileCount := "agent_pool_profiles." + strconv.Itoa(i) + ".count"
 		if d.HasChange(profileCount) {
-			v, ok := d.GetOk(profileCount)
+			count, ok := d.GetOk(profileCount)
 			if !ok {
-				return fmt.Errorf("")
+				return fmt.Errorf("failed to get agent pool profile count")
 			}
-			count := v.(int)
-			if err = scaleCluster(d, c, i, count); err != nil {
+			if err = scaleCluster(d, c, i, count.(int)); err != nil {
 				return fmt.Errorf("error scaling agent pool: %+v", err)
 			}
 		}
@@ -404,5 +407,5 @@ func resourceACSEngineK8sClusterUpdate(d *schema.ResourceData, m interface{}) er
 
 	d.Partial(false)
 
-	return resourceACSEngineK8sClusterRead(d, m)
+	return resourceACSEngineK8sClusterRead(data, m)
 }

@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/Azure/acs-engine/pkg/acsengine"
-	"github.com/Azure/acs-engine/pkg/api"
 	"github.com/Azure/acs-engine/pkg/api/common"
 	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/kubernetes"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -44,14 +43,6 @@ func validateKubernetesVersion(v interface{}, k string) (ws []string, errors []e
 	return
 }
 
-func getKubeConfig(cluster *api.ContainerService) (string, error) {
-	kubeConfig, err := acsengine.GenerateKubeConfig(cluster.Properties, cluster.Location)
-	if err != nil {
-		return "", fmt.Errorf("failed to generate kube config: %+v", err)
-	}
-	return kubeConfig, nil
-}
-
 func flattenKubeConfig(kubeConfigFile string) (string, []interface{}, error) {
 	rawKubeConfig := base64Encode(kubeConfigFile)
 
@@ -78,8 +69,16 @@ func flattenKubeConfig(kubeConfigFile string) (string, []interface{}, error) {
 	return rawKubeConfig, kubeConfig, nil
 }
 
-func setKubeConfig(d *schema.ResourceData, cluster *api.ContainerService) error {
-	kubeConfigFile, err := getKubeConfig(cluster)
+func (cluster *Cluster) getKubeConfig() (string, error) {
+	kubeConfig, err := acsengine.GenerateKubeConfig(cluster.Properties, cluster.Location)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate kube config: %+v", err)
+	}
+	return kubeConfig, nil
+}
+
+func (d *ResourceData) setKubeConfig(cluster *Cluster) error {
+	kubeConfigFile, err := cluster.getKubeConfig()
 	if err != nil {
 		return fmt.Errorf("Error getting kube config: %+v", err)
 	}

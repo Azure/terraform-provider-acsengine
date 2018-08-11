@@ -6,17 +6,16 @@ import (
 	"github.com/Azure/acs-engine/pkg/i18n"
 	"github.com/Azure/acs-engine/pkg/operations/kubernetesupgrade"
 	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/client"
-	"github.com/hashicorp/terraform/helper/schema"
 )
 
-func upgradeCluster(d *schema.ResourceData, upgradeVersion string) error {
-	cluster, err := loadContainerServiceFromApimodel(d, true, true)
+func upgradeCluster(d *ResourceData, upgradeVersion string) error {
+	cluster, err := d.loadContainerServiceFromApimodel(true, true)
 	if err != nil {
 		return fmt.Errorf("error parsing the api model: %+v", err)
 	}
 
 	uc := client.NewUpgradeClient()
-	if err := uc.SetUpgradeClient(cluster, d.Id(), upgradeVersion); err != nil {
+	if err := uc.SetUpgradeClient(cluster.ContainerService, d.Id(), upgradeVersion); err != nil {
 		return fmt.Errorf("error initializing upgrade client: %+v", err)
 	}
 
@@ -29,7 +28,8 @@ func upgradeCluster(d *schema.ResourceData, upgradeVersion string) error {
 		StepTimeout: uc.Timeout,
 	}
 
-	kubeconfig, err := getKubeConfig(uc.Cluster)
+	cluster.ContainerService = uc.Cluster
+	kubeconfig, err := cluster.getKubeConfig()
 	if err != nil {
 		return fmt.Errorf("failed to generate kube config: %+v", err)
 	}
@@ -46,5 +46,6 @@ func upgradeCluster(d *schema.ResourceData, upgradeVersion string) error {
 		return fmt.Errorf("failed to deploy upgraded cluster: %+v", err)
 	}
 
-	return saveTemplates(d, uc.Cluster, uc.DeploymentDirectory)
+	cluster.ContainerService = uc.Cluster
+	return cluster.saveTemplates(d, uc.DeploymentDirectory)
 }

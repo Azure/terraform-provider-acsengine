@@ -95,7 +95,7 @@ func flattenTags(tags map[string]string) (map[string]interface{}, error) {
 	return output, nil
 }
 
-func getTags(d *schema.ResourceData) map[string]interface{} {
+func (d *ResourceData) getTags() map[string]interface{} {
 	var tags map[string]interface{}
 	if v, ok := d.GetOk("tags"); ok {
 		tags = v.(map[string]interface{})
@@ -106,7 +106,7 @@ func getTags(d *schema.ResourceData) map[string]interface{} {
 	return tags
 }
 
-func setTags(d *schema.ResourceData, tagMap map[string]string) error {
+func (d *ResourceData) setTags(tagMap map[string]string) error {
 	tags, err := flattenTags(tagMap)
 	if err != nil {
 		return fmt.Errorf("Error flattening `tags`: %+v", err)
@@ -120,14 +120,14 @@ func setTags(d *schema.ResourceData, tagMap map[string]string) error {
 
 // only updates resource group tags
 // I don't like that this function depends on containerservice.go and that file depends on tags.go
-func updateResourceGroupTags(d *schema.ResourceData, c *ArmClient) error {
+func updateResourceGroupTags(d *ResourceData, c *ArmClient) error {
 	if err := createClusterResourceGroup(d, c); err != nil { // this should update... let's see if it works
 		return fmt.Errorf("failed to update resource group: %+v", err)
 	}
 
-	tags := getTags(d)
+	tags := d.getTags()
 
-	cluster, err := loadContainerServiceFromApimodel(d, true, false)
+	cluster, err := d.loadContainerServiceFromApimodel(true, false)
 	if err != nil {
 		return fmt.Errorf("error parsing API model: %+v", err)
 	}
@@ -135,5 +135,5 @@ func updateResourceGroupTags(d *schema.ResourceData, c *ArmClient) error {
 
 	deploymentDirectory := path.Join("_output", cluster.Properties.MasterProfile.DNSPrefix)
 
-	return saveTemplates(d, cluster, deploymentDirectory)
+	return cluster.saveTemplates(d, deploymentDirectory)
 }

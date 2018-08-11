@@ -9,7 +9,7 @@ func WasConflict(resp *http.Response) bool {
 	return responseWasStatusCode(resp, http.StatusConflict)
 }
 
-// WasNotFound checks if HTTP response was a status "not found"
+// WasNotFound checks if HTTP response was status "not found"
 func WasNotFound(resp *http.Response) bool {
 	return responseWasStatusCode(resp, http.StatusNotFound)
 }

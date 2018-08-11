@@ -44,9 +44,9 @@ func TestGetKubeConfig(t *testing.T) {
 	name := "cluster"
 	location := "southcentralus"
 	prefix := "masterDNSPrefix"
-	cluster := utils.MockContainerService(name, location, prefix)
+	cluster := mockCluster(name, location, prefix)
 
-	kubeconfig, err := getKubeConfig(cluster)
+	kubeconfig, err := cluster.getKubeConfig()
 	if err != nil {
 		t.Fatalf("failed to get kube config: %+v", err)
 	}
@@ -103,12 +103,12 @@ func TestFlattenInvalidKubeConfig(t *testing.T) {
 func TestSetKubeConfig(t *testing.T) {
 	d := mockClusterResourceData("cluster", "southcentralus", "rg", "prefix")
 	// I need a mock container service
-	cluster, err := loadContainerServiceFromApimodel(d, true, false)
+	cluster, err := d.loadContainerServiceFromApimodel(true, false)
 	if err != nil {
 		t.Fatalf("failed to load cluster: %+v", err)
 	}
 
-	if err = setKubeConfig(d, cluster); err != nil {
+	if err = d.setKubeConfig(&cluster); err != nil {
 		t.Fatalf("failed to set kube config: %+v", err)
 	}
 }

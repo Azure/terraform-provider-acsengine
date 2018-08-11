@@ -181,7 +181,8 @@ func dataSourceACSEngineKubernetesCluster() *schema.Resource {
 	}
 }
 
-func dataSourceACSEngineK8sClusterRead(d *schema.ResourceData, m interface{}) error {
+func dataSourceACSEngineK8sClusterRead(data *schema.ResourceData, m interface{}) error {
+	d := newResourceData(data)
 	client := m.(*ArmClient)
 	deployClient := client.deploymentsClient
 
@@ -210,7 +211,7 @@ func dataSourceACSEngineK8sClusterRead(d *schema.ResourceData, m interface{}) er
 		return fmt.Errorf("Error setting resource group: %+v", err)
 	}
 
-	cluster, err := loadContainerServiceFromApimodel(d, true, false)
+	cluster, err := d.loadContainerServiceFromApimodel(true, false)
 	if err != nil {
 		return fmt.Errorf("Error parsing API model: %+v", err)
 	}
@@ -223,15 +224,15 @@ func dataSourceACSEngineK8sClusterRead(d *schema.ResourceData, m interface{}) er
 		return fmt.Errorf("Error setting kubernetes_version: %+v", err)
 	}
 
-	if err := setDataSourceProfiles(d, cluster); err != nil {
+	if err := d.setDataSourceStateProfiles(&cluster); err != nil {
 		return err
 	}
 
-	if err := setTags(d, cluster.Tags); err != nil {
+	if err := d.setTags(cluster.Tags); err != nil {
 		return err
 	}
 
-	if err := setKubeConfig(d, cluster); err != nil {
+	if err := d.setKubeConfig(&cluster); err != nil {
 		return err
 	}
 

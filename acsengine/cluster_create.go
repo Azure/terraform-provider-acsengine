@@ -7,54 +7,32 @@ import (
 	"path"
 
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
-	"github.com/hashicorp/terraform/helper/schema"
 )
 
-func generateACSEngineTemplate(d *schema.ResourceData, write bool) (template string, parameters string, err error) {
-	cluster, err := setContainerService(d)
-	if err != nil {
-		return "", "", err
-	}
-
-	template, parameters, certsGenerated, err := formatTemplates(cluster, true)
+func generateACSEngineTemplate(cluster Cluster, write bool) (template string, parameters string, err error) {
+	template, parameters, certsGenerated, err := cluster.formatTemplates(true)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to format templates using cluster: %+v", err)
 	}
 
 	if write { // this should be default but allow for more testing
 		deploymentDirectory := path.Join("_output", cluster.Properties.MasterProfile.DNSPrefix)
-		if err = writeTemplatesAndCerts(cluster, template, parameters, deploymentDirectory, certsGenerated); err != nil {
+		if err = cluster.writeTemplatesAndCerts(template, parameters, deploymentDirectory, certsGenerated); err != nil {
 			return "", "", fmt.Errorf("error writing templates and certificates: %+v", err)
 		}
-	}
-	if err = setAPIModel(d, cluster); err != nil {
-		return "", "", fmt.Errorf("error setting API model: %+v", err)
 	}
 
 	return template, parameters, nil
 }
 
-func deployTemplate(d *schema.ResourceData, client *ArmClient, template, parameters string) (id string, err error) {
-	var name, resourceGroup string
-	var v interface{}
-	var ok bool
-
-	if v, ok = d.GetOk("name"); !ok {
-		return "", fmt.Errorf("cluster 'name' not found")
-	}
-	name = v.(string)
-
-	if v, ok = d.GetOk("resource_group"); !ok {
-		return "", fmt.Errorf("cluster 'resource_group' not found")
-	}
-	resourceGroup = v.(string)
-
+func deployTemplate(client *ArmClient, name, resourceGroup, template, parameters string) (id string, err error) {
 	azureDeployTemplate, azureDeployParametersFile, err := expandTemplates(template, parameters)
 	if err != nil {
 		return "", fmt.Errorf("failed to expand template and parameters: %+v", err)
 	}
 
-	if v, ok = azureDeployParametersFile["parameters"]; !ok {
+	v, ok := azureDeployParametersFile["parameters"]
+	if !ok {
 		return "", fmt.Errorf("azureDeployParameters formatted incorrectly")
 	}
 	azureDeployParameters := v.(map[string]interface{})

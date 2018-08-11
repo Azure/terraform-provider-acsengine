@@ -176,15 +176,14 @@ func TestFlattenTagsEmpty(t *testing.T) {
 // }
 
 func TestSetTags(t *testing.T) {
-	r := resourceArmACSEngineKubernetesCluster()
-	d := r.TestResourceData()
+	d := mockClusterResourceData("name", "location", "rg", "prefix")
 
 	tags := map[string]string{
 		"home": "1111111111",
 		"cell": "2222222222",
 	}
 
-	if err := setTags(d, tags); err != nil {
+	if err := d.setTags(tags); err != nil {
 		t.Fatalf("failed to set tags: %+v", err)
 	}
 }

@@ -1,6 +1,7 @@
 package acsengine
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/Azure/acs-engine/pkg/api"
@@ -300,8 +301,7 @@ func TestFlattenUnsetAgentPoolProfiles(t *testing.T) {
 }
 
 func TestExpandLinuxProfile(t *testing.T) {
-	r := resourceArmACSEngineKubernetesCluster()
-	d := r.TestResourceData()
+	d := mockClusterResourceData("name", "southcentralus", "rg", "prefix")
 
 	adminUsername := "azureuser"
 	linuxProfiles := utils.FlattenLinuxProfile(adminUsername)
@@ -316,8 +316,7 @@ func TestExpandLinuxProfile(t *testing.T) {
 }
 
 func TestExpandWindowsProfile(t *testing.T) {
-	r := resourceArmACSEngineKubernetesCluster()
-	d := r.TestResourceData()
+	d := mockClusterResourceData("name", "southcentralus", "rg", "prefix")
 
 	adminUsername := "azureuser"
 	adminPassword := "password"
@@ -334,8 +333,7 @@ func TestExpandWindowsProfile(t *testing.T) {
 }
 
 func TestExpandServicePrincipal(t *testing.T) {
-	r := resourceArmACSEngineKubernetesCluster()
-	d := r.TestResourceData()
+	d := mockClusterResourceData("name", "southcentralus", "rg", "prefix")
 
 	clientID := testClientID()
 	servicePrincipals := utils.FlattenServicePrincipal()
@@ -350,8 +348,7 @@ func TestExpandServicePrincipal(t *testing.T) {
 }
 
 func TestExpandMasterProfile(t *testing.T) {
-	r := resourceArmACSEngineKubernetesCluster()
-	d := r.TestResourceData()
+	d := mockClusterResourceData("name", "southcentralus", "rg", "prefix")
 
 	dnsPrefix := "masterDNSPrefix"
 	vmSize := "Standard_D2_v2"
@@ -368,8 +365,7 @@ func TestExpandMasterProfile(t *testing.T) {
 }
 
 func TestExpandAgentPoolProfiles(t *testing.T) {
-	r := resourceArmACSEngineKubernetesCluster()
-	d := r.TestResourceData()
+	d := mockClusterResourceData("name", "southcentralus", "rg", "prefix")
 
 	agentPool1Name := "agentpool1"
 	agentPool1Count := 1
@@ -407,7 +403,7 @@ func TestSetContainerService(t *testing.T) {
 
 	d := mockClusterResourceData(name, location, resourceGroup, masterDNSPrefix)
 
-	cluster, err := setContainerService(d)
+	cluster, err := d.setContainerService()
 	if err != nil {
 		t.Fatalf("setContainerService failed: %+v", err)
 	}
@@ -426,7 +422,7 @@ func TestLoadContainerServiceFromApimodel(t *testing.T) {
 
 	d := mockClusterResourceData(name, location, "testrg", "creativeMasterDNSPrefix") // I need to add a test apimodel in here
 
-	apimodel, err := loadContainerServiceFromApimodel(d, true, false)
+	apimodel, err := d.loadContainerServiceFromApimodel(true, false)
 	if err != nil {
 		t.Fatalf("failed to load container service from api model: %+v", err)
 	}
@@ -438,9 +434,9 @@ func TestLoadContainerServiceFromApimodel(t *testing.T) {
 func TestSetProfiles(t *testing.T) {
 	dnsPrefix := "lessCreativeMasterDNSPrefix"
 	d := mockClusterResourceData("name1", "westus", "testrg", "creativeMasterDNSPrefix")
-	cluster := utils.MockContainerService("name2", "southcentralus", dnsPrefix)
+	cluster := mockCluster("name2", "southcentralus", dnsPrefix)
 
-	if err := setProfiles(d, cluster); err != nil {
+	if err := d.setStateProfiles(cluster); err != nil {
 		t.Fatalf("setProfiles failed: %+v", err)
 	}
 	v, ok := d.GetOk("master_profile.0.dns_name_prefix")
@@ -452,9 +448,9 @@ func TestSetProfiles(t *testing.T) {
 func TestSetResourceProfiles(t *testing.T) {
 	dnsPrefix := "lessCreativeMasterDNSPrefix"
 	d := mockClusterResourceData("name1", "westus", "testrg", "creativeMasterDNSPrefix")
-	cluster := utils.MockContainerService("name2", "southcentralus", dnsPrefix)
+	cluster := mockCluster("name2", "southcentralus", dnsPrefix)
 
-	if err := setResourceProfiles(d, cluster); err != nil {
+	if err := d.setResourceStateProfiles(cluster); err != nil {
 		t.Fatalf("setProfiles failed: %+v", err)
 	}
 	v, ok := d.GetOk("master_profile.0.dns_name_prefix")
@@ -465,14 +461,80 @@ func TestSetResourceProfiles(t *testing.T) {
 func TestSetDataSourceProfiles(t *testing.T) {
 	dnsPrefix := "lessCreativeMasterDNSPrefix"
 	d := mockClusterResourceData("name1", "westus", "testrg", "creativeMasterDNSPrefix")
-	cluster := utils.MockContainerService("name2", "southcentralus", dnsPrefix)
+	cluster := mockCluster("name2", "southcentralus", dnsPrefix)
 
-	if err := setDataSourceProfiles(d, cluster); err != nil {
+	if err := d.setDataSourceStateProfiles(cluster); err != nil {
 		t.Fatalf("setProfiles failed: %+v", err)
 	}
 	v, ok := d.GetOk("master_profile.0.dns_name_prefix")
 	assert.True(t, ok, "failed to get 'master_profile.0.dns_name_prefix'")
 	assert.Equal(t, dnsPrefix, v.(string), "'master_profile.0.dns_name_prefix' is not set correctly")
+}
+
+func TestAddValue(t *testing.T) {
+	parameters := map[string]interface{}{}
+
+	addValue(parameters, "key", "data")
+
+	v, ok := parameters["key"]
+	assert.True(t, ok, "could not find key")
+	val := v.(map[string]interface{})
+	assert.Equal(t, val["value"], "data", "value not set correctly")
+}
+
+func TestExpandTemplateBodies(t *testing.T) {
+	body := `{
+		"groceries": {
+			"quinoa": "5",
+			"pasta": "2"
+		}
+	}`
+
+	template, parameters, err := expandTemplates(body, body)
+	if err != nil {
+		t.Fatalf("expand templates failed: %+v", err)
+	}
+
+	v, ok := parameters["groceries"]
+	assert.True(t, ok, "could not find `groceries`")
+	paramsGroceries := v.(map[string]interface{})
+	assert.Equal(t, len(paramsGroceries), 2, fmt.Sprintf("length of grocery list is not correct: expected 2 and found %d", len(paramsGroceries)))
+	v, ok = paramsGroceries["quinoa"]
+	assert.True(t, ok, "could not find `quinoa`")
+	assert.Equal(t, v.(string), "5")
+
+	v, ok = template["groceries"]
+	assert.True(t, ok, "could not find `groceries`")
+	templateGroceries := v.(map[string]interface{})
+	if len(templateGroceries) != 2 {
+		t.Fatalf("length of grocery list is not correct: expected 2 and found %d", len(templateGroceries))
+	}
+	assert.Equal(t, len(templateGroceries), 2)
+	v, ok = templateGroceries["pasta"]
+	assert.True(t, ok, "could not find `pasta`")
+	assert.Equal(t, v.(string), "2")
+}
+
+func TestExpandBody(t *testing.T) {
+	body := `{
+		"groceries": {
+			"bananas": "5",
+			"pasta": "2"
+		}
+	}`
+
+	expandedBody, err := expandBody(body)
+	if err != nil {
+		t.Fatalf("%+v", err)
+	}
+
+	v, ok := expandedBody["groceries"]
+	assert.True(t, ok, "could not find `groceries`")
+	groceries := v.(map[string]interface{})
+	assert.Equal(t, len(groceries), 2)
+	v, ok = groceries["bananas"]
+	assert.True(t, ok, "could not find `bananas`")
+	assert.Equal(t, v.(string), "5")
 }
 
 func testCertificateProfile() *api.CertificateProfile {

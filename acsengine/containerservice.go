@@ -2,13 +2,32 @@ package acsengine
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"log"
+	"os"
+	"path"
 
+	"github.com/Azure/acs-engine/pkg/acsengine"
+	"github.com/Azure/acs-engine/pkg/acsengine/transform"
 	"github.com/Azure/acs-engine/pkg/api"
 	"github.com/Azure/acs-engine/pkg/api/common"
 	"github.com/Azure/acs-engine/pkg/i18n"
 	"github.com/hashicorp/terraform/helper/schema"
 )
+
+// Cluster ...
+type Cluster struct {
+	*api.ContainerService
+
+	ResourceGroup string
+}
+
+// ResourceData ...
+type ResourceData struct {
+	*schema.ResourceData
+}
 
 func flattenLinuxProfile(profile api.LinuxProfile) ([]interface{}, error) {
 	adminUsername := profile.AdminUsername
@@ -142,7 +161,7 @@ func flattenDataSourceServicePrincipal(profile api.ServicePrincipalProfile) ([]i
 	return profiles, nil
 }
 
-func expandLinuxProfile(d *schema.ResourceData) (api.LinuxProfile, error) {
+func expandLinuxProfile(d *ResourceData) (api.LinuxProfile, error) {
 	var profiles []interface{}
 	v, ok := d.GetOk("linux_profile")
 	if !ok {
@@ -177,7 +196,7 @@ func expandLinuxProfile(d *schema.ResourceData) (api.LinuxProfile, error) {
 	return profile, nil
 }
 
-func expandWindowsProfile(d *schema.ResourceData) (*api.WindowsProfile, error) {
+func expandWindowsProfile(d *ResourceData) (*api.WindowsProfile, error) {
 	var profiles []interface{}
 	v, ok := d.GetOk("windows_profile")
 	if !ok { // maybe don't return error here?
@@ -197,7 +216,7 @@ func expandWindowsProfile(d *schema.ResourceData) (*api.WindowsProfile, error) {
 	return profile, nil
 }
 
-func expandServicePrincipal(d *schema.ResourceData) (api.ServicePrincipalProfile, error) {
+func expandServicePrincipal(d *ResourceData) (api.ServicePrincipalProfile, error) {
 	var configs []interface{}
 	v, ok := d.GetOk("service_principal")
 	if !ok {
@@ -217,7 +236,7 @@ func expandServicePrincipal(d *schema.ResourceData) (api.ServicePrincipalProfile
 	return principal, nil
 }
 
-func expandMasterProfile(d *schema.ResourceData) (api.MasterProfile, error) {
+func expandMasterProfile(d *ResourceData) (api.MasterProfile, error) {
 	var configs []interface{}
 	v, ok := d.GetOk("master_profile")
 	if !ok {
@@ -244,7 +263,7 @@ func expandMasterProfile(d *schema.ResourceData) (api.MasterProfile, error) {
 	return profile, nil
 }
 
-func expandAgentPoolProfiles(d *schema.ResourceData) ([]*api.AgentPoolProfile, error) {
+func expandAgentPoolProfiles(d *ResourceData) ([]*api.AgentPoolProfile, error) {
 	var configs []interface{}
 	v, ok := d.GetOk("agent_pool_profiles")
 	if !ok {
@@ -278,22 +297,59 @@ func expandAgentPoolProfiles(d *schema.ResourceData) ([]*api.AgentPoolProfile, e
 	return profiles, nil
 }
 
+func addValue(params map[string]interface{}, k string, v interface{}) {
+	params[k] = map[string]interface{}{
+		"value": v,
+	}
+}
+
+func expandTemplates(template string, parameters string) (map[string]interface{}, map[string]interface{}, error) {
+	templateBody, err := expandBody(template)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error expanding the template_body for Azure RM Template Deployment: %+v", err)
+	}
+	parametersBody, err := expandBody(parameters)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error expanding the parameters_body for Azure RM Template Deployment: %+v", err)
+	}
+	return templateBody, parametersBody, nil
+}
+
+func expandBody(body string) (map[string]interface{}, error) {
+	var bodyMap map[string]interface{}
+	if err := json.Unmarshal([]byte(body), &bodyMap); err != nil {
+		return nil, err
+	}
+	return bodyMap, nil
+}
+
 // I feel kind of funny about having these functions here
 
-func setContainerService(d *schema.ResourceData) (*api.ContainerService, error) {
-	var name, location, kubernetesVersion string
+func newResourceData(data *schema.ResourceData) *ResourceData {
+	return &ResourceData{
+		ResourceData: data,
+	}
+}
+
+func (d *ResourceData) setContainerService() (Cluster, error) {
+	var name, location, resourceGroup, kubernetesVersion string
 	var v interface{}
 	var ok bool
 
 	if v, ok = d.GetOk("name"); !ok {
-		return &api.ContainerService{}, fmt.Errorf("cluster 'name' not found")
+		return Cluster{}, fmt.Errorf("cluster 'name' not found")
 	}
 	name = v.(string)
 
 	if v, ok = d.GetOk("location"); !ok {
-		return &api.ContainerService{}, fmt.Errorf("cluster 'location' not found")
+		return Cluster{}, fmt.Errorf("cluster 'location' not found")
 	}
 	location = azureRMNormalizeLocation(v.(string)) // from location.go
+
+	if v, ok = d.GetOk("resource_group"); !ok {
+		return Cluster{}, fmt.Errorf("cluster 'resource_group' not found")
+	}
+	resourceGroup = v.(string)
 
 	if v, ok = d.GetOk("kubernetes_version"); ok {
 		kubernetesVersion = v.(string)
@@ -303,41 +359,44 @@ func setContainerService(d *schema.ResourceData) (*api.ContainerService, error) 
 
 	linuxProfile, err := expandLinuxProfile(d)
 	if err != nil {
-		return nil, fmt.Errorf("error expanding `linux_profile: %+v`", err)
+		return Cluster{}, fmt.Errorf("error expanding `linux_profile: %+v`", err)
 	}
 	windowsProfile, err := expandWindowsProfile(d)
 	if err != nil {
-		return nil, fmt.Errorf("error expanding `windows_profile: %+v`", err)
+		return Cluster{}, fmt.Errorf("error expanding `windows_profile: %+v`", err)
 	}
 	servicePrincipal, err := expandServicePrincipal(d)
 	if err != nil {
-		return nil, fmt.Errorf("error expanding `service_principal: %+v`", err)
+		return Cluster{}, fmt.Errorf("error expanding `service_principal: %+v`", err)
 	}
 	masterProfile, err := expandMasterProfile(d)
 	if err != nil {
-		return nil, fmt.Errorf("error expanding `master_profile: %+v`", err)
+		return Cluster{}, fmt.Errorf("error expanding `master_profile: %+v`", err)
 	}
 	agentProfiles, err := expandAgentPoolProfiles(d)
 	if err != nil {
-		return nil, fmt.Errorf("error expanding `agent_pool_profiles: %+v`", err)
+		return Cluster{}, fmt.Errorf("error expanding `agent_pool_profiles: %+v`", err)
 	}
 
-	tags := getTags(d)
+	tags := d.getTags()
 
-	cluster := &api.ContainerService{
-		Name:     name,
-		Location: location,
-		Properties: &api.Properties{
-			LinuxProfile:            &linuxProfile,
-			ServicePrincipalProfile: &servicePrincipal,
-			MasterProfile:           &masterProfile,
-			AgentPoolProfiles:       agentProfiles,
-			OrchestratorProfile: &api.OrchestratorProfile{
-				OrchestratorType:    "Kubernetes",
-				OrchestratorVersion: kubernetesVersion,
+	cluster := Cluster{
+		ContainerService: &api.ContainerService{
+			Name:     name,
+			Location: location,
+			Properties: &api.Properties{
+				LinuxProfile:            &linuxProfile,
+				ServicePrincipalProfile: &servicePrincipal,
+				MasterProfile:           &masterProfile,
+				AgentPoolProfiles:       agentProfiles,
+				OrchestratorProfile: &api.OrchestratorProfile{
+					OrchestratorType:    "Kubernetes",
+					OrchestratorVersion: kubernetesVersion,
+				},
 			},
+			Tags: expandClusterTags(tags),
 		},
-		Tags: expandClusterTags(tags),
+		ResourceGroup: resourceGroup,
 	}
 
 	if windowsProfile != nil {
@@ -347,10 +406,10 @@ func setContainerService(d *schema.ResourceData) (*api.ContainerService, error) 
 	return cluster, nil
 }
 
-func loadContainerServiceFromApimodel(d *schema.ResourceData, validate, isUpdate bool) (*api.ContainerService, error) {
+func (d *ResourceData) loadContainerServiceFromApimodel(validate, isUpdate bool) (Cluster, error) {
 	locale, err := i18n.LoadTranslations()
 	if err != nil {
-		return &api.ContainerService{}, fmt.Errorf("error loading translations: %+v", err)
+		return Cluster{}, fmt.Errorf("error loading translations: %+v", err)
 	}
 	apiloader := &api.Apiloader{
 		Translator: &i18n.Translator{
@@ -361,13 +420,14 @@ func loadContainerServiceFromApimodel(d *schema.ResourceData, validate, isUpdate
 	if v, ok := d.GetOk("api_model"); ok {
 		apimodel, err = base64.StdEncoding.DecodeString(v.(string))
 		if err != nil {
-			return &api.ContainerService{}, fmt.Errorf("error decoding `api_model`: %+v", err)
+			return Cluster{}, fmt.Errorf("error decoding `api_model`: %+v", err)
 		}
 	}
 
-	cluster, err := apiloader.LoadContainerService(apimodel, apiVersion, validate, isUpdate, nil)
+	cluster := Cluster{}
+	cluster.ContainerService, err = apiloader.LoadContainerService(apimodel, apiVersion, validate, isUpdate, nil)
 	if err != nil {
-		return &api.ContainerService{}, fmt.Errorf("error loading container service from apimodel bytes: %+v", err)
+		return Cluster{}, fmt.Errorf("error loading container service from apimodel bytes: %+v", err)
 	}
 
 	// make sure the location is normalized
@@ -375,7 +435,7 @@ func loadContainerServiceFromApimodel(d *schema.ResourceData, validate, isUpdate
 	return cluster, nil
 }
 
-func setAPIModel(d *schema.ResourceData, cluster *api.ContainerService) error {
+func (d *ResourceData) setStateAPIModel(cluster *Cluster) error {
 	locale, err := i18n.LoadTranslations()
 	if err != nil {
 		return fmt.Errorf("error loading translations: %+v", err)
@@ -386,7 +446,7 @@ func setAPIModel(d *schema.ResourceData, cluster *api.ContainerService) error {
 			Locale: locale,
 		},
 	}
-	apimodel, err := apiloader.SerializeContainerService(cluster, apiVersion)
+	apimodel, err := apiloader.SerializeContainerService(cluster.ContainerService, apiVersion)
 	if err != nil {
 		return fmt.Errorf("error serializing API model: %+v", err)
 	}
@@ -397,7 +457,7 @@ func setAPIModel(d *schema.ResourceData, cluster *api.ContainerService) error {
 	return nil
 }
 
-func setProfiles(d *schema.ResourceData, cluster *api.ContainerService) error {
+func (d *ResourceData) setStateProfiles(cluster *Cluster) error {
 	linuxProfile, err := flattenLinuxProfile(*cluster.Properties.LinuxProfile)
 	if err != nil {
 		return fmt.Errorf("Error flattening `linux_profile`: %+v", err)
@@ -435,8 +495,8 @@ func setProfiles(d *schema.ResourceData, cluster *api.ContainerService) error {
 	return nil
 }
 
-func setResourceProfiles(d *schema.ResourceData, cluster *api.ContainerService) error {
-	if err := setProfiles(d, cluster); err != nil {
+func (d *ResourceData) setResourceStateProfiles(cluster *Cluster) error {
+	if err := d.setStateProfiles(cluster); err != nil {
 		return err
 	}
 
@@ -451,8 +511,8 @@ func setResourceProfiles(d *schema.ResourceData, cluster *api.ContainerService) 
 	return nil
 }
 
-func setDataSourceProfiles(d *schema.ResourceData, cluster *api.ContainerService) error {
-	if err := setProfiles(d, cluster); err != nil {
+func (d *ResourceData) setDataSourceStateProfiles(cluster *Cluster) error {
+	if err := d.setStateProfiles(cluster); err != nil {
 		return err
 	}
 
@@ -465,4 +525,96 @@ func setDataSourceProfiles(d *schema.ResourceData, cluster *api.ContainerService
 	}
 
 	return nil
+}
+
+func (cluster *Cluster) writeTemplatesAndCerts(template string, parameters string, deploymentDirectory string, certsGenerated bool) error {
+	locale, err := i18n.LoadTranslations()
+	if err != nil {
+		return fmt.Errorf("error loading translations: %+v", err)
+	}
+
+	// save templates and certificates
+	writer := &acsengine.ArtifactWriter{
+		Translator: &i18n.Translator{
+			Locale: locale,
+		},
+	}
+	if err = writer.WriteTLSArtifacts(cluster.ContainerService, apiVersion, template, parameters, deploymentDirectory, certsGenerated, false); err != nil {
+		return fmt.Errorf("error writing artifacts: %+v", err)
+	}
+
+	return nil
+}
+
+func (cluster *Cluster) formatTemplates(buildParamsFile bool) (string, string, bool, error) {
+	locale, err := i18n.LoadTranslations()
+	if err != nil {
+		return "", "", false, fmt.Errorf("error loading translations: %+v", err)
+	}
+	ctx := acsengine.Context{
+		Translator: &i18n.Translator{
+			Locale: locale,
+		},
+	}
+
+	templateGenerator, err := acsengine.InitializeTemplateGenerator(ctx, false)
+	if err != nil {
+		return "", "", false, fmt.Errorf("failed to initialize template generator: %+v", err)
+	}
+	template, parameters, certsGenerated, err := templateGenerator.GenerateTemplate(cluster.ContainerService, acsengine.DefaultGeneratorCode, false, false, acsEngineVersion)
+	if err != nil {
+		return "", "", false, fmt.Errorf("error generating templates: %+v", err)
+	}
+
+	if template, err = transform.PrettyPrintArmTemplate(template); err != nil {
+		return "", "", false, fmt.Errorf("error pretty printing template: %+v", err)
+	}
+	if buildParamsFile {
+		if parameters, err = transform.BuildAzureParametersFile(parameters); err != nil {
+			return "", "", false, fmt.Errorf("error pretty printing template parameters: %+v", err)
+		}
+	}
+
+	return template, parameters, certsGenerated, nil
+}
+
+func (cluster *Cluster) saveTemplates(d *ResourceData, deploymentDirectory string) error {
+	template, parameters, certsGenerated, err := cluster.formatTemplates(true)
+	if err != nil {
+		return fmt.Errorf("failed to format templates: %+v", err)
+	}
+
+	if err = cluster.writeTemplatesAndCerts(template, parameters, deploymentDirectory, certsGenerated); err != nil {
+		return fmt.Errorf("error writing templates and certificates: %+v", err)
+	}
+	if err = d.setStateAPIModel(cluster); err != nil {
+		return fmt.Errorf("error setting API model: %+v", err)
+	}
+
+	return nil
+}
+
+func getAPIModelFromFile(deploymentDirectory string) (string, error) {
+	APIModelPath := path.Join(deploymentDirectory, "apimodel.json")
+	if _, err := os.Stat(APIModelPath); os.IsNotExist(err) {
+		return "", fmt.Errorf("specified api model does not exist (%s)", APIModelPath)
+	}
+	f, err := os.Open(APIModelPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to open file: %+v", err)
+	}
+	defer func() { // weirdness is because I need to check return value for linter
+		err := f.Close()
+		if err != nil {
+			log.Fatalf("error closing file: %+v", err)
+		}
+	}()
+
+	b, err := ioutil.ReadAll(f)
+	if err != nil {
+		return "", fmt.Errorf("failed to read file: %+v", err)
+	}
+	apimodel := base64Encode(string(b))
+
+	return apimodel, nil
 }

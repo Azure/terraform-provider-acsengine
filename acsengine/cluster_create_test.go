@@ -28,7 +28,8 @@ func TestGenerateTemplateBasic(t *testing.T) {
 	}
 
 	r := resourceArmACSEngineKubernetesCluster()
-	d := r.TestResourceData()
+	data := r.TestResourceData()
+	d := newResourceData(data)
 
 	for _, tc := range cases {
 		d.Set("name", tc.Name)
@@ -54,7 +55,12 @@ func TestGenerateTemplateBasic(t *testing.T) {
 		agentPoolProfiles = append(agentPoolProfiles, agentPoolProfile1)
 		d.Set("agent_pool_profiles", &agentPoolProfiles)
 
-		template, parameters, err := generateACSEngineTemplate(d, false) // don't write files
+		cluster, err := d.setContainerService()
+		if err != nil {
+			t.Fatalf("failed to set cluster")
+		}
+
+		template, parameters, err := generateACSEngineTemplate(cluster, false) // don't write files
 		if err != nil {
 			t.Fatalf("Template generation failed: %v", err)
 		}
@@ -94,7 +100,8 @@ func TestGenerateTemplateCustomized(t *testing.T) {
 	}
 
 	r := resourceArmACSEngineKubernetesCluster()
-	d := r.TestResourceData()
+	data := r.TestResourceData()
+	d := newResourceData(data)
 
 	for _, tc := range cases {
 		d.Set("name", tc.Name)
@@ -120,7 +127,12 @@ func TestGenerateTemplateCustomized(t *testing.T) {
 		agentPoolProfiles = append(agentPoolProfiles, agentPoolProfile1)
 		d.Set("agent_pool_profiles", &agentPoolProfiles)
 
-		template, parameters, err := generateACSEngineTemplate(d, false) // don't write files
+		cluster, err := d.setContainerService()
+		if err != nil {
+			t.Fatalf("failed to set cluster")
+		}
+
+		template, parameters, err := generateACSEngineTemplate(cluster, false) // don't write files
 		if err != nil {
 			t.Fatalf("Template generation failed: %v", err)
 		}

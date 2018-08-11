@@ -2,12 +2,12 @@ package acsengine
 
 import (
 	"github.com/Azure/terraform-provider-acsengine/acsengine/utils"
-	"github.com/hashicorp/terraform/helper/schema"
 )
 
-func mockClusterResourceData(name string, location string, resourceGroup string, dnsPrefix string) *schema.ResourceData {
+func mockClusterResourceData(name, location, resourceGroup, dnsPrefix string) *ResourceData {
 	r := resourceArmACSEngineKubernetesCluster()
-	d := r.TestResourceData()
+	data := r.TestResourceData()
+	d := newResourceData(data)
 
 	d.Set("name", name)
 	d.Set("location", location)
@@ -44,4 +44,11 @@ func mockClusterResourceData(name string, location string, resourceGroup string,
 	d.Set("api_model", base64Encode(apimodel))
 
 	return d
+}
+
+func mockCluster(name, location, dnsPrefix string) *Cluster {
+	cluster := utils.MockContainerService(name, location, dnsPrefix)
+	return &Cluster{
+		ContainerService: cluster,
+	}
 }
