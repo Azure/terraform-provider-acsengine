@@ -9,6 +9,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/profiles/latest/keyvault/mgmt/keyvault"
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/adal"
@@ -32,6 +33,7 @@ type ArmClient struct {
 	deploymentsClient    resources.DeploymentsClient
 	providersClient      resources.ProvidersClient
 	resourceGroupsClient resources.GroupsClient
+	keyVaultClient       keyvault.VaultsClient
 }
 
 func (c *ArmClient) configureClient(client *autorest.Client, auth autorest.Authorizer) {
@@ -153,13 +155,24 @@ func getArmClient(c *authentication.Config) (*ArmClient, error) {
 		return nil, fmt.Errorf("Unable to configure OAuthConfig for tenant %s", c.TenantID)
 	}
 
+	sender := autorest.CreateSender(withRequestLogging())
+
 	endpoint := env.ResourceManagerEndpoint
 	auth, err := getAuthorizationToken(c, oauthConfig, endpoint)
 	if err != nil {
 		return nil, err
 	}
 
+	keyVaultAuth := autorest.NewBearerAuthorizerCallback(sender, func(tenantID, resource string) (*autorest.BearerAuthorizer, error) {
+		keyVaultSpt, err := getAuthorizationToken(c, oauthConfig, resource)
+		if err != nil {
+			return nil, err
+		}
+		return keyVaultSpt, nil
+	})
+
 	client.registerResourcesClients(endpoint, c.SubscriptionID, auth)
+	client.registerKeyVaultClients(endpoint, c.SubscriptionID, auth, keyVaultAuth, sender)
 
 	return &client, nil
 }
@@ -176,4 +189,13 @@ func (c *ArmClient) registerResourcesClients(endpoint, subscriptionID string, au
 	providersClient := resources.NewProvidersClientWithBaseURI(endpoint, subscriptionID)
 	c.configureClient(&providersClient.Client, auth)
 	c.providersClient = providersClient
+}
+
+func (c *ArmClient) registerKeyVaultClients(endpoint, subscriptionID string, auth autorest.Authorizer, keyVaultAuth autorest.Authorizer, sender autorest.Sender) {
+	keyVaultClient := keyvault.NewVaultsClientWithBaseURI(endpoint, subscriptionID)
+	setUserAgent(&keyVaultClient.Client)
+	keyVaultClient.Authorizer = auth
+	keyVaultClient.Sender = sender
+	keyVaultClient.SkipResourceProviderRegistration = c.skipProviderRegistration
+	c.keyVaultClient = keyVaultClient
 }

@@ -108,12 +108,28 @@ func resourceArmACSEngineKubernetesCluster() *schema.Resource {
 							Required: true,
 							ForceNew: true,
 						},
-						"client_secret": {
+						"client_secret": { // I need to delete this
 							Type:      schema.TypeString,
 							Required:  true,
 							ForceNew:  true,
 							Sensitive: true,
 						},
+						// keyVaultSecretRef will replace client secret in actual configuration
+						"vault_id": {
+							Type:      schema.TypeString,
+							Required:  true,
+							ForceNew:  true,
+							Sensitive: true,
+						},
+						"secret_name": {
+							Type:     schema.TypeString,
+							Required: true,
+							ForceNew: true,
+						},
+						// "version": {
+						// 	Type:     schema.TypeString,
+						// 	Optional: true,
+						// },
 					},
 				},
 			},
@@ -199,28 +215,29 @@ func resourceArmACSEngineKubernetesCluster() *schema.Resource {
 				},
 			},
 
-			"key_vault": {
-				Type:     schema.TypeList,
-				Required: true,
-				MaxItems: 1,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"name": {
-							Type:     schema.TypeString,
-							Required: true, // I could also make this optional and computed
-						},
-						"tenant_id": {
-							Type:     schema.TypeString,
-							Required: true,
-						},
-						"vault_uri": {
-							Type:      schema.TypeString,
-							Computed:  true,
-							Sensitive: true,
-						},
-					},
-				},
-			},
+			// "key_vault": {
+			// 	Type:     schema.TypeList,
+			// 	Required: true,
+			// 	// Optional: true, // for now
+			// 	MaxItems: 1,
+			// 	Elem: &schema.Resource{
+			// 		Schema: map[string]*schema.Schema{
+			// 			"name": {
+			// 				Type:     schema.TypeString,
+			// 				Required: true, // I could also make this optional and computed
+			// 			},
+			// 			"tenant_id": {
+			// 				Type:     schema.TypeString,
+			// 				Required: true,
+			// 			},
+			// 			"vault_uri": {
+			// 				Type:      schema.TypeString,
+			// 				Computed:  true,
+			// 				Sensitive: true,
+			// 			},
+			// 		},
+			// 	},
+			// },
 
 			"kube_config": {
 				Type:     schema.TypeList,
@@ -296,6 +313,8 @@ func resourceACSEngineK8sClusterCreate(data *schema.ResourceData, m interface{})
 	if err = d.setStateAPIModel(&cluster); err != nil {
 		return fmt.Errorf("error setting API model: %+v", err)
 	}
+
+	// store keys in key vault
 
 	id, err := deployTemplate(client, cluster.Name, cluster.ResourceGroup, template, parameters)
 	if err != nil {

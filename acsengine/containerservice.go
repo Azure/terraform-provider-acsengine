@@ -78,6 +78,9 @@ func flattenWindowsProfile(profile *api.WindowsProfile) ([]interface{}, error) {
 func flattenServicePrincipal(profile api.ServicePrincipalProfile) ([]interface{}, error) {
 	clientID := profile.ClientID
 	clientSecret := profile.Secret
+	vaultID := profile.KeyvaultSecretRef.VaultID
+	secretName := profile.KeyvaultSecretRef.SecretName
+	// version := profile.KeyvaultSecretRef.SecretVersion
 	if clientID == "" || clientSecret == "" {
 		return nil, fmt.Errorf("Service principal not set correctly")
 	}
@@ -87,6 +90,8 @@ func flattenServicePrincipal(profile api.ServicePrincipalProfile) ([]interface{}
 	values := map[string]interface{}{}
 	values["client_id"] = clientID
 	values["client_secret"] = clientSecret
+	values["vault_id"] = vaultID
+	values["secret_name"] = secretName
 
 	profiles = append(profiles, values)
 
@@ -199,7 +204,7 @@ func expandLinuxProfile(d *ResourceData) (api.LinuxProfile, error) {
 func expandWindowsProfile(d *ResourceData) (*api.WindowsProfile, error) {
 	var profiles []interface{}
 	v, ok := d.GetOk("windows_profile")
-	if !ok { // maybe don't return error here?
+	if !ok { // don't return error because this shows there's no Windows profile
 		return nil, nil
 	}
 	profiles = v.([]interface{})
