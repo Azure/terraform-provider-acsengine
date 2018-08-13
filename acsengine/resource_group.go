@@ -2,6 +2,7 @@ package acsengine
 
 import (
 	"fmt"
+	"log"
 	"regexp"
 	"strings"
 
@@ -53,6 +54,7 @@ func resourceAzurermResourceGroupNameDiffSuppress(k, old, new string, d *schema.
 
 func createClusterResourceGroup(d *ResourceData, client *ArmClient) error {
 	rgClient := client.resourceGroupsClient
+	log.Printf("[INFO] preparing arugments for Azure resource group creation.")
 
 	var v interface{}
 	var ok bool
