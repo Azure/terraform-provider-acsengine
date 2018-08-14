@@ -26,8 +26,11 @@ type ScaleClient struct {
 }
 
 // NewScaleClient returns a new ScaleClient
-func NewScaleClient() *ScaleClient {
-	return &ScaleClient{}
+func NewScaleClient(secret string) *ScaleClient {
+	acsengineClient := NewACSEngineClient(secret)
+	return &ScaleClient{
+		ACSEngineClient: *acsengineClient,
+	}
 }
 
 // SetScaleClient sets values in acsengine scale client

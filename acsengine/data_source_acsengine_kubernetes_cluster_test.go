@@ -2,7 +2,6 @@ package acsengine
 
 import (
 	"fmt"
-	"os"
 	"strconv"
 	"testing"
 
@@ -12,11 +11,11 @@ import (
 
 func TestAccDataSourceACSEngineK8sCluster_basic(t *testing.T) {
 	ri := acctest.RandInt()
-	clientID := os.Getenv("ARM_CLIENT_ID")
-	clientSecret := os.Getenv("ARM_CLIENT_SECRET")
-	location := os.Getenv("ARM_TEST_LOCATION")
-	keyData := os.Getenv("SSH_KEY_PUB")
-	config := testAccDataSourceACSEngineK8sClusterBasic(ri, clientID, clientSecret, location, keyData)
+	clientID := testClientID()
+	location := testLocation()
+	keyData := testSSHPublicKey()
+	vaultID := testKeyVaultID()
+	config := testAccDataSourceACSEngineK8sClusterBasic(ri, clientID, location, keyData, vaultID)
 	dataSourceName := fmt.Sprintf("data.acsengine_kubernetes_cluster.test%d", ri)
 
 	resource.Test(t, resource.TestCase{
@@ -39,8 +38,8 @@ func TestAccDataSourceACSEngineK8sCluster_basic(t *testing.T) {
 	})
 }
 
-func testAccDataSourceACSEngineK8sClusterBasic(rInt int, clientID string, clientSecret string, location string, keyData string) string {
-	resource := testAccACSEngineK8sClusterBasic(rInt, clientID, clientSecret, location, keyData)
+func testAccDataSourceACSEngineK8sClusterBasic(rInt int, clientID, location, keyData, vaultID string) string {
+	resource := testAccACSEngineK8sClusterBasic(rInt, clientID, location, keyData, vaultID)
 	resourceName := resourceName(rInt)
 	return fmt.Sprintf(`%s
 	

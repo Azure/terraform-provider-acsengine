@@ -16,7 +16,7 @@ func TestACSEngineK8sCluster_setUpgradeClient(t *testing.T) {
 	id := fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Resources/deployments/%s", os.Getenv("ARM_SUBSCRIPTION_ID"), resourceGroup, "clusterName")
 	upgradeVersion := "1.9.8"
 
-	uc := NewUpgradeClient()
+	uc := NewUpgradeClient(os.Getenv("ARM_CLIENT_SECRET"))
 	err := uc.SetUpgradeClient(cluster, id, upgradeVersion)
 	if err != nil {
 		t.Fatalf("setUpgradeClient failed: %+v", err)

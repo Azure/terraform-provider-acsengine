@@ -15,7 +15,7 @@ func TestSetACSEngineClient(t *testing.T) {
 	cluster := utils.MockContainerService("clusterName", "southcentralus", masterDNSPrefix)
 	id := fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Resources/deployments/%s", os.Getenv("ARM_SUBSCRIPTION_ID"), resourceGroup, "clusterName")
 
-	c := NewACSEngineClient()
+	c := NewACSEngineClient(os.Getenv("ARM_CLIENT_SECRET"))
 
 	if err := c.SetACSEngineClient(cluster, id); err != nil {
 		t.Fatalf("initializeScaleClient failed: %+v", err)
@@ -29,7 +29,7 @@ func TestSetACSEngineClientBadID(t *testing.T) {
 	masterDNSPrefix := "masterDNSPrefix"
 	cluster := utils.MockContainerService("clusterName", "southcentralus", masterDNSPrefix)
 
-	c := NewACSEngineClient()
+	c := NewACSEngineClient(os.Getenv("ARM_CLIENT_SECRET"))
 
 	if err := c.SetACSEngineClient(cluster, ""); err == nil {
 		t.Fatalf("initializeScaleClient should have failed")

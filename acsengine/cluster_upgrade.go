@@ -8,13 +8,20 @@ import (
 	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/client"
 )
 
-func upgradeCluster(d *ResourceData, upgradeVersion string) error {
+func upgradeCluster(d *ResourceData, c *ArmClient, upgradeVersion string) error {
 	cluster, err := d.loadContainerServiceFromApimodel(true, true)
 	if err != nil {
 		return fmt.Errorf("error parsing the api model: %+v", err)
 	}
 
-	uc := client.NewUpgradeClient()
+	// get key vault secret here
+	// get client secret first?
+	clientSecret, err := getKey(c, cluster.Properties.ServicePrincipalProfile.KeyvaultSecretRef)
+	if err != nil {
+		return fmt.Errorf("error getting service principal key: %+v", err)
+	}
+
+	uc := client.NewUpgradeClient(clientSecret)
 	if err := uc.SetUpgradeClient(cluster.ContainerService, d.Id(), upgradeVersion); err != nil {
 		return fmt.Errorf("error initializing upgrade client: %+v", err)
 	}

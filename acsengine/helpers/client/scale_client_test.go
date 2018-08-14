@@ -17,7 +17,7 @@ func TestSetScaleClient(t *testing.T) {
 
 	agentIndex := 0
 	desiredAgentCount := 2
-	sc := NewScaleClient()
+	sc := NewScaleClient(os.Getenv("ARM_CLIENT_SECRET"))
 	if err := sc.SetScaleClient(cluster, id, agentIndex, desiredAgentCount); err != nil {
 		t.Fatalf("setScaleClient failed: %+v", err)
 	}

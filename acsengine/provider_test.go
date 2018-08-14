@@ -132,6 +132,8 @@ func testAccPreCheck(t *testing.T) {
 		"ARM_SUBSCRIPTION_ID",
 		"ARM_TENANT_ID",
 		"ARM_TEST_LOCATION",
+		"ARM_TEST_VAULT_URI", // might not need this
+		"ARM_TEST_VAULT_ID",
 		"SSH_KEY_PUB",
 	}
 
@@ -141,6 +143,7 @@ func testAccPreCheck(t *testing.T) {
 			t.Fatalf("`%s` must be set for acceptance tests!", variable)
 		}
 	}
+	// ideally check that key vault actually exists
 }
 
 func testClientID() string {
@@ -157,6 +160,18 @@ func testLocation() string {
 
 func testSSHPublicKey() string {
 	return os.Getenv("SSH_KEY_PUB")
+}
+
+func testTenantID() string {
+	return os.Getenv("ARM_TENANT_ID")
+}
+
+func testKeyVaultURI() string {
+	return os.Getenv("ARM_TEST_VAULT_URI")
+}
+
+func testKeyVaultID() string {
+	return os.Getenv("ARM_TEST_VAULT_ID")
 }
 
 func testArmEnvironmentName() string {

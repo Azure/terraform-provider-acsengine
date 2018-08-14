@@ -18,7 +18,13 @@ func scaleCluster(d *ResourceData, c *ArmClient, agentIndex, agentCount int) err
 		return fmt.Errorf("error parsing the api model: %+v", err)
 	}
 
-	sc := client.NewScaleClient()
+	// get client secret first?
+	clientSecret, err := getKey(c, cluster.Properties.ServicePrincipalProfile.KeyvaultSecretRef)
+	if err != nil {
+		return fmt.Errorf("error getting service principal key: %+v", err)
+	}
+
+	sc := client.NewScaleClient(clientSecret)
 	if err = sc.SetScaleClient(cluster.ContainerService, d.Id(), agentIndex, agentCount); err != nil {
 		return fmt.Errorf("failed to initialize scale client: %+v", err)
 	}

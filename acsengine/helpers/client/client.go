@@ -32,8 +32,11 @@ type ACSEngineClient struct {
 }
 
 // NewACSEngineClient returns a new acs-engine cluster client
-func NewACSEngineClient() *ACSEngineClient {
-	return &ACSEngineClient{}
+func NewACSEngineClient(secret string) *ACSEngineClient {
+	authArgs := NewAuthArgs(secret)
+	return &ACSEngineClient{
+		AuthArgs: *authArgs,
+	}
 }
 
 // AddACSEngineClientAuthArgs adds auth args and sets up client

@@ -97,8 +97,8 @@ func TestFlattenServicePrincipal(t *testing.T) {
 	}()
 
 	clientID := "client id"
-	clientSecret := "secret"
-	profile := utils.ExpandServicePrincipal(clientID, clientSecret)
+	vaultID := "vault id"
+	profile := utils.ExpandServicePrincipal(clientID, vaultID)
 
 	servicePrincipal, err := flattenServicePrincipal(profile)
 	if err != nil {
@@ -127,8 +127,8 @@ func TestFlattenDataSourceServicePrincipal(t *testing.T) {
 	}()
 
 	clientID := "client id"
-	clientSecret := "secret"
-	profile := utils.ExpandServicePrincipal(clientID, clientSecret)
+	vaultID := "id"
+	profile := utils.ExpandServicePrincipal(clientID, vaultID)
 
 	servicePrincipal, err := flattenDataSourceServicePrincipal(profile)
 	if err != nil {

@@ -52,7 +52,7 @@ func TestValidateAuthArgs(t *testing.T) {
 				},
 			},
 		}
-		auth := NewAuthArgs()
+		auth := NewAuthArgs(tc.ClientSecret)
 		auth.AddAuthArgs(cluster, id)
 		auth.RawSubscriptionID = tc.RawSubscriptionID
 		auth.AuthMethod = tc.AuthMethod

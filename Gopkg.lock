@@ -37,7 +37,7 @@
   revision = "ccb5dc0cb3189100a0478798fe5e8da506262f78"
 
 [[projects]]
-  digest = "1:8ec7ce67dd76378ef491c18ff1bdcc44af54c17751a1a91bd8665cdf32fa4548"
+  digest = "1:631fcce6414c9e41d34a12900baaa8a248f0c4e356b8bcc073746e8446fd3dbf"
   name = "github.com/Azure/azure-sdk-for-go"
   packages = [
     "profiles/latest/keyvault/mgmt/keyvault",
@@ -45,6 +45,7 @@
     "services/authorization/mgmt/2015-07-01/authorization",
     "services/compute/mgmt/2018-04-01/compute",
     "services/graphrbac/1.6/graphrbac",
+    "services/keyvault/2016-10-01/keyvault",
     "services/keyvault/mgmt/2016-10-01/keyvault",
     "services/network/mgmt/2018-05-01/network",
     "services/resources/mgmt/2016-06-01/subscriptions",
@@ -981,6 +982,7 @@
     "github.com/Azure/acs-engine/pkg/operations",
     "github.com/Azure/acs-engine/pkg/operations/kubernetesupgrade",
     "github.com/Azure/azure-sdk-for-go/profiles/latest/keyvault/mgmt/keyvault",
+    "github.com/Azure/azure-sdk-for-go/services/keyvault/2016-10-01/keyvault",
     "github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources",
     "github.com/Azure/go-autorest/autorest",
     "github.com/Azure/go-autorest/autorest/adal",

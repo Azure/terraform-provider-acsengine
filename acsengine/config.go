@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/keyvault/mgmt/keyvault"
+	vaultsvc "github.com/Azure/azure-sdk-for-go/services/keyvault/2016-10-01/keyvault"
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/adal"
@@ -33,7 +34,9 @@ type ArmClient struct {
 	deploymentsClient    resources.DeploymentsClient
 	providersClient      resources.ProvidersClient
 	resourceGroupsClient resources.GroupsClient
-	keyVaultClient       keyvault.VaultsClient
+
+	keyVaultClient           keyvault.VaultsClient
+	keyVaultManagementClient vaultsvc.BaseClient
 }
 
 func (c *ArmClient) configureClient(client *autorest.Client, auth autorest.Authorizer) {
@@ -198,4 +201,11 @@ func (c *ArmClient) registerKeyVaultClients(endpoint, subscriptionID string, aut
 	keyVaultClient.Sender = sender
 	keyVaultClient.SkipResourceProviderRegistration = c.skipProviderRegistration
 	c.keyVaultClient = keyVaultClient
+
+	keyVaultManagementClient := vaultsvc.New()
+	setUserAgent(&keyVaultManagementClient.Client)
+	keyVaultManagementClient.Authorizer = keyVaultAuth
+	keyVaultManagementClient.Sender = sender
+	keyVaultManagementClient.SkipResourceProviderRegistration = c.skipProviderRegistration
+	c.keyVaultManagementClient = keyVaultManagementClient
 }

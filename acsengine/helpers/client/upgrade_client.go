@@ -19,8 +19,11 @@ type UpgradeClient struct {
 }
 
 // NewUpgradeClient returns a new UpgradeClient
-func NewUpgradeClient() *UpgradeClient {
-	return &UpgradeClient{}
+func NewUpgradeClient(secret string) *UpgradeClient {
+	acsengineClient := NewACSEngineClient(secret)
+	return &UpgradeClient{
+		ACSEngineClient: *acsengineClient,
+	}
 }
 
 // SetUpgradeClient sets acs-engine upgrade client fields

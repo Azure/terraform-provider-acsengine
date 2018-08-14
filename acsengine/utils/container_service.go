@@ -43,9 +43,9 @@ func FlattenServicePrincipal() []interface{} {
 
 	spValues := map[string]interface{}{
 		// "client_id":     testClientID(),
-		"client_id": os.Getenv("ARM_CLIENT_ID"), // for now
-		// "client_secret": testClientSecret(),
-		"client_secret": os.Getenv("ARM_CLIENT_SECRET"), // for now
+		"client_id":   os.Getenv("ARM_CLIENT_ID"), // for now
+		"vault_id":    "https://stuff",            // for now
+		"secret_name": "secret",                   // for now
 	}
 
 	servicePrincipals = append(servicePrincipals, spValues)
@@ -116,10 +116,13 @@ func ExpandWindowsProfile(adminUsername string, adminPassword string) api.Window
 }
 
 // ExpandServicePrincipal creates test api.ServicePrincipalProfile
-func ExpandServicePrincipal(clientID string, clientSecret string) api.ServicePrincipalProfile {
+func ExpandServicePrincipal(clientID string, vaultID string) api.ServicePrincipalProfile {
 	profile := api.ServicePrincipalProfile{
 		ClientID: clientID,
-		Secret:   clientSecret,
+		KeyvaultSecretRef: &api.KeyvaultSecretRef{
+			VaultID:    vaultID,
+			SecretName: "secret",
+		},
 	}
 
 	return profile

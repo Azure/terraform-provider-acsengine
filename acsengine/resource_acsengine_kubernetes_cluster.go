@@ -108,14 +108,7 @@ func resourceArmACSEngineKubernetesCluster() *schema.Resource {
 							Required: true,
 							ForceNew: true,
 						},
-						"client_secret": { // I need to delete this
-							Type:      schema.TypeString,
-							Required:  true,
-							ForceNew:  true,
-							Sensitive: true,
-						},
-						// keyVaultSecretRef will replace client secret in actual configuration
-						"vault_id": {
+						"vault_id": { // not the same as URI
 							Type:      schema.TypeString,
 							Required:  true,
 							ForceNew:  true,
@@ -215,30 +208,6 @@ func resourceArmACSEngineKubernetesCluster() *schema.Resource {
 				},
 			},
 
-			// "key_vault": {
-			// 	Type:     schema.TypeList,
-			// 	Required: true,
-			// 	// Optional: true, // for now
-			// 	MaxItems: 1,
-			// 	Elem: &schema.Resource{
-			// 		Schema: map[string]*schema.Schema{
-			// 			"name": {
-			// 				Type:     schema.TypeString,
-			// 				Required: true, // I could also make this optional and computed
-			// 			},
-			// 			"tenant_id": {
-			// 				Type:     schema.TypeString,
-			// 				Required: true,
-			// 			},
-			// 			"vault_uri": {
-			// 				Type:      schema.TypeString,
-			// 				Computed:  true,
-			// 				Sensitive: true,
-			// 			},
-			// 		},
-			// 	},
-			// },
-
 			"kube_config": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -315,6 +284,9 @@ func resourceACSEngineK8sClusterCreate(data *schema.ResourceData, m interface{})
 	}
 
 	// store keys in key vault
+	if err = setKeys(client, &cluster); err != nil {
+		return fmt.Errorf("error setting keys and certificates in key vault: %+v", err)
+	}
 
 	id, err := deployTemplate(client, cluster.Name, cluster.ResourceGroup, template, parameters)
 	if err != nil {
@@ -416,7 +388,7 @@ func resourceACSEngineK8sClusterUpdate(data *schema.ResourceData, m interface{})
 		if err = kubernetes.ValidateKubernetesVersionUpgrade(new.(string), old.(string)); err != nil {
 			return fmt.Errorf("error upgrading Kubernetes version: %+v", err)
 		}
-		if err = upgradeCluster(d, new.(string)); err != nil {
+		if err = upgradeCluster(d, c, new.(string)); err != nil {
 			return fmt.Errorf("error upgrading Kubernetes version: %+v", err)
 		}
 

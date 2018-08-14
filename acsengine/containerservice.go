@@ -21,7 +21,8 @@ import (
 type Cluster struct {
 	*api.ContainerService
 
-	ResourceGroup string
+	ResourceGroup    string
+	ServicePrincipal string
 }
 
 // ResourceData ...
@@ -77,11 +78,13 @@ func flattenWindowsProfile(profile *api.WindowsProfile) ([]interface{}, error) {
 
 func flattenServicePrincipal(profile api.ServicePrincipalProfile) ([]interface{}, error) {
 	clientID := profile.ClientID
-	clientSecret := profile.Secret
-	vaultID := profile.KeyvaultSecretRef.VaultID
-	secretName := profile.KeyvaultSecretRef.SecretName
-	// version := profile.KeyvaultSecretRef.SecretVersion
-	if clientID == "" || clientSecret == "" {
+	keyVaultSecretRef := profile.KeyvaultSecretRef
+	if keyVaultSecretRef == nil {
+		return nil, fmt.Errorf("Key vault secret ref should be set")
+	}
+	vaultID := keyVaultSecretRef.VaultID
+	secretName := keyVaultSecretRef.SecretName
+	if clientID == "" || vaultID == "" || secretName == "" {
 		return nil, fmt.Errorf("Service principal not set correctly")
 	}
 
@@ -89,7 +92,6 @@ func flattenServicePrincipal(profile api.ServicePrincipalProfile) ([]interface{}
 
 	values := map[string]interface{}{}
 	values["client_id"] = clientID
-	values["client_secret"] = clientSecret
 	values["vault_id"] = vaultID
 	values["secret_name"] = secretName
 
@@ -231,11 +233,17 @@ func expandServicePrincipal(d *ResourceData) (api.ServicePrincipalProfile, error
 	config := configs[0].(map[string]interface{})
 
 	clientID := config["client_id"].(string)
-	clientSecret := config["client_secret"].(string)
+	vaultID := config["vault_id"].(string)
+	secretName := config["secret_name"].(string)
+	// secretVersion := config["version"].(string)
 
 	principal := api.ServicePrincipalProfile{
 		ClientID: clientID,
-		Secret:   clientSecret,
+		KeyvaultSecretRef: &api.KeyvaultSecretRef{
+			VaultID:    vaultID,
+			SecretName: secretName,
+			// SecretVersion: version,
+		},
 	}
 
 	return principal, nil
