@@ -15,6 +15,9 @@ func generateACSEngineTemplate(cluster Cluster, write bool) (template string, pa
 		return "", "", fmt.Errorf("failed to format templates using cluster: %+v", err)
 	}
 
+	// now replace lines in templates with certificate/key IDs?
+	// I don't think I can generate a template with keys in it since they don't exist yet
+
 	if write { // this should be default but allow for more testing
 		deploymentDirectory := path.Join("_output", cluster.Properties.MasterProfile.DNSPrefix)
 		if err = cluster.writeTemplatesAndCerts(template, parameters, deploymentDirectory, certsGenerated); err != nil {

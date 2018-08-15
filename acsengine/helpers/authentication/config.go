@@ -18,6 +18,7 @@ type Config struct {
 	ClientID                  string
 	SubscriptionID            string
 	TenantID                  string
+	ObjectID                  string
 	Environment               string
 	SkipCredentialsValidation bool
 	SkipProviderRegistration  bool

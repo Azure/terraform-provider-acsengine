@@ -15,14 +15,14 @@ func mockClusterResourceData(name, location, resourceGroup, dnsPrefix string) *R
 	d.Set("kubernetes_version", "1.10.0")
 
 	adminUsername := "azureuser"
-	linuxProfiles := utils.FlattenLinuxProfile(adminUsername)
+	linuxProfiles := utils.MockFlattenLinuxProfile(adminUsername)
 	d.Set("linux_profile", &linuxProfiles)
 
-	servicePrincipals := utils.FlattenServicePrincipal()
+	servicePrincipals := utils.MockFlattenServicePrincipal()
 	d.Set("service_principal", servicePrincipals)
 
 	vmSize := "Standard_D2_v2"
-	masterProfiles := utils.FlattenMasterProfile(1, dnsPrefix, vmSize)
+	masterProfiles := utils.MockFlattenMasterProfile(1, dnsPrefix, vmSize)
 	d.Set("master_profile", &masterProfiles)
 
 	agentPool1Name := "agentpool1"
@@ -32,9 +32,9 @@ func mockClusterResourceData(name, location, resourceGroup, dnsPrefix string) *R
 	agentPool2osDiskSize := 30
 
 	agentPoolProfiles := []interface{}{}
-	agentPoolProfile0 := utils.FlattenAgentPoolProfiles(agentPool1Name, agentPool1Count, "Standard_D2_v2", 0, false)
+	agentPoolProfile0 := utils.MockFlattenAgentPoolProfiles(agentPool1Name, agentPool1Count, "Standard_D2_v2", 0, false)
 	agentPoolProfiles = append(agentPoolProfiles, agentPoolProfile0)
-	agentPoolProfile1 := utils.FlattenAgentPoolProfiles(agentPool2Name, agentPool2Count, "Standard_D2_v2", agentPool2osDiskSize, true)
+	agentPoolProfile1 := utils.MockFlattenAgentPoolProfiles(agentPool2Name, agentPool2Count, "Standard_D2_v2", agentPool2osDiskSize, true)
 	agentPoolProfiles = append(agentPoolProfiles, agentPoolProfile1)
 	d.Set("agent_pool_profiles", &agentPoolProfiles)
 

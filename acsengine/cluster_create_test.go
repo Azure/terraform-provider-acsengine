@@ -36,22 +36,22 @@ func TestGenerateTemplateBasic(t *testing.T) {
 		d.Set("location", tc.Location)
 		d.Set("resource_group", tc.ResourceGroup)
 
-		linuxProfiles := utils.FlattenLinuxProfile(tc.AdminUsername)
+		linuxProfiles := utils.MockFlattenLinuxProfile(tc.AdminUsername)
 		d.Set("linux_profile", &linuxProfiles)
 
-		servicePrincipals := utils.FlattenServicePrincipal()
+		servicePrincipals := utils.MockFlattenServicePrincipal()
 		d.Set("service_principal", servicePrincipals)
 
 		vmSize := "Standard_D2_v2"
-		masterProfiles := utils.FlattenMasterProfile(tc.MasterCount, tc.DNSPrefix, vmSize)
+		masterProfiles := utils.MockFlattenMasterProfile(tc.MasterCount, tc.DNSPrefix, vmSize)
 		d.Set("master_profile", &masterProfiles)
 
 		agentPoolProfiles := []interface{}{}
 		agentPoolName := "agentpool0"
-		agentPoolProfile0 := utils.FlattenAgentPoolProfiles(agentPoolName, tc.AgentPoolCount, vmSize, 0, false)
+		agentPoolProfile0 := utils.MockFlattenAgentPoolProfiles(agentPoolName, tc.AgentPoolCount, vmSize, 0, false)
 		agentPoolProfiles = append(agentPoolProfiles, agentPoolProfile0)
 		agentPoolName = "agentpool1"
-		agentPoolProfile1 := utils.FlattenAgentPoolProfiles(agentPoolName, tc.AgentPoolCount+1, vmSize, 0, false)
+		agentPoolProfile1 := utils.MockFlattenAgentPoolProfiles(agentPoolName, tc.AgentPoolCount+1, vmSize, 0, false)
 		agentPoolProfiles = append(agentPoolProfiles, agentPoolProfile1)
 		d.Set("agent_pool_profiles", &agentPoolProfiles)
 
@@ -109,21 +109,21 @@ func TestGenerateTemplateCustomized(t *testing.T) {
 		d.Set("resource_group", tc.ResourceGroup)
 		d.Set("kubernetes_version", tc.Version)
 
-		linuxProfiles := utils.FlattenLinuxProfile(tc.AdminUsername)
+		linuxProfiles := utils.MockFlattenLinuxProfile(tc.AdminUsername)
 		d.Set("linux_profile", &linuxProfiles)
 
-		servicePrincipals := utils.FlattenServicePrincipal()
+		servicePrincipals := utils.MockFlattenServicePrincipal()
 		d.Set("service_principal", servicePrincipals)
 
-		masterProfiles := utils.FlattenMasterProfile(tc.MasterCount, tc.DNSPrefix, tc.MasterVMSize)
+		masterProfiles := utils.MockFlattenMasterProfile(tc.MasterCount, tc.DNSPrefix, tc.MasterVMSize)
 		d.Set("master_profile", &masterProfiles)
 
 		agentPoolProfiles := []interface{}{}
 		agentPoolName := "agentpool0"
-		agentPoolProfile0 := utils.FlattenAgentPoolProfiles(agentPoolName, tc.AgentPoolCount, tc.AgentVMSize, 0, false)
+		agentPoolProfile0 := utils.MockFlattenAgentPoolProfiles(agentPoolName, tc.AgentPoolCount, tc.AgentVMSize, 0, false)
 		agentPoolProfiles = append(agentPoolProfiles, agentPoolProfile0)
 		agentPoolName = "agentpool1"
-		agentPoolProfile1 := utils.FlattenAgentPoolProfiles(agentPoolName, tc.AgentPoolCount+1, tc.AgentVMSize, 0, false)
+		agentPoolProfile1 := utils.MockFlattenAgentPoolProfiles(agentPoolName, tc.AgentPoolCount+1, tc.AgentVMSize, 0, false)
 		agentPoolProfiles = append(agentPoolProfiles, agentPoolProfile1)
 		d.Set("agent_pool_profiles", &agentPoolProfiles)
 

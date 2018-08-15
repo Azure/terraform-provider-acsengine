@@ -45,6 +45,9 @@ func (c *Config) ValidateServicePrincipal() error {
 	if c.TenantID == "" {
 		err = multierror.Append(err, fmt.Errorf("Tenant ID must be configured for the AzureRM provider"))
 	}
+	// if c.ObjectID == "" {
+	// 	err = multierror.Append(err, fmt.Errorf("Object ID must be configured for the AzureRM provider"))
+	// }
 	if c.Environment == "" {
 		err = multierror.Append(err, fmt.Errorf("Environment must be configured for the AzureRM provider"))
 	}

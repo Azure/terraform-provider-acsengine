@@ -7,8 +7,10 @@ import (
 	"github.com/Azure/acs-engine/pkg/api/common"
 )
 
-// FlattenLinuxProfile creates test linux profile interface
-func FlattenLinuxProfile(adminUsername string) []interface{} {
+// I should name these so that they are clearly "mocks"
+
+// MockFlattenLinuxProfile creates test linux profile interface
+func MockFlattenLinuxProfile(adminUsername string) []interface{} {
 	sshKeys := []interface{}{}
 	keys := map[string]interface{}{
 		// "key_data": testSSHPublicKey(),
@@ -25,8 +27,8 @@ func FlattenLinuxProfile(adminUsername string) []interface{} {
 	return linuxProfiles
 }
 
-// FlattenWindowsProfile creates test windows profile interface
-func FlattenWindowsProfile(adminUsername string, adminPassword string) []interface{} {
+// MockFlattenWindowsProfile creates test windows profile interface
+func MockFlattenWindowsProfile(adminUsername string, adminPassword string) []interface{} {
 	values := map[string]interface{}{
 		"admin_username": adminUsername,
 		"admin_password": adminPassword,
@@ -37,8 +39,8 @@ func FlattenWindowsProfile(adminUsername string, adminPassword string) []interfa
 	return windowsProfiles
 }
 
-// FlattenServicePrincipal creates test service principal interface
-func FlattenServicePrincipal() []interface{} {
+// MockFlattenServicePrincipal creates test service principal interface
+func MockFlattenServicePrincipal() []interface{} {
 	servicePrincipals := []interface{}{}
 
 	spValues := map[string]interface{}{
@@ -53,8 +55,8 @@ func FlattenServicePrincipal() []interface{} {
 	return servicePrincipals
 }
 
-// FlattenMasterProfile creates test master profile interface
-func FlattenMasterProfile(count int, dnsNamePrefix string, vmSize string) []interface{} {
+// MockFlattenMasterProfile creates test master profile interface
+func MockFlattenMasterProfile(count int, dnsNamePrefix string, vmSize string) []interface{} {
 	masterProfiles := []interface{}{}
 
 	masterProfile := make(map[string]interface{}, 5)
@@ -69,8 +71,8 @@ func FlattenMasterProfile(count int, dnsNamePrefix string, vmSize string) []inte
 	return masterProfiles
 }
 
-// FlattenAgentPoolProfiles creates test agent pool profiles interface
-func FlattenAgentPoolProfiles(name string, count int, vmSize string, osDiskSizeGB int, windows bool) map[string]interface{} {
+// MockFlattenAgentPoolProfiles creates test agent pool profiles interface
+func MockFlattenAgentPoolProfiles(name string, count int, vmSize string, osDiskSizeGB int, windows bool) map[string]interface{} {
 	agentPoolValues := map[string]interface{}{
 		"name":    name,
 		"count":   count,
@@ -88,8 +90,8 @@ func FlattenAgentPoolProfiles(name string, count int, vmSize string, osDiskSizeG
 	return agentPoolValues
 }
 
-// ExpandLinuxProfile creates test api.LinuxProfile
-func ExpandLinuxProfile(adminUsername string, keyData string) api.LinuxProfile {
+// MockExpandLinuxProfile creates test api.LinuxProfile
+func MockExpandLinuxProfile(adminUsername string, keyData string) api.LinuxProfile {
 	sshPublicKeys := []api.PublicKey{
 		{KeyData: keyData},
 	}
@@ -105,8 +107,8 @@ func ExpandLinuxProfile(adminUsername string, keyData string) api.LinuxProfile {
 	return profile
 }
 
-// ExpandWindowsProfile creates test api.WindowsProfile
-func ExpandWindowsProfile(adminUsername string, adminPassword string) api.WindowsProfile {
+// MockExpandWindowsProfile creates test api.WindowsProfile
+func MockExpandWindowsProfile(adminUsername string, adminPassword string) api.WindowsProfile {
 	profile := api.WindowsProfile{
 		AdminUsername: adminUsername,
 		AdminPassword: adminPassword,
@@ -115,8 +117,8 @@ func ExpandWindowsProfile(adminUsername string, adminPassword string) api.Window
 	return profile
 }
 
-// ExpandServicePrincipal creates test api.ServicePrincipalProfile
-func ExpandServicePrincipal(clientID string, vaultID string) api.ServicePrincipalProfile {
+// MockExpandServicePrincipal creates test api.ServicePrincipalProfile
+func MockExpandServicePrincipal(clientID string, vaultID string) api.ServicePrincipalProfile {
 	profile := api.ServicePrincipalProfile{
 		ClientID: clientID,
 		KeyvaultSecretRef: &api.KeyvaultSecretRef{
@@ -128,8 +130,8 @@ func ExpandServicePrincipal(clientID string, vaultID string) api.ServicePrincipa
 	return profile
 }
 
-// ExpandMasterProfile creates test api.MasterProfile
-func ExpandMasterProfile(count int, dnsPrefix string, vmSize string, fqdn string, osDiskSize int) api.MasterProfile {
+// MockExpandMasterProfile creates test api.MasterProfile
+func MockExpandMasterProfile(count int, dnsPrefix string, vmSize string, fqdn string, osDiskSize int) api.MasterProfile {
 	profile := api.MasterProfile{
 		Count:     count,
 		DNSPrefix: dnsPrefix,
@@ -144,8 +146,8 @@ func ExpandMasterProfile(count int, dnsPrefix string, vmSize string, fqdn string
 	return profile
 }
 
-// ExpandAgentPoolProfile creates test api.AgentPoolProfile pointer
-func ExpandAgentPoolProfile(name string, count int, vmSize string, osDiskSizeGB int, isWindows bool) *api.AgentPoolProfile {
+// MockExpandAgentPoolProfile creates test api.AgentPoolProfile pointer
+func MockExpandAgentPoolProfile(name string, count int, vmSize string, osDiskSizeGB int, isWindows bool) *api.AgentPoolProfile {
 	profile := &api.AgentPoolProfile{
 		Name:   name,
 		Count:  count,
@@ -163,8 +165,8 @@ func ExpandAgentPoolProfile(name string, count int, vmSize string, osDiskSizeGB 
 	return profile
 }
 
-// ExpandCertificateProfile creates test api.CertificateProfile
-func ExpandCertificateProfile() api.CertificateProfile {
+// MockExpandCertificateProfile creates test api.CertificateProfile
+func MockExpandCertificateProfile() api.CertificateProfile {
 	certificateProfile := api.CertificateProfile{
 		CaCertificate:         "apple",
 		CaPrivateKey:          "banana",
@@ -182,12 +184,12 @@ func ExpandCertificateProfile() api.CertificateProfile {
 
 // MockContainerService returns a container service with mostly pre-initialized values
 func MockContainerService(name string, location string, dnsPrefix string) *api.ContainerService {
-	linuxProfile := ExpandLinuxProfile("azureuser", "public key")
-	servicePrincipal := ExpandServicePrincipal(os.Getenv("ARM_CLIENT_ID"), os.Getenv("ARM_CLIENT_SECRET"))
-	masterProfile := ExpandMasterProfile(1, dnsPrefix, "Standard_D2_v2", "fqdn", 0)
+	linuxProfile := MockExpandLinuxProfile("azureuser", "public key")
+	servicePrincipal := MockExpandServicePrincipal(os.Getenv("ARM_CLIENT_ID"), os.Getenv("ARM_CLIENT_SECRET"))
+	masterProfile := MockExpandMasterProfile(1, dnsPrefix, "Standard_D2_v2", "fqdn", 0)
 
-	agentPoolProfile1 := ExpandAgentPoolProfile("agentpool1", 1, "Standard_D2_v2", 0, false)
-	agentPoolProfile2 := ExpandAgentPoolProfile("agentpool2", 2, "Standard_D2_v2", 30, false)
+	agentPoolProfile1 := MockExpandAgentPoolProfile("agentpool1", 1, "Standard_D2_v2", 0, false)
+	agentPoolProfile2 := MockExpandAgentPoolProfile("agentpool2", 2, "Standard_D2_v2", 30, false)
 	agentPoolProfiles := []*api.AgentPoolProfile{agentPoolProfile1, agentPoolProfile2}
 
 	orchestratorProfile := api.OrchestratorProfile{
@@ -195,7 +197,7 @@ func MockContainerService(name string, location string, dnsPrefix string) *api.C
 		OrchestratorVersion: common.GetDefaultKubernetesVersion(),
 	}
 
-	certificateProfile := ExpandCertificateProfile()
+	certificateProfile := MockExpandCertificateProfile()
 
 	properties := api.Properties{
 		LinuxProfile:            &linuxProfile,

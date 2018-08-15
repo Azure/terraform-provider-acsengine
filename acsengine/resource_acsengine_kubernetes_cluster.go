@@ -119,9 +119,16 @@ func resourceArmACSEngineKubernetesCluster() *schema.Resource {
 							Required: true,
 							ForceNew: true,
 						},
+						// "object_id": {},
 						// "version": {
 						// 	Type:     schema.TypeString,
 						// 	Optional: true,
+						// },
+						// "vault_uri": {
+						// 	Type:      schema.TypeString,
+						// 	Required:  true,
+						// 	ForceNew:  true,
+						// 	Sensitive: true,
 						// },
 					},
 				},
@@ -284,7 +291,7 @@ func resourceACSEngineK8sClusterCreate(data *schema.ResourceData, m interface{})
 	}
 
 	// store keys in key vault
-	if err = setKeys(client, &cluster); err != nil {
+	if err = setCertificateProfileSecrets(client, &cluster); err != nil {
 		return fmt.Errorf("error setting keys and certificates in key vault: %+v", err)
 	}
 

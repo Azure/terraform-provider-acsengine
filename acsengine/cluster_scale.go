@@ -18,8 +18,8 @@ func scaleCluster(d *ResourceData, c *ArmClient, agentIndex, agentCount int) err
 		return fmt.Errorf("error parsing the api model: %+v", err)
 	}
 
-	// get client secret first?
-	clientSecret, err := getKey(c, cluster.Properties.ServicePrincipalProfile.KeyvaultSecretRef)
+	keyVaultSecretRef := cluster.Properties.ServicePrincipalProfile.KeyvaultSecretRef
+	clientSecret, err := getSecret(c, keyVaultSecretRef.VaultID, keyVaultSecretRef.SecretName, "")
 	if err != nil {
 		return fmt.Errorf("error getting service principal key: %+v", err)
 	}

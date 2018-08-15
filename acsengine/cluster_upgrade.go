@@ -14,9 +14,8 @@ func upgradeCluster(d *ResourceData, c *ArmClient, upgradeVersion string) error 
 		return fmt.Errorf("error parsing the api model: %+v", err)
 	}
 
-	// get key vault secret here
-	// get client secret first?
-	clientSecret, err := getKey(c, cluster.Properties.ServicePrincipalProfile.KeyvaultSecretRef)
+	keyvaultSecretRef := cluster.Properties.ServicePrincipalProfile.KeyvaultSecretRef
+	clientSecret, err := getSecret(c, keyvaultSecretRef.VaultID, keyvaultSecretRef.SecretName, "")
 	if err != nil {
 		return fmt.Errorf("error getting service principal key: %+v", err)
 	}
