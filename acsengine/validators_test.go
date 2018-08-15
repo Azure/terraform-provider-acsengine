@@ -44,8 +44,7 @@ func TestAgentPoolProfileCountValidation(t *testing.T) {
 		{Value: 101, ErrCount: 1},
 	}
 
-	for _, tc := range cases { // for each test case
-		// from resource_arm_container_service.go
+	for _, tc := range cases {
 		_, errors := validateAgentPoolProfileCount(tc.Value, "acsengine_kubernetes_cluster")
 
 		if len(errors) != tc.ErrCount {

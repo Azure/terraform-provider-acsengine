@@ -3,14 +3,14 @@ package acsengine
 // TO DO
 // - consider renaming client package
 // - use log instead of fmt, figure out why it's not printing
-// - Keep improving documentation
-// - add code coverage (needs to be >50%)
+// - Keep improving documentation - I need to document key vault stuff
+// - add code coverage (needs to be >50%) - this really needs to be brought back up again! 43% right now
 // - make code more unit test-able and write more unit tests (plus clean up ones I have to use mock objects more?)
-// - do I need more translations?
 // - refactor: better organization of functions, get rid of code duplication, inheritance where it makes sense, better function/variable naming
 // - ask about additions to acs-engine: doesn't seem to allow tagging deployment, weird index problem
-// - create a new struct for api.ContainerService so I can write methods for it?
-// - use assert functions where I can so that tests are uniform, I've accidentally been writing expected and actual in wrong order too
+// - make sure key vault is created before tests (especially in CircleCI tests)
+// - get rid of a secret from my git history (it's only in my old commits since I force pushed)
+// - make sure certificate output is correct, also that getKubeConfig side effects aren't messing with upgrade
 
 import (
 	"fmt"
@@ -119,16 +119,10 @@ func resourceArmACSEngineKubernetesCluster() *schema.Resource {
 							Required: true,
 							ForceNew: true,
 						},
-						// "object_id": {},
-						// "version": {
+						// "secret_version": {
 						// 	Type:     schema.TypeString,
-						// 	Optional: true,
-						// },
-						// "vault_uri": {
-						// 	Type:      schema.TypeString,
-						// 	Required:  true,
-						// 	ForceNew:  true,
-						// 	Sensitive: true,
+						// 	Required: true,
+						// 	ForceNew: true,
 						// },
 					},
 				},
@@ -282,17 +276,12 @@ func resourceACSEngineK8sClusterCreate(data *schema.ResourceData, m interface{})
 		return fmt.Errorf("failed to create resource group: %+v", err)
 	}
 
-	template, parameters, err := generateACSEngineTemplate(cluster, true)
+	template, parameters, err := generateACSEngineTemplate(client, cluster, true)
 	if err != nil {
 		return fmt.Errorf("failed to generate ACS Engine template: %+v", err)
 	}
 	if err = d.setStateAPIModel(&cluster); err != nil {
 		return fmt.Errorf("error setting API model: %+v", err)
-	}
-
-	// store keys in key vault
-	if err = setCertificateProfileSecrets(client, &cluster); err != nil {
-		return fmt.Errorf("error setting keys and certificates in key vault: %+v", err)
 	}
 
 	id, err := deployTemplate(client, cluster.Name, cluster.ResourceGroup, template, parameters)
@@ -312,6 +301,7 @@ func resourceACSEngineK8sClusterRead(data *schema.ResourceData, m interface{}) e
 		d.SetId("")
 		return err
 	}
+	client := m.(*ArmClient)
 
 	if err = d.Set("resource_group", id.ResourceGroup); err != nil {
 		return fmt.Errorf("error setting `resource_group`: %+v", err)
@@ -340,7 +330,7 @@ func resourceACSEngineK8sClusterRead(data *schema.ResourceData, m interface{}) e
 		return err
 	}
 
-	if err = d.setKubeConfig(&cluster); err != nil {
+	if err = d.setKubeConfig(client, &cluster, true); err != nil {
 		return err
 	}
 

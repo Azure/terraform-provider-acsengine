@@ -8,7 +8,23 @@ Manages ACS Engine Cluster
 
 ## Example Usage
 
+You should have an existing Azure key vault where you can store your service principal secret and cluster certificates and keys. You should store the value of the service principal secret in your key vault before creating this Terraform resource. You can use the `azurerm` Terraform provider to create resource groups, key vaults, access policies, and key vault secrets.
+
 ```hcl
+data "azurerm_resource_group" "testkvrg" {
+  name = "testkv"
+}
+
+data "azurerm_key_vault" "testkv" {
+  name = "testkvrg"
+  resource_group_name = "${data.azurerm_resource_group.testkvrg.name}"
+}
+
+data "azurerm_key_vault_secret" "spsecret" {
+  name = "spsecret"
+  vault_uri = "${data.azurerm_key_vault.testkv.vault_uri}"
+}
+
 resource "acsengine_kubernetes_cluster" "test" {
     name               = "testcluster"
     resource_group     = "testrg"
@@ -42,7 +58,8 @@ resource "acsengine_kubernetes_cluster" "test" {
 
     service_principal {
         client_id     = ""
-        client_secret = ""
+        vault_id      = ""
+        secret_name   = ""
     }
 
     tags {
@@ -98,7 +115,10 @@ The following arguments are supported:
 `service_principal` supports the following:
 
 * `client_id` - (Required) The ID for the service principal.
-* `client_secret` - (Required) The secret password associated with the service principal.
+* `vault_id` - (Required) The Azure resource ID for the key vault containing the service principal secret.
+* `secret_name` - (Required) The name of the key vault secret containing the value of your service principal secret.
+
+<!-- * `client_secret` - (Required) The secret password associated with the service principal. -->
 
 ## Attributes Reference
 
@@ -125,3 +145,5 @@ For example, if the resource ID of your cluster deployment is "/subscriptions/12
 ```terraform import acsengine_kubernetes_cluster.example "/subscriptions/1234/resourceGroups/testrg/providers/Microsoft.Resources/deployments/deploymentName _output/dnsPrefix"```
 
 Remember to surround the ID string by quotes since there is a space. Also, do not forget to add properties to `apimodel.json` that you specified on the command line when deploying acs-engine templates. For instance, add `location` and `name` (i.e. deployment name). You can add these to `apimodel.json`. Do not run `acs-engine generate` on your cluster definition again because that will generate new certificates and keys (I think). If you are unsure what the apimodel should look like, you can take a look at an 'apimodel.json' file created with this Terraform provider (or output the `api_model` field from an existing resource, decoded from base64).
+
+<!-- You will also need to add key vault secret references to this file so that new certificates are not created. -->

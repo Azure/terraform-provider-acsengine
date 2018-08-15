@@ -2,18 +2,38 @@ provider "acsengine" {}
 
 provider "azurerm" {}
 
-data "azurerm_resource_group" "testkvrg" {
-  name = "testkv"
+resource "azurerm_resource_group" "testkvrg" {
+  name     = "testkv"
+  location = "southcentralus"
 }
 
-data "azurerm_key_vault" "testkv" {
-  name = "testkvrg"
-  resource_group_name = "${data.azurerm_resource_group.testkvrg.name}"
-}
+resource "azurerm_key_vault" "testkv" {
+  name = "testkvsm"
+  location = "${azurerm_resource_group.testkvrg.location}"
+  resource_group_name = "${azurerm_resource_group.testkvrg.name}"
+  tenant_id = ""
 
-data "azurerm_key_vault_secret" "spsecret" {
-  name = "spsecret"
-  vault_uri = "${data.azurerm_key_vault.testkv.vault_uri}"
+  sku {
+    name = "standard"
+  }
+
+  access_policy {
+      tenant_id = ""
+      object_id = ""
+
+      key_permissions = [
+          "get",
+          "create",
+      ]
+
+      secret_permissions = [
+          "get",
+          "delete",
+          "set",
+      ]
+  }
+
+  enabled_for_template_deployment = true
 }
 
 resource "azurerm_key_vault_secret" "spsecret" {
@@ -51,8 +71,8 @@ resource "acsengine_kubernetes_cluster" "cluster" {
 
   service_principal {
     client_id     = ""
-    vault_id      = "${data.azurerm_key_vault.kv.id}"
-    secret_name   = "${data.azurerm_key_vault_secret.spsecret.name}"
+    vault_id      = "${azurerm_key_vault.kv.id}"
+    secret_name   = "${azurerm_key_vault_secret.spsecret.name}"
   }
 
   tags {

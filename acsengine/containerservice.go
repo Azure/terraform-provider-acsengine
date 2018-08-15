@@ -295,8 +295,6 @@ func expandAgentPoolProfiles(d *ResourceData) ([]*api.AgentPoolProfile, error) {
 	return profiles, nil
 }
 
-// I feel kind of funny about having these functions here
-
 func newResourceData(data *schema.ResourceData) *ResourceData {
 	return &ResourceData{
 		ResourceData: data,

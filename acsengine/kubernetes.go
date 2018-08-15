@@ -69,7 +69,14 @@ func flattenKubeConfig(kubeConfigFile string) (string, []interface{}, error) {
 	return rawKubeConfig, kubeConfig, nil
 }
 
-func (cluster *Cluster) getKubeConfig() (string, error) {
+// this needs to changed to get secrets from key vault first
+func (cluster *Cluster) getKubeConfig(c *ArmClient, keyVault bool) (string, error) {
+	// this has side effects! sets certificates
+	if keyVault {
+		if err := getCertificateProfileSecretsKeyVault(c, cluster); err != nil {
+			return "", fmt.Errorf("failed to get secrets from key vault for kube config: %+v", err)
+		}
+	}
 	kubeConfig, err := acsengine.GenerateKubeConfig(cluster.Properties, cluster.Location)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate kube config: %+v", err)
@@ -77,8 +84,8 @@ func (cluster *Cluster) getKubeConfig() (string, error) {
 	return kubeConfig, nil
 }
 
-func (d *ResourceData) setKubeConfig(cluster *Cluster) error {
-	kubeConfigFile, err := cluster.getKubeConfig()
+func (d *ResourceData) setKubeConfig(c *ArmClient, cluster *Cluster, keyVault bool) error {
+	kubeConfigFile, err := cluster.getKubeConfig(c, keyVault)
 	if err != nil {
 		return fmt.Errorf("Error getting kube config: %+v", err)
 	}

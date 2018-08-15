@@ -15,7 +15,7 @@ func upgradeCluster(d *ResourceData, c *ArmClient, upgradeVersion string) error 
 	}
 
 	keyvaultSecretRef := cluster.Properties.ServicePrincipalProfile.KeyvaultSecretRef
-	clientSecret, err := getSecret(c, keyvaultSecretRef.VaultID, keyvaultSecretRef.SecretName, "")
+	clientSecret, err := getSecretFromKeyVault(c, keyvaultSecretRef.VaultID, keyvaultSecretRef.SecretName, "")
 	if err != nil {
 		return fmt.Errorf("error getting service principal key: %+v", err)
 	}
@@ -35,7 +35,7 @@ func upgradeCluster(d *ResourceData, c *ArmClient, upgradeVersion string) error 
 	}
 
 	cluster.ContainerService = uc.Cluster
-	kubeconfig, err := cluster.getKubeConfig()
+	kubeconfig, err := cluster.getKubeConfig(c, true) // do I need to set those certificates again?
 	if err != nil {
 		return fmt.Errorf("failed to generate kube config: %+v", err)
 	}

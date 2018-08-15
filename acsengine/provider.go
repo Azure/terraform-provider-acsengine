@@ -236,6 +236,14 @@ func base64Encode(data string) string {
 	return base64.StdEncoding.EncodeToString([]byte(data))
 }
 
+func base64Decode(data string) string {
+	if !isBase64Encoded(data) {
+		return data
+	}
+	result, _ := base64.StdEncoding.DecodeString(data)
+	return string(result)
+}
+
 func isBase64Encoded(data string) bool {
 	_, err := base64.StdEncoding.DecodeString(data)
 	return err == nil

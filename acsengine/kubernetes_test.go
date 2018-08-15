@@ -46,7 +46,7 @@ func TestGetKubeConfig(t *testing.T) {
 	prefix := "masterDNSPrefix"
 	cluster := mockCluster(name, location, prefix)
 
-	kubeconfig, err := cluster.getKubeConfig()
+	kubeconfig, err := cluster.getKubeConfig(nil, false)
 	if err != nil {
 		t.Fatalf("failed to get kube config: %+v", err)
 	}
@@ -108,7 +108,7 @@ func TestSetKubeConfig(t *testing.T) {
 		t.Fatalf("failed to load cluster: %+v", err)
 	}
 
-	if err = d.setKubeConfig(&cluster); err != nil {
+	if err = d.setKubeConfig(nil, &cluster, false); err != nil {
 		t.Fatalf("failed to set kube config: %+v", err)
 	}
 }

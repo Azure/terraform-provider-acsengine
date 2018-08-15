@@ -1,7 +1,6 @@
 package acsengine
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"path"
@@ -9,26 +8,59 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
 )
 
-func generateACSEngineTemplate(cluster Cluster, write bool) (template string, parameters string, err error) {
-	template, parameters, certsGenerated, err := cluster.formatTemplates(true)
+func generateACSEngineTemplate(c *ArmClient, cluster Cluster, write bool) (string, string, error) {
+	// generate certs separately and set them before trying to formate template?
+
+	// possibly more efficient option
+	// 1. create secrets, which would then need a new function to set in keyvault
+	// 2. setCertificateProfileSecretsAPIModel
+	// 3. generate template
+
+	// probably easier way which I will try first
+	// 1. generate template to generate certs
+	// 2. setCertificateProfileSecrets
+	// 3. setCertificateProfileSecretsAPIModel
+	// 4. generate template again. Will this be inefficient?
+
+	// certificates are generated here
+	template, parameters, _ /*certsGenerated*/, err := cluster.formatTemplates(true)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to format templates using cluster: %+v", err)
 	}
 
-	// now replace lines in templates with certificate/key IDs?
-	// I don't think I can generate a template with keys in it since they don't exist yet
-
 	if write { // this should be default but allow for more testing
+		if err = setCertificateProfileSecretsKeyVault(c, &cluster); err != nil {
+			return "", "", fmt.Errorf("error setting keys and certificates in key vault: %+v", err)
+		}
+
+		if err = cluster.setCertificateProfileSecretsAPIModel(); err != nil {
+			return "", "", fmt.Errorf("error setting cluster secret IDs: %+v", err)
+		}
+
+		var certsGenerated bool
+		// generating templates again here so they contain key vault reference blocks instead of keys in plain text
+		template, parameters, certsGenerated, err = cluster.formatTemplates(true)
+		if err != nil {
+			return "", "", fmt.Errorf("failed to format templates using cluster: %+v", err)
+		}
+		if certsGenerated {
+			return "", "", fmt.Errorf("new certs should not have been generated")
+		}
+
 		deploymentDirectory := path.Join("_output", cluster.Properties.MasterProfile.DNSPrefix)
-		if err = cluster.writeTemplatesAndCerts(template, parameters, deploymentDirectory, certsGenerated); err != nil {
+		// I'm putting false instead of certsGenerated here so I can see all of the files
+		// This is writing key vault references, not actual certs and keys I think
+		if err = cluster.writeTemplatesAndCerts(template, parameters, deploymentDirectory, false); err != nil {
 			return "", "", fmt.Errorf("error writing templates and certificates: %+v", err)
 		}
 	}
 
+	// no kube config is being saved...
+
 	return template, parameters, nil
 }
 
-func deployTemplate(client *ArmClient, name, resourceGroup, template, parameters string) (id string, err error) {
+func deployTemplate(c *ArmClient, name, resourceGroup, template, parameters string) (string, error) {
 	azureDeployTemplate, azureDeployParametersFile, err := expandTemplates(template, parameters)
 	if err != nil {
 		return "", fmt.Errorf("failed to expand template and parameters: %+v", err)
@@ -48,22 +80,22 @@ func deployTemplate(client *ArmClient, name, resourceGroup, template, parameters
 		},
 	}
 
-	if err := createDeployment(client.StopContext, client, resourceGroup, name, &deployment); err != nil {
+	if err := createDeployment(c, resourceGroup, name, &deployment); err != nil {
 		return "", fmt.Errorf("failed to create deployment: %+v", err)
 	}
 
-	return getDeploymentID(client.StopContext, client, resourceGroup, name)
+	return getDeploymentID(c, resourceGroup, name)
 }
 
-func createDeployment(ctx context.Context, client *ArmClient, resourceGroup string, name string, deployment *resources.Deployment) error {
-	deployClient := client.deploymentsClient
-	future, err := deployClient.CreateOrUpdate(ctx, resourceGroup, name, *deployment)
+func createDeployment(c *ArmClient, resourceGroup string, name string, deployment *resources.Deployment) error {
+	deployClient := c.deploymentsClient
+	future, err := deployClient.CreateOrUpdate(c.StopContext, resourceGroup, name, *deployment)
 	if err != nil {
 		return fmt.Errorf("error creating deployment: %+v", err)
 	}
 	fmt.Println("[INFO] Deployment created (1)") // log
 
-	if err = future.WaitForCompletion(client.StopContext, deployClient.Client); err != nil {
+	if err = future.WaitForCompletion(c.StopContext, deployClient.Client); err != nil {
 		return fmt.Errorf("error creating deployment: %+v", err)
 	}
 	_, err = future.Result(deployClient)
@@ -76,9 +108,9 @@ func createDeployment(ctx context.Context, client *ArmClient, resourceGroup stri
 	return nil
 }
 
-func getDeploymentID(ctx context.Context, client *ArmClient, resourceGroup string, name string) (string, error) {
-	deployClient := client.deploymentsClient
-	read, err := deployClient.Get(ctx, resourceGroup, name)
+func getDeploymentID(c *ArmClient, resourceGroup string, name string) (string, error) {
+	deployClient := c.deploymentsClient
+	read, err := deployClient.Get(c.StopContext, resourceGroup, name)
 	if err != nil {
 		return "", fmt.Errorf("error getting deployment: %+v", err)
 	}

@@ -1,5 +1,19 @@
 provider "acsengine" {}
 
+data "azurerm_resource_group" "testkvrg" {
+  name = "testkv"
+}
+
+data "azurerm_key_vault" "testkv" {
+  name = "testkvrg"
+  resource_group_name = "${data.azurerm_resource_group.testkvrg.name}"
+}
+
+data "azurerm_key_vault_secret" "spsecret" {
+  name = "spsecret"
+  vault_uri = "${data.azurerm_key_vault.testkv.vault_uri}"
+}
+
 resource "acsengine_kubernetes_cluster" "cluster" {
   name               = "testcluster"
   resource_group     = "testRG"
@@ -24,7 +38,7 @@ resource "acsengine_kubernetes_cluster" "cluster" {
     admin_username = "azureuser"
 
     ssh {
-      key_data = "ssh-rsa AAAA..."
+      key_data = ""
     }
   }
 
@@ -35,7 +49,8 @@ resource "acsengine_kubernetes_cluster" "cluster" {
 
   service_principal {
     client_id     = ""
-    client_secret = ""
+    vault_id      = "${data.azurerm_key_vault.kv.id}"
+    secret_name   = "${data.azurerm_key_vault_secret.spsecret.name}"
   }
 
   tags {

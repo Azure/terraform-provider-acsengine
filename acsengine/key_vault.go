@@ -17,7 +17,7 @@ import (
 // }
 
 // certificate profile need to be set
-func setCertificateProfileSecrets(c *ArmClient, cluster *Cluster) error {
+func setCertificateProfileSecretsKeyVault(c *ArmClient, cluster *Cluster) error {
 	var err error
 	// set them in key vault
 	keyVaultID := cluster.Properties.ServicePrincipalProfile.KeyvaultSecretRef.VaultID // I need URI not ID
@@ -30,57 +30,100 @@ func setCertificateProfileSecrets(c *ArmClient, cluster *Cluster) error {
 	}
 	keyVaultURI := *resp.Properties.VaultURI
 
-	if err = setSecret(c, keyVaultURI, fmt.Sprintf("%s-cacrt", dnsPrefix), certificateProfile.CaCertificate); err != nil {
+	if err = setSecret(c, keyVaultURI, secretName("cacrt", dnsPrefix), base64Encode(certificateProfile.CaCertificate)); err != nil {
 		return fmt.Errorf("error setting ca certificate: %+v", err)
 	}
-	if err = setSecret(c, keyVaultURI, fmt.Sprintf("%s-cakey", dnsPrefix), certificateProfile.CaPrivateKey); err != nil {
+	if err = setSecret(c, keyVaultURI, secretName("cakey", dnsPrefix), base64Encode(certificateProfile.CaPrivateKey)); err != nil {
 		return fmt.Errorf("error setting ca key: %+v", err)
 	}
-	if err = setSecret(c, keyVaultURI, fmt.Sprintf("%s-apiservercrt", dnsPrefix), certificateProfile.APIServerCertificate); err != nil {
+	if err = setSecret(c, keyVaultURI, secretName("apiservercrt", dnsPrefix), base64Encode(certificateProfile.APIServerCertificate)); err != nil {
 		return fmt.Errorf("error setting api server certificate: %+v", err)
 	}
-	if err = setSecret(c, keyVaultURI, fmt.Sprintf("%s-apiserverkey", dnsPrefix), certificateProfile.APIServerPrivateKey); err != nil {
+	if err = setSecret(c, keyVaultURI, secretName("apiserverkey", dnsPrefix), base64Encode(certificateProfile.APIServerPrivateKey)); err != nil {
 		return fmt.Errorf("error setting api server key: %+v", err)
 	}
-	if err = setSecret(c, keyVaultURI, fmt.Sprintf("%s-clientcrt", dnsPrefix), certificateProfile.ClientCertificate); err != nil {
+	if err = setSecret(c, keyVaultURI, secretName("clientcrt", dnsPrefix), base64Encode(certificateProfile.ClientCertificate)); err != nil {
 		return fmt.Errorf("error setting client certificate: %+v", err)
 	}
-	if err = setSecret(c, keyVaultURI, fmt.Sprintf("%s-clientkey", dnsPrefix), certificateProfile.ClientPrivateKey); err != nil {
+	if err = setSecret(c, keyVaultURI, secretName("clientkey", dnsPrefix), base64Encode(certificateProfile.ClientPrivateKey)); err != nil {
 		return fmt.Errorf("error setting client key: %+v", err)
 	}
-	if err = setSecret(c, keyVaultURI, fmt.Sprintf("%s-etcdservercrt", dnsPrefix), certificateProfile.EtcdServerCertificate); err != nil {
+	if err = setSecret(c, keyVaultURI, secretName("kubeconfigcrt", dnsPrefix), base64Encode(certificateProfile.KubeConfigCertificate)); err != nil {
+		return fmt.Errorf("error setting client certificate: %+v", err)
+	}
+	if err = setSecret(c, keyVaultURI, secretName("kubeconfigkey", dnsPrefix), base64Encode(certificateProfile.KubeConfigPrivateKey)); err != nil {
+		return fmt.Errorf("error setting client key: %+v", err)
+	}
+	if err = setSecret(c, keyVaultURI, secretName("etcdservercrt", dnsPrefix), base64Encode(certificateProfile.EtcdServerCertificate)); err != nil {
 		return fmt.Errorf("error setting etcd server certificate: %+v", err)
 	}
-	if err = setSecret(c, keyVaultURI, fmt.Sprintf("%s-etcdserverkey", dnsPrefix), certificateProfile.EtcdServerPrivateKey); err != nil {
+	if err = setSecret(c, keyVaultURI, secretName("etcdserverkey", dnsPrefix), base64Encode(certificateProfile.EtcdServerPrivateKey)); err != nil {
 		return fmt.Errorf("error setting etcd server key: %+v", err)
 	}
-	if err = setSecret(c, keyVaultURI, fmt.Sprintf("%s-etcdclientcrt", dnsPrefix), certificateProfile.EtcdClientCertificate); err != nil {
+	if err = setSecret(c, keyVaultURI, secretName("etcdclientcrt", dnsPrefix), base64Encode(certificateProfile.EtcdClientCertificate)); err != nil {
 		return fmt.Errorf("error setting etcd client certificate: %+v", err)
 	}
-	if err = setSecret(c, keyVaultURI, fmt.Sprintf("%s-etcdclientkey", dnsPrefix), certificateProfile.EtcdClientPrivateKey); err != nil {
+	if err = setSecret(c, keyVaultURI, secretName("etcdclientkey", dnsPrefix), base64Encode(certificateProfile.EtcdClientPrivateKey)); err != nil {
 		return fmt.Errorf("error setting etcd client key: %+v", err)
 	}
 	for i, crt := range certificateProfile.EtcdPeerCertificates {
-		if err = setSecret(c, keyVaultURI, fmt.Sprintf("%s-etcdpeer%dcrt", dnsPrefix, i), crt); err != nil {
+		if err = setSecret(c, keyVaultURI, secretName(fmt.Sprintf("etcdpeer%dcrt", i), dnsPrefix), base64Encode(crt)); err != nil {
 			return fmt.Errorf("error setting etcdpeer%d certificate: %+v", i, err)
 		}
 	}
 	for i, key := range certificateProfile.EtcdPeerPrivateKeys {
-		if err = setSecret(c, keyVaultURI, fmt.Sprintf("%s-etcdpeer%dkey", dnsPrefix, i), key); err != nil {
+		if err = setSecret(c, keyVaultURI, secretName(fmt.Sprintf("etcdpeer%dkey", i), dnsPrefix), base64Encode(key)); err != nil {
 			return fmt.Errorf("error setting etcdpeer%d key: %+v", i, err)
 		}
 	}
 
-	// also set azuredeploy file to only have vault uri (I probably shouldn't call WriteTLSArtifacts until after)
+	return nil
+}
+
+// for setting kube config correctly
+func getCertificateProfileSecretsKeyVault(c *ArmClient, cluster *Cluster) error {
+	vaultID := cluster.Properties.ServicePrincipalProfile.KeyvaultSecretRef.VaultID
+	dnsPrefix := cluster.Properties.MasterProfile.DNSPrefix
+
+	var val string
+
+	resp, err := getKeyVault(c, vaultID)
+	if err != nil {
+		return fmt.Errorf("failed to get key vault: %+v", err)
+	}
+
+	props := resp.Properties
+	if props == nil {
+		return fmt.Errorf("properties not found")
+	}
+	vaultURI := props.VaultURI
+	if vaultURI == nil {
+		return fmt.Errorf("vault uri not found")
+	}
+
+	fmt.Printf("key vault: %s\n", *vaultURI)
+
+	if val, err = getSecret(c, *vaultURI, secretName("cacrt", dnsPrefix), ""); err != nil {
+		return fmt.Errorf("failed to get ca.crt")
+	}
+	cluster.Properties.CertificateProfile.CaCertificate = base64Decode(val)
+	if val, err = getSecret(c, *vaultURI, secretName("kubeconfigcrt", dnsPrefix), ""); err != nil {
+		return fmt.Errorf("failed to get kubectlClient.crt")
+	}
+	cluster.Properties.CertificateProfile.KubeConfigCertificate = base64Decode(val)
+	if val, err = getSecret(c, *vaultURI, secretName("kubeconfigkey", dnsPrefix), ""); err != nil {
+		return fmt.Errorf("failed to get kubectlClient.key")
+	}
+	cluster.Properties.CertificateProfile.KubeConfigPrivateKey = base64Decode(val)
 
 	return nil
 }
 
-// why am I able to get but not set secrets?
 func setSecret(c *ArmClient, vaultURI, name, value string) error {
+	contentType := "base64" // is this valid?
 	parameters := vaultsvc.SecretSetParameters{
-		Value: &value,
-		// ContentType:
+		Value:       &value,
+		ContentType: &contentType,
 	}
 	_, err := c.keyVaultManagementClient.SetSecret(c.StopContext, vaultURI, name, parameters)
 	if err != nil {
@@ -89,12 +132,24 @@ func setSecret(c *ArmClient, vaultURI, name, value string) error {
 	return nil
 }
 
-func getSecret(c *ArmClient, vaultID, secretName, version string) (string, error) {
+func getSecret(c *ArmClient, vaultURI, name, version string) (string, error) {
 	keyVaultManagementClient := c.keyVaultManagementClient
 
-	// I need URI not ID
-	// version := sp.KeyvaultSecretRef.SecretVersion
+	read, err := keyVaultManagementClient.GetSecret(c.StopContext, vaultURI, name, version)
+	if err != nil {
+		return "", fmt.Errorf("error reading key vault with vault URI %s: %+v", vaultURI, err)
+	}
+	if read.ID == nil {
+		return "", fmt.Errorf("cannot read key vault secret %s with key vault URI %s", name, vaultURI)
+	}
+	if read.Value == nil {
+		return "", fmt.Errorf("key value is not set")
+	}
+	fmt.Println(read.Value)
+	return *read.Value, nil
+}
 
+func getSecretFromKeyVault(c *ArmClient, vaultID, secretName, version string) (string, error) {
 	resp, err := getKeyVault(c, vaultID)
 	if err != nil {
 		return "", fmt.Errorf("failed to get key vault: %+v", err)
@@ -111,18 +166,7 @@ func getSecret(c *ArmClient, vaultID, secretName, version string) (string, error
 
 	fmt.Printf("key vault: %s\n", *vaultURI)
 
-	read, err := keyVaultManagementClient.GetSecret(c.StopContext, *vaultURI, secretName, "")
-	if err != nil {
-		return "", fmt.Errorf("error reading key vault %s with vault URI %s: %+v", vaultID, *vaultURI, err)
-	}
-	if read.ID == nil {
-		return "", fmt.Errorf("cannot read key vault secret %s (in key vault %s) with URI %s", secretName, vaultID, *vaultURI)
-	}
-	if read.Value == nil {
-		return "", fmt.Errorf("key value is not set")
-	}
-	fmt.Println(read.Value)
-	return *read.Value, nil
+	return getSecret(c, *vaultURI, secretName, version)
 }
 
 func getKeyVault(c *ArmClient, vaultID string) (*keyvault.Vault, error) {
@@ -143,79 +187,38 @@ func getKeyVault(c *ArmClient, vaultID string) (*keyvault.Vault, error) {
 	return &resp, nil
 }
 
-// if it turns out this is a problem with acs-engine then I only need the second function, which will generate the parameters correctly
+func (cluster *Cluster) setCertificateProfileSecretsAPIModel() error {
+	certificateProfile := cluster.Properties.CertificateProfile
+	vaultID := cluster.Properties.ServicePrincipalProfile.KeyvaultSecretRef.VaultID
+	dnsPrefix := cluster.Properties.MasterProfile.DNSPrefix
 
-// func setCertificateProfileSecretsParameters(c *ArmClient, cluster *Cluster, params string) error {
-// 	certificateProfile := cluster.Properties.CertificateProfile
-// 	vaultID := cluster.Properties.ServicePrincipalProfile.KeyvaultSecretRef.VaultID
-// 	dnsPrefix := cluster.Properties.MasterProfile.DNSPrefix
+	certificateProfile.CaCertificate = vaultSecretRefName("cacrt", vaultID, dnsPrefix)
+	certificateProfile.CaPrivateKey = vaultSecretRefName("cakey", vaultID, dnsPrefix)
+	certificateProfile.APIServerCertificate = vaultSecretRefName("apiservercrt", vaultID, dnsPrefix)
+	certificateProfile.APIServerPrivateKey = vaultSecretRefName("apiserverkey", vaultID, dnsPrefix)
+	certificateProfile.ClientCertificate = vaultSecretRefName("clientcrt", vaultID, dnsPrefix)
+	certificateProfile.ClientPrivateKey = vaultSecretRefName("clientkey", vaultID, dnsPrefix)
+	certificateProfile.KubeConfigCertificate = vaultSecretRefName("kubeconfigcrt", vaultID, dnsPrefix)
+	certificateProfile.KubeConfigPrivateKey = vaultSecretRefName("kubeconfigkey", vaultID, dnsPrefix)
+	certificateProfile.EtcdClientCertificate = vaultSecretRefName("etcdclientcrt", vaultID, dnsPrefix)
+	certificateProfile.EtcdClientPrivateKey = vaultSecretRefName("etcdclientkey", vaultID, dnsPrefix)
+	certificateProfile.EtcdServerCertificate = vaultSecretRefName("etcdservercrt", vaultID, dnsPrefix)
+	certificateProfile.EtcdServerPrivateKey = vaultSecretRefName("etcdserverkey", vaultID, dnsPrefix)
 
-// 	parametersMap, err := expandBody(params)
-// 	if err != nil {
-// 		return fmt.Errorf("failed to expand parameters string: %+v", err)
-// 	}
+	for i := range certificateProfile.EtcdPeerCertificates {
+		certificateProfile.EtcdPeerCertificates[i] = vaultSecretRefName(fmt.Sprintf("etcdpeer%dcrt", i), vaultID, dnsPrefix)
+	}
+	for i := range certificateProfile.EtcdPeerCertificates {
+		certificateProfile.EtcdPeerPrivateKeys[i] = vaultSecretRefName(fmt.Sprintf("etcdpeer%dkey", i), vaultID, dnsPrefix)
+	}
 
-// 	v, ok := parametersMap["parameters"]
-// 	if !ok {
-// 		return fmt.Errorf("parameters not formatted correctly")
-// 	}
-// 	parameters := v.(map[string]interface{})
+	return nil
+}
 
-// 	// this actually has to be a reference block
-// 	// "reference": {
-// 	// 	"keyVault": {
-// 	// 	  "id": "/subscriptions/<SUB_ID>/resourceGroups/<RG_NAME>/providers/Microsoft.KeyVault/vaults/<KV_NAME>"
-// 	// 	},
-// 	// 	"secretName": "<NAME>"
-// 	// 	"secretVersion": "<VERSION>"
-// 	//  }
-// 	// parameters["caCertificate"] = fmt.Sprintf("%s/secrets/%s-cacert", vaultID, dnsPrefix)
-// 	// parameters["caPrivateKey"] = fmt.Sprintf("%s/secrets/%s-cakey", vaultID, dnsPrefix)
-// 	// parameters["apiServerCertificate"] = fmt.Sprintf("%s/secrets/%s-apiservercrt", vaultID, dnsPrefix)
-// 	// parameters["apiServerPrivateKey"] = fmt.Sprintf("%s/secrets/%s-apiserverkey", vaultID, dnsPrefix)
-// 	// parameters["clientCertificate"] = fmt.Sprintf("%s/secrets/%s-clientcrt", vaultID, dnsPrefix)
-// 	// parameters["clientPrivateKey"] = fmt.Sprintf("%s/secrets/%s-clientkey", vaultID, dnsPrefix)
-// 	// parameters["kubeConfigCertificate"] = fmt.Sprintf("%s/secrets/%s-kubeconfigcrt", vaultID, dnsPrefix)
-// 	// parameters["kubeConfigPrivateKey"] = fmt.Sprintf("%s/secrets/%s-kubeconfigkey", vaultID, dnsPrefix)
-// 	// parameters["etcdClientCertificate"] = fmt.Sprintf("%s/secrets/%s-etcdclientcrt", vaultID, dnsPrefix)
-// 	// parameters["etcdClientPrivateKey"] = fmt.Sprintf("%s/secrets/%s-etcdclientkey", vaultID, dnsPrefix)
-// 	// parameters["etcdServerCertificate"] = fmt.Sprintf("%s/secrets/%s-etcdservercrt", vaultID, dnsPrefix)
-// 	// parameters["etcdServerPrivateKey"] = fmt.Sprintf("%s/secrets/%s-etcdserverkey", vaultID, dnsPrefix)
+func secretName(name, dnsPrefix string) string {
+	return fmt.Sprintf("%s-%s", dnsPrefix, name)
+}
 
-// 	for i := range certificateProfile.EtcdPeerCertificates {
-// 		parameters[fmt.Sprintf("etcdPeerCertificate%d", i)] = fmt.Sprintf("%s/secrets/%s-etcdpeer%dcrt", vaultID, dnsPrefix, i)
-// 	}
-// 	for i := range certificateProfile.EtcdClientPrivateKey {
-// 		parameters[fmt.Sprintf("etcdPeerPrivateKey%d", i)] = fmt.Sprintf("%s/secrets/%s-etcdpeer%dkey", vaultID, dnsPrefix, i)
-// 	}
-
-// 	return nil
-// }
-
-// func setCertificateProfileSecretsAPIModel(c *ArmClient, cluster *Cluster, params string) error {
-// 	certificateProfile := cluster.Properties.CertificateProfile
-// 	vaultID := cluster.Properties.ServicePrincipalProfile.KeyvaultSecretRef.VaultID
-// 	dnsPrefix := cluster.Properties.MasterProfile.DNSPrefix
-
-// 	certificateProfile.CaCertificate = fmt.Sprintf("%s/secrets/%s-cacert", vaultID, dnsPrefix)
-// 	certificateProfile.CaPrivateKey = fmt.Sprintf("%s/secrets/%s-cakey", vaultID, dnsPrefix)
-// 	certificateProfile.APIServerCertificate = fmt.Sprintf("%s/secrets/%s-apiservercrt", vaultID, dnsPrefix)
-// 	certificateProfile.APIServerPrivateKey = fmt.Sprintf("%s/secrets/%s-apiserverkey", vaultID, dnsPrefix)
-// 	certificateProfile.ClientCertificate = fmt.Sprintf("%s/secrets/%s-clientcrt", vaultID, dnsPrefix)
-// 	certificateProfile.ClientPrivateKey = fmt.Sprintf("%s/secrets/%s-clientkey", vaultID, dnsPrefix)
-// 	certificateProfile.KubeConfigCertificate = fmt.Sprintf("%s/secrets/%s-kubeconfigcrt", vaultID, dnsPrefix)
-// 	certificateProfile.KubeConfigPrivateKey = fmt.Sprintf("%s/secrets/%s-kubeconfigkey", vaultID, dnsPrefix)
-// 	certificateProfile.EtcdClientCertificate = fmt.Sprintf("%s/secrets/%s-etcdclientcrt", vaultID, dnsPrefix)
-// 	certificateProfile.EtcdClientPrivateKey = fmt.Sprintf("%s/secrets/%s-etcdclientcrt", vaultID, dnsPrefix)
-// 	certificateProfile.EtcdServerCertificate = fmt.Sprintf("%s/secrets/%s-etcdservercrt", vaultID, dnsPrefix)
-// 	certificateProfile.EtcdClientPrivateKey = fmt.Sprintf("%s/secrets/%s-etcdserverkey", vaultID, dnsPrefix)
-
-// 	for i := range certificateProfile.EtcdPeerCertificates {
-// 		certificateProfile.EtcdPeerCertificates[i] = fmt.Sprintf("%s/secrets/%s-etcdpeer%dcrt", vaultID, dnsPrefix, i)
-// 	}
-// 	for i := range certificateProfile.EtcdPeerCertificates {
-// 		certificateProfile.EtcdPeerPrivateKeys[i] = fmt.Sprintf("%s/secrets/%s-etcdpeer%dkey", vaultID, dnsPrefix, i)
-// 	}
-
-// 	return nil
-// }
+func vaultSecretRefName(name, vaultID, dnsPrefix string) string {
+	return fmt.Sprintf("%s/secrets/%s", vaultID, secretName(name, dnsPrefix))
+}

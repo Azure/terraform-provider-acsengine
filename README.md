@@ -80,7 +80,8 @@ resource "acsengine_kubernetes_cluster" "test" {
 
   service_principal {
     client_id     = ""
-    client_secret = ""
+    vault_id      = ""
+    secret_name   = "spsecret"
   }
 
   tags {

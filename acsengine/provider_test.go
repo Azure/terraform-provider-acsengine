@@ -132,7 +132,6 @@ func testAccPreCheck(t *testing.T) {
 		"ARM_SUBSCRIPTION_ID",
 		"ARM_TENANT_ID",
 		"ARM_TEST_LOCATION",
-		"ARM_TEST_VAULT_URI", // might not need this
 		"ARM_TEST_VAULT_ID",
 		"SSH_KEY_PUB",
 	}
@@ -164,10 +163,6 @@ func testSSHPublicKey() string {
 
 func testTenantID() string {
 	return os.Getenv("ARM_TENANT_ID")
-}
-
-func testKeyVaultURI() string {
-	return os.Getenv("ARM_TEST_VAULT_URI")
 }
 
 func testKeyVaultID() string {

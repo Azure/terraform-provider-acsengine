@@ -19,7 +19,7 @@ func scaleCluster(d *ResourceData, c *ArmClient, agentIndex, agentCount int) err
 	}
 
 	keyVaultSecretRef := cluster.Properties.ServicePrincipalProfile.KeyvaultSecretRef
-	clientSecret, err := getSecret(c, keyVaultSecretRef.VaultID, keyVaultSecretRef.SecretName, "")
+	clientSecret, err := getSecretFromKeyVault(c, keyVaultSecretRef.VaultID, keyVaultSecretRef.SecretName, "")
 	if err != nil {
 		return fmt.Errorf("error getting service principal key: %+v", err)
 	}

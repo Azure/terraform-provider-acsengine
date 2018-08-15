@@ -60,12 +60,11 @@ func TestGenerateTemplateBasic(t *testing.T) {
 			t.Fatalf("failed to set cluster")
 		}
 
-		template, parameters, err := generateACSEngineTemplate(cluster, false) // don't write files
+		template, parameters, err := generateACSEngineTemplate(nil, cluster, false) // don't write files
 		if err != nil {
 			t.Fatalf("Template generation failed: %v", err)
 		}
 
-		// now I can test that the template and parameters look okay I guess...
 		assert.Contains(t, parameters, tc.AdminUsername, "cluster admin username set incorrectly in parameters")
 		assert.Contains(t, parameters, testClientID(), "cluster client ID set incorrectly in parameters")
 		assert.Contains(t, parameters, vmSize, "cluster VM size set incorrectly in parameters")
@@ -132,7 +131,7 @@ func TestGenerateTemplateCustomized(t *testing.T) {
 			t.Fatalf("failed to set cluster")
 		}
 
-		template, parameters, err := generateACSEngineTemplate(cluster, false) // don't write files
+		template, parameters, err := generateACSEngineTemplate(nil, cluster, false) // don't write files
 		if err != nil {
 			t.Fatalf("Template generation failed: %v", err)
 		}

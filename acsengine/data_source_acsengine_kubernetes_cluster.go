@@ -194,7 +194,6 @@ func dataSourceACSEngineK8sClusterRead(data *schema.ResourceData, m interface{})
 		resourceGroup = v.(string)
 	}
 
-	// this could be a problem because the deployment name changes
 	resp, err := deployClient.Get(client.StopContext, resourceGroup, name)
 	if err != nil {
 		if utils.ResponseWasNotFound(resp.Response) {
@@ -232,7 +231,7 @@ func dataSourceACSEngineK8sClusterRead(data *schema.ResourceData, m interface{})
 		return err
 	}
 
-	if err := d.setKubeConfig(&cluster); err != nil {
+	if err := d.setKubeConfig(client, &cluster, true); err != nil {
 		return err
 	}
 
