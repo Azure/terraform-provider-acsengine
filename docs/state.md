@@ -7,3 +7,7 @@ Unfortunately, this makes implementing the acs-engine kubernetes cluster data so
 ## Note on resources created
 
 Storing the contents of `apimodel.json` in the Terraform state means that no new resources have to be created to store this information. The Azure resources created include the Azure resource group for the cluster, and all resources that are essential to creating and deploying a cluster (for instance, VMs for nodes and agent pools). The resource group is deleted to destroy the cluster. **Important:** This means that new resources should not be created within this resource group unless they can be deleted with the cluster.
+
+## Note on certificates and key storage
+
+To use this Terraform resource, you are expected to have an Azure key vault created (in a separate resource group) which you can use with your ACS-Engine Kubernetes cluster to store your service principal secret and certificates and keys for cluster authentication.

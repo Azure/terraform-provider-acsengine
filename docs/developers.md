@@ -47,6 +47,8 @@ You will need to have the following environment variables set:
 * `ARM_CLIENT_SECRET`: Azure client secret
 * `ARM_SUBSCRIPTION_ID`: Azure subscription UUID
 * `ARM_TENANT_ID`: Azure tenant UUID
+* `ARM_TEST_VAULT_ID`: Azure vault ID used for storing test certificates and keys
+* `ARM_TEST_LOCATION`: Azure region used for creating test resources
 * `SSH_KEY_PUB`: Public SSH key
 
 <!-- ## Debugging
