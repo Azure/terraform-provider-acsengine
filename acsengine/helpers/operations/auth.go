@@ -48,9 +48,7 @@ func (a *AuthArgs) AddAuthArgs(cluster *api.ContainerService, azureID string) er
 	}
 	a.RawSubscriptionID = id.SubscriptionID
 	a.AuthMethod = defaultAuthMethod
-	// first I need to get the client ID using the vault ID and secret name
 	a.RawClientID = cluster.Properties.ServicePrincipalProfile.ClientID
-	// a.ClientSecret = cluster.Properties.ServicePrincipalProfile.Secret
 	if err = a.ValidateAuthArgs(); err != nil {
 		return fmt.Errorf("error validating auth args: %+v", err)
 	}

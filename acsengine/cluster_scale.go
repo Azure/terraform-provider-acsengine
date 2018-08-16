@@ -67,6 +67,9 @@ func scaleDownCluster(c *ArmClient, sc *operations.ScaleClient, currentNodeCount
 
 	cluster := newCluster(sc.Cluster)
 	kubeconfig, err := cluster.getKubeConfig(c, true)
+	if err != nil {
+		return fmt.Errorf("error getting kube config: %+v", err)
+	}
 	if err = sc.DrainNodes(kubeconfig, vmsToDelete); err != nil {
 		return fmt.Errorf("Got error while draining the nodes to be deleted: %+v", err)
 	}
