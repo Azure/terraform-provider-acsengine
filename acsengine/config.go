@@ -15,7 +15,7 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/adal"
 	"github.com/Azure/go-autorest/autorest/azure"
-	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/authentication"
+	"github.com/Azure/terraform-provider-acsengine/internal/authentication"
 	"github.com/hashicorp/terraform/terraform"
 )
 

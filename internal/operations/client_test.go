@@ -5,14 +5,14 @@ import (
 	"os"
 	"testing"
 
-	"github.com/Azure/terraform-provider-acsengine/acsengine/utils"
+	"github.com/Azure/terraform-provider-acsengine/internal/tester"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestSetACSEngineClient(t *testing.T) {
 	resourceGroup := "clusterResourceGroup"
 	masterDNSPrefix := "masterDNSPrefix"
-	cluster := utils.MockContainerService("clusterName", "southcentralus", masterDNSPrefix)
+	cluster := tester.MockContainerService("clusterName", "southcentralus", masterDNSPrefix)
 	id := fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Resources/deployments/%s", os.Getenv("ARM_SUBSCRIPTION_ID"), resourceGroup, "clusterName")
 
 	c := NewACSEngineClient(os.Getenv("ARM_CLIENT_SECRET"))
@@ -27,7 +27,7 @@ func TestSetACSEngineClient(t *testing.T) {
 
 func TestSetACSEngineClientBadID(t *testing.T) {
 	masterDNSPrefix := "masterDNSPrefix"
-	cluster := utils.MockContainerService("clusterName", "southcentralus", masterDNSPrefix)
+	cluster := tester.MockContainerService("clusterName", "southcentralus", masterDNSPrefix)
 
 	c := NewACSEngineClient(os.Getenv("ARM_CLIENT_SECRET"))
 

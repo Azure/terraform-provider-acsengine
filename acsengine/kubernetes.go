@@ -5,7 +5,7 @@ import (
 
 	"github.com/Azure/acs-engine/pkg/acsengine"
 	"github.com/Azure/acs-engine/pkg/api/common"
-	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/kubernetes"
+	"github.com/Azure/terraform-provider-acsengine/internal/kubernetes"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 

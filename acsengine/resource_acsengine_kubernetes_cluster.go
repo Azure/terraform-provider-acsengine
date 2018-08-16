@@ -21,9 +21,9 @@ import (
 	"strconv"
 
 	"github.com/Azure/acs-engine/pkg/api"
-	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/kubernetes"
-	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/response"
-	"github.com/Azure/terraform-provider-acsengine/acsengine/utils"
+	"github.com/Azure/terraform-provider-acsengine/internal/kubernetes"
+	"github.com/Azure/terraform-provider-acsengine/internal/resource"
+	"github.com/Azure/terraform-provider-acsengine/internal/response"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
 )
@@ -300,7 +300,7 @@ func resourceACSEngineK8sClusterCreate(data *schema.ResourceData, m interface{})
 
 func resourceACSEngineK8sClusterRead(data *schema.ResourceData, m interface{}) error {
 	d := newResourceData(data)
-	id, err := utils.ParseAzureResourceID(d.Id())
+	id, err := resource.ParseAzureResourceID(d.Id())
 	if err != nil {
 		d.SetId("")
 		return err
@@ -345,7 +345,7 @@ func resourceACSEngineK8sClusterDelete(d *schema.ResourceData, m interface{}) er
 	client := m.(*ArmClient)
 	rgClient := client.resourceGroupsClient
 
-	id, err := utils.ParseAzureResourceID(d.Id())
+	id, err := resource.ParseAzureResourceID(d.Id())
 	if err != nil {
 		return fmt.Errorf("error parsing Azure resource ID %q: %+v", d.Id(), err)
 	}

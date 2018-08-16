@@ -1,7 +1,8 @@
 package acsengine
 
 import (
-	"github.com/Azure/terraform-provider-acsengine/acsengine/utils"
+	"github.com/Azure/terraform-provider-acsengine/internal/resource"
+	"github.com/Azure/terraform-provider-acsengine/internal/tester"
 )
 
 func mockClusterResourceData(name, location, resourceGroup, dnsPrefix string) *resourceData {
@@ -15,14 +16,14 @@ func mockClusterResourceData(name, location, resourceGroup, dnsPrefix string) *r
 	d.Set("kubernetes_version", "1.10.0")
 
 	adminUsername := "azureuser"
-	linuxProfiles := utils.MockFlattenLinuxProfile(adminUsername)
+	linuxProfiles := tester.MockFlattenLinuxProfile(adminUsername)
 	d.Set("linux_profile", &linuxProfiles)
 
-	servicePrincipals := utils.MockFlattenServicePrincipal()
+	servicePrincipals := tester.MockFlattenServicePrincipal()
 	d.Set("service_principal", servicePrincipals)
 
 	vmSize := "Standard_D2_v2"
-	masterProfiles := utils.MockFlattenMasterProfile(1, dnsPrefix, vmSize)
+	masterProfiles := tester.MockFlattenMasterProfile(1, dnsPrefix, vmSize)
 	d.Set("master_profile", &masterProfiles)
 
 	agentPool1Name := "agentpool1"
@@ -32,22 +33,22 @@ func mockClusterResourceData(name, location, resourceGroup, dnsPrefix string) *r
 	agentPool2osDiskSize := 30
 
 	agentPoolProfiles := []interface{}{}
-	agentPoolProfile0 := utils.MockFlattenAgentPoolProfiles(agentPool1Name, agentPool1Count, "Standard_D2_v2", 0, false)
+	agentPoolProfile0 := tester.MockFlattenAgentPoolProfiles(agentPool1Name, agentPool1Count, "Standard_D2_v2", 0, false)
 	agentPoolProfiles = append(agentPoolProfiles, agentPoolProfile0)
-	agentPoolProfile1 := utils.MockFlattenAgentPoolProfiles(agentPool2Name, agentPool2Count, "Standard_D2_v2", agentPool2osDiskSize, true)
+	agentPoolProfile1 := tester.MockFlattenAgentPoolProfiles(agentPool2Name, agentPool2Count, "Standard_D2_v2", agentPool2osDiskSize, true)
 	agentPoolProfiles = append(agentPoolProfiles, agentPoolProfile1)
 	d.Set("agent_pool_profiles", &agentPoolProfiles)
 
 	d.Set("tags", map[string]interface{}{})
 
-	apimodel := utils.ACSEngineK8sClusterAPIModel(name, location, dnsPrefix)
+	apimodel := resource.ACSEngineK8sClusterAPIModel(name, location, dnsPrefix)
 	d.Set("api_model", base64Encode(apimodel))
 
 	return d
 }
 
 func mockCluster(name, location, dnsPrefix string) *Cluster {
-	cluster := utils.MockContainerService(name, location, dnsPrefix)
+	cluster := tester.MockContainerService(name, location, dnsPrefix)
 	return &Cluster{
 		ContainerService: cluster,
 	}

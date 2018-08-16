@@ -10,8 +10,8 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
 	"github.com/Azure/go-autorest/autorest/adal"
-	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/authentication"
-	azschema "github.com/Azure/terraform-provider-acsengine/acsengine/helpers/schema"
+	"github.com/Azure/terraform-provider-acsengine/internal/authentication"
+	azschema "github.com/Azure/terraform-provider-acsengine/internal/schema"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
 )

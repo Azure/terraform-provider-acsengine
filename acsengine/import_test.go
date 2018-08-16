@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/Azure/terraform-provider-acsengine/acsengine/utils"
+	"github.com/Azure/terraform-provider-acsengine/internal/resource"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -24,7 +24,7 @@ func TestParseImportID(t *testing.T) {
 	}
 	assert.Equal(t, deploymentDirectory, deploymentDirectoryInput, "parseImportID failed")
 
-	if _, err = utils.ParseAzureResourceID(azureID); err != nil {
+	if _, err = resource.ParseAzureResourceID(azureID); err != nil {
 		t.Fatalf("failed to parse azureID: %+v", err)
 	}
 }

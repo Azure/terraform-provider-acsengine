@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/Azure/acs-engine/pkg/api"
-	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/operations"
+	"github.com/Azure/terraform-provider-acsengine/internal/operations"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
-	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/authentication"
+	"github.com/Azure/terraform-provider-acsengine/internal/authentication"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"

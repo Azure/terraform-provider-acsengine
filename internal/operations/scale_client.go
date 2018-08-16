@@ -9,7 +9,7 @@ import (
 	"github.com/Azure/acs-engine/pkg/api"
 	"github.com/Azure/acs-engine/pkg/armhelpers/utils"
 	"github.com/Azure/acs-engine/pkg/operations"
-	azutils "github.com/Azure/terraform-provider-acsengine/acsengine/utils"
+	"github.com/Azure/terraform-provider-acsengine/internal/resource"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -42,7 +42,7 @@ func (sc *ScaleClient) SetScaleClient(cluster *api.ContainerService, azureID str
 		return fmt.Errorf("failed to initialize ACSEngineClient: %+v", err)
 	}
 
-	id, err := azutils.ParseAzureResourceID(azureID)
+	id, err := resource.ParseAzureResourceID(azureID)
 	if err != nil {
 		return fmt.Errorf("error parsing resource ID: %+v", err)
 	}

@@ -6,7 +6,7 @@ import (
 	"github.com/Azure/acs-engine/pkg/api"
 	"github.com/Azure/acs-engine/pkg/armhelpers"
 	"github.com/Azure/go-autorest/autorest/azure"
-	"github.com/Azure/terraform-provider-acsengine/acsengine/utils"
+	"github.com/Azure/terraform-provider-acsengine/internal/resource"
 	"github.com/satori/go.uuid"
 )
 
@@ -42,7 +42,7 @@ func (a *AuthArgs) AddAuthArgs(cluster *api.ContainerService, azureID string) er
 	a.RawAzureEnvironment = "AzurePublicCloud"
 	a.language = "en-us"
 
-	id, err := utils.ParseAzureResourceID(azureID)
+	id, err := resource.ParseAzureResourceID(azureID)
 	if err != nil {
 		return fmt.Errorf("error parsing resource ID: %+v", err)
 	}

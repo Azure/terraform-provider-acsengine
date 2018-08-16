@@ -5,7 +5,7 @@ import (
 
 	"github.com/Azure/acs-engine/pkg/i18n"
 	"github.com/Azure/acs-engine/pkg/operations/kubernetesupgrade"
-	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/operations"
+	"github.com/Azure/terraform-provider-acsengine/internal/operations"
 )
 
 func upgradeCluster(d *resourceData, c *ArmClient, upgradeVersion string) error {

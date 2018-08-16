@@ -1,4 +1,4 @@
-package utils
+package tester
 
 import (
 	"os"
@@ -7,9 +7,7 @@ import (
 	"github.com/Azure/acs-engine/pkg/api/common"
 )
 
-// I should name these so that they are clearly "mocks"
-
-// MockFlattenLinuxProfile creates test linux profile interface
+// MockFlattenLinuxProfile ...
 func MockFlattenLinuxProfile(adminUsername string) []interface{} {
 	sshKeys := []interface{}{}
 	keys := map[string]interface{}{
@@ -27,7 +25,7 @@ func MockFlattenLinuxProfile(adminUsername string) []interface{} {
 	return linuxProfiles
 }
 
-// MockFlattenWindowsProfile creates test windows profile interface
+// MockFlattenWindowsProfile ...
 func MockFlattenWindowsProfile(adminUsername string, adminPassword string) []interface{} {
 	values := map[string]interface{}{
 		"admin_username": adminUsername,
@@ -39,7 +37,7 @@ func MockFlattenWindowsProfile(adminUsername string, adminPassword string) []int
 	return windowsProfiles
 }
 
-// MockFlattenServicePrincipal creates test service principal interface
+// MockFlattenProfile
 func MockFlattenServicePrincipal() []interface{} {
 	servicePrincipals := []interface{}{}
 
@@ -55,7 +53,7 @@ func MockFlattenServicePrincipal() []interface{} {
 	return servicePrincipals
 }
 
-// MockFlattenMasterProfile creates test master profile interface
+// MockFlattenProfile
 func MockFlattenMasterProfile(count int, dnsNamePrefix string, vmSize string) []interface{} {
 	masterProfiles := []interface{}{}
 
@@ -71,7 +69,7 @@ func MockFlattenMasterProfile(count int, dnsNamePrefix string, vmSize string) []
 	return masterProfiles
 }
 
-// MockFlattenAgentPoolProfiles creates test agent pool profiles interface
+// MockFlattenProfile
 func MockFlattenAgentPoolProfiles(name string, count int, vmSize string, osDiskSizeGB int, windows bool) map[string]interface{} {
 	agentPoolValues := map[string]interface{}{
 		"name":    name,
@@ -90,7 +88,6 @@ func MockFlattenAgentPoolProfiles(name string, count int, vmSize string, osDiskS
 	return agentPoolValues
 }
 
-// MockExpandLinuxProfile creates test api.LinuxProfile
 func MockExpandLinuxProfile(adminUsername string, keyData string) api.LinuxProfile {
 	sshPublicKeys := []api.PublicKey{
 		{KeyData: keyData},
@@ -107,7 +104,6 @@ func MockExpandLinuxProfile(adminUsername string, keyData string) api.LinuxProfi
 	return profile
 }
 
-// MockExpandWindowsProfile creates test api.WindowsProfile
 func MockExpandWindowsProfile(adminUsername string, adminPassword string) api.WindowsProfile {
 	profile := api.WindowsProfile{
 		AdminUsername: adminUsername,
@@ -117,7 +113,6 @@ func MockExpandWindowsProfile(adminUsername string, adminPassword string) api.Wi
 	return profile
 }
 
-// MockExpandServicePrincipal creates test api.ServicePrincipalProfile
 func MockExpandServicePrincipal(clientID string, vaultID string) api.ServicePrincipalProfile {
 	profile := api.ServicePrincipalProfile{
 		ClientID: clientID,
@@ -130,7 +125,6 @@ func MockExpandServicePrincipal(clientID string, vaultID string) api.ServicePrin
 	return profile
 }
 
-// MockExpandMasterProfile creates test api.MasterProfile
 func MockExpandMasterProfile(count int, dnsPrefix string, vmSize string, fqdn string, osDiskSize int) api.MasterProfile {
 	profile := api.MasterProfile{
 		Count:     count,
@@ -146,7 +140,6 @@ func MockExpandMasterProfile(count int, dnsPrefix string, vmSize string, fqdn st
 	return profile
 }
 
-// MockExpandAgentPoolProfile creates test api.AgentPoolProfile pointer
 func MockExpandAgentPoolProfile(name string, count int, vmSize string, osDiskSizeGB int, isWindows bool) *api.AgentPoolProfile {
 	profile := &api.AgentPoolProfile{
 		Name:   name,
@@ -165,7 +158,6 @@ func MockExpandAgentPoolProfile(name string, count int, vmSize string, osDiskSiz
 	return profile
 }
 
-// MockExpandCertificateProfile creates test api.CertificateProfile
 func MockExpandCertificateProfile() api.CertificateProfile {
 	certificateProfile := api.CertificateProfile{
 		CaCertificate:         "apple",
@@ -182,7 +174,6 @@ func MockExpandCertificateProfile() api.CertificateProfile {
 	return certificateProfile
 }
 
-// MockContainerService returns a container service with mostly pre-initialized values
 func MockContainerService(name string, location string, dnsPrefix string) *api.ContainerService {
 	linuxProfile := MockExpandLinuxProfile("azureuser", "public key")
 	servicePrincipal := MockExpandServicePrincipal(os.Getenv("ARM_CLIENT_ID"), os.Getenv("ARM_CLIENT_SECRET"))

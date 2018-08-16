@@ -3,7 +3,7 @@ package acsengine
 import (
 	"fmt"
 
-	"github.com/Azure/terraform-provider-acsengine/acsengine/utils"
+	"github.com/Azure/terraform-provider-acsengine/internal/utils"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 

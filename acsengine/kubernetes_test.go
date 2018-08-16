@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/Azure/terraform-provider-acsengine/acsengine/utils"
+	"github.com/Azure/terraform-provider-acsengine/internal/resource"
+	"github.com/Azure/terraform-provider-acsengine/internal/utils"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -61,7 +62,7 @@ func TestFlattenKubeConfig(t *testing.T) {
 		}
 	}()
 
-	kubeConfigFile := utils.ACSEngineK8sClusterKubeConfig("masterfqdn", "southcentralus")
+	kubeConfigFile := resource.ACSEngineK8sClusterKubeConfig("masterfqdn", "southcentralus")
 
 	_, kubeConfigs, err := flattenKubeConfig(kubeConfigFile)
 	if err != nil {

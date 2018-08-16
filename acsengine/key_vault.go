@@ -5,7 +5,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/keyvault/mgmt/keyvault"
 	vaultsvc "github.com/Azure/azure-sdk-for-go/services/keyvault/2016-10-01/keyvault"
-	"github.com/Azure/terraform-provider-acsengine/acsengine/utils"
+	"github.com/Azure/terraform-provider-acsengine/internal/resource"
 )
 
 // // I ought to check if something like this exists in keyvault package already
@@ -174,7 +174,7 @@ func getSecretFromKeyVault(c *ArmClient, vaultID, secretName, version string) (s
 func getKeyVault(c *ArmClient, vaultID string) (*keyvault.Vault, error) {
 	keyVaultClient := c.keyVaultClient
 
-	id, err := utils.ParseAzureResourceID(vaultID)
+	id, err := resource.ParseAzureResourceID(vaultID)
 	if err != nil {
 		return nil, err
 	}

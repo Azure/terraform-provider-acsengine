@@ -10,7 +10,7 @@ import (
 	"github.com/Azure/acs-engine/pkg/armhelpers"
 	"github.com/Azure/acs-engine/pkg/helpers"
 	"github.com/Azure/acs-engine/pkg/i18n"
-	"github.com/Azure/terraform-provider-acsengine/acsengine/utils"
+	"github.com/Azure/terraform-provider-acsengine/internal/resource"
 	"github.com/leonelquinteros/gotext"
 	log "github.com/sirupsen/logrus"
 )
@@ -60,7 +60,7 @@ func (c *ACSEngineClient) AddACSEngineClientAuthArgs(cluster *api.ContainerServi
 func (c *ACSEngineClient) SetACSEngineClient(cluster *api.ContainerService, azureID string) error {
 	var err error
 
-	id, err := utils.ParseAzureResourceID(azureID)
+	id, err := resource.ParseAzureResourceID(azureID)
 	if err != nil {
 		return fmt.Errorf("error parsing resource ID: %+v", err)
 	}

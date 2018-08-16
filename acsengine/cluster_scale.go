@@ -8,7 +8,7 @@ import (
 	"github.com/Azure/acs-engine/pkg/api"
 	"github.com/Azure/acs-engine/pkg/i18n"
 	ops "github.com/Azure/acs-engine/pkg/operations"
-	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/operations"
+	"github.com/Azure/terraform-provider-acsengine/internal/operations"
 )
 
 func scaleCluster(d *resourceData, c *ArmClient, agentIndex, agentCount int) error {

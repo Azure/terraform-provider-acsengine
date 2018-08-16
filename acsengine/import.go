@@ -5,7 +5,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/Azure/terraform-provider-acsengine/acsengine/utils"
+	"github.com/Azure/terraform-provider-acsengine/internal/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -19,7 +19,7 @@ func resourceACSEngineK8sClusterImport(d *schema.ResourceData, m interface{}) ([
 		return nil, err
 	}
 
-	id, err := utils.ParseAzureResourceID(azureID)
+	id, err := resource.ParseAzureResourceID(azureID)
 	if err != nil {
 		return nil, err
 	}
