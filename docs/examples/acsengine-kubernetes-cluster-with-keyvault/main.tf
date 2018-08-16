@@ -11,15 +11,15 @@ resource "azurerm_key_vault" "testkv" {
   name = "testkvsm"
   location = "${azurerm_resource_group.testkvrg.location}"
   resource_group_name = "${azurerm_resource_group.testkvrg.name}"
-  tenant_id = ""
+  tenant_id = "${var.tenant_id}"
 
   sku {
     name = "standard"
   }
 
   access_policy {
-      tenant_id = ""
-      object_id = ""
+      tenant_id = "${var.tenant_id}"
+      object_id = "${var.object_id}"
 
       key_permissions = [
           "get",
@@ -38,7 +38,7 @@ resource "azurerm_key_vault" "testkv" {
 
 resource "azurerm_key_vault_secret" "spsecret" {
   name = "spsecret"
-  value = ""
+  value = "${var.sp_secret}"
   vault_uri = "${azurerm_key_vault.testkv.vault_uri}"
 }
 
@@ -65,12 +65,12 @@ resource "acsengine_kubernetes_cluster" "cluster" {
     admin_username = "azureuser"
 
     ssh {
-      key_data = ""
+      key_data = "${var.ssh_public_key}"
     }
   }
 
   service_principal {
-    client_id     = ""
+    client_id     = "${var.sp_id}"
     vault_id      = "${azurerm_key_vault.kv.id}"
     secret_name   = "${azurerm_key_vault_secret.spsecret.name}"
   }

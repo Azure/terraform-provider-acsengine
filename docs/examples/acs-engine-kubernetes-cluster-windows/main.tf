@@ -38,7 +38,7 @@ resource "acsengine_kubernetes_cluster" "cluster" {
     admin_username = "azureuser"
 
     ssh {
-      key_data = ""
+      key_data = "${var.ssh_public_key}"
     }
   }
 
