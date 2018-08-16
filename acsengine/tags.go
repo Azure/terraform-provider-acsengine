@@ -95,7 +95,7 @@ func flattenTags(tags map[string]string) (map[string]interface{}, error) {
 	return output, nil
 }
 
-func (d *ResourceData) getTags() map[string]interface{} {
+func (d *resourceData) getTags() map[string]interface{} {
 	var tags map[string]interface{}
 	if v, ok := d.GetOk("tags"); ok {
 		tags = v.(map[string]interface{})
@@ -106,7 +106,7 @@ func (d *ResourceData) getTags() map[string]interface{} {
 	return tags
 }
 
-func (d *ResourceData) setTags(tagMap map[string]string) error {
+func (d *resourceData) setTags(tagMap map[string]string) error {
 	tags, err := flattenTags(tagMap)
 	if err != nil {
 		return fmt.Errorf("Error flattening `tags`: %+v", err)
@@ -120,7 +120,7 @@ func (d *ResourceData) setTags(tagMap map[string]string) error {
 
 // only updates resource group tags
 // I don't like that this function depends on containerservice.go and that file depends on tags.go
-func updateResourceGroupTags(d *ResourceData, c *ArmClient) error {
+func updateResourceGroupTags(d *resourceData, c *ArmClient) error {
 	if err := createClusterResourceGroup(d, c); err != nil { // this should update... let's see if it works
 		return fmt.Errorf("failed to update resource group: %+v", err)
 	}

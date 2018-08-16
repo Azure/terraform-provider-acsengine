@@ -4,7 +4,7 @@ import (
 	"github.com/Azure/terraform-provider-acsengine/acsengine/utils"
 )
 
-func mockClusterResourceData(name, location, resourceGroup, dnsPrefix string) *ResourceData {
+func mockClusterResourceData(name, location, resourceGroup, dnsPrefix string) *resourceData {
 	r := resourceArmACSEngineKubernetesCluster()
 	data := r.TestResourceData()
 	d := newResourceData(data)

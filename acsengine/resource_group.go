@@ -52,7 +52,7 @@ func resourceAzurermResourceGroupNameDiffSuppress(k, old, new string, d *schema.
 	return strings.ToLower(old) == strings.ToLower(new)
 }
 
-func createClusterResourceGroup(d *ResourceData, client *ArmClient) error {
+func createClusterResourceGroup(d *resourceData, client *ArmClient) error {
 	rgClient := client.resourceGroupsClient
 	log.Printf("[INFO] preparing arguments for Azure resource group creation.")
 

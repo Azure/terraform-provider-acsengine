@@ -11,7 +11,7 @@ import (
 )
 
 // ResourceData ...
-type ResourceData struct {
+type resourceData struct {
 	*schema.ResourceData
 }
 
@@ -153,7 +153,7 @@ func flattenDataSourceServicePrincipal(profile api.ServicePrincipalProfile) ([]i
 	return profiles, nil
 }
 
-func expandLinuxProfile(d *ResourceData) (api.LinuxProfile, error) {
+func expandLinuxProfile(d *resourceData) (api.LinuxProfile, error) {
 	var profiles []interface{}
 	v, ok := d.GetOk("linux_profile")
 	if !ok {
@@ -188,7 +188,7 @@ func expandLinuxProfile(d *ResourceData) (api.LinuxProfile, error) {
 	return profile, nil
 }
 
-func expandWindowsProfile(d *ResourceData) (*api.WindowsProfile, error) {
+func expandWindowsProfile(d *resourceData) (*api.WindowsProfile, error) {
 	var profiles []interface{}
 	v, ok := d.GetOk("windows_profile")
 	if !ok { // don't return error because this shows there's no Windows profile
@@ -208,7 +208,7 @@ func expandWindowsProfile(d *ResourceData) (*api.WindowsProfile, error) {
 	return profile, nil
 }
 
-func expandServicePrincipal(d *ResourceData) (api.ServicePrincipalProfile, error) {
+func expandServicePrincipal(d *resourceData) (api.ServicePrincipalProfile, error) {
 	var configs []interface{}
 	v, ok := d.GetOk("service_principal")
 	if !ok {
@@ -234,7 +234,7 @@ func expandServicePrincipal(d *ResourceData) (api.ServicePrincipalProfile, error
 	return principal, nil
 }
 
-func expandMasterProfile(d *ResourceData) (api.MasterProfile, error) {
+func expandMasterProfile(d *resourceData) (api.MasterProfile, error) {
 	var configs []interface{}
 	v, ok := d.GetOk("master_profile")
 	if !ok {
@@ -261,7 +261,7 @@ func expandMasterProfile(d *ResourceData) (api.MasterProfile, error) {
 	return profile, nil
 }
 
-func expandAgentPoolProfiles(d *ResourceData) ([]*api.AgentPoolProfile, error) {
+func expandAgentPoolProfiles(d *resourceData) ([]*api.AgentPoolProfile, error) {
 	var configs []interface{}
 	v, ok := d.GetOk("agent_pool_profiles")
 	if !ok {
@@ -295,13 +295,13 @@ func expandAgentPoolProfiles(d *ResourceData) ([]*api.AgentPoolProfile, error) {
 	return profiles, nil
 }
 
-func newResourceData(data *schema.ResourceData) *ResourceData {
-	return &ResourceData{
+func newResourceData(data *schema.ResourceData) *resourceData {
+	return &resourceData{
 		ResourceData: data,
 	}
 }
 
-func (d *ResourceData) setContainerService() (Cluster, error) {
+func (d *resourceData) setContainerService() (Cluster, error) {
 	var name, location, resourceGroup, kubernetesVersion string
 	var v interface{}
 	var ok bool
@@ -376,7 +376,7 @@ func (d *ResourceData) setContainerService() (Cluster, error) {
 	return cluster, nil
 }
 
-func (d *ResourceData) loadContainerServiceFromApimodel(validate, isUpdate bool) (Cluster, error) {
+func (d *resourceData) loadContainerServiceFromApimodel(validate, isUpdate bool) (Cluster, error) {
 	locale, err := i18n.LoadTranslations()
 	if err != nil {
 		return Cluster{}, fmt.Errorf("error loading translations: %+v", err)
@@ -405,7 +405,7 @@ func (d *ResourceData) loadContainerServiceFromApimodel(validate, isUpdate bool)
 	return cluster, nil
 }
 
-func (d *ResourceData) setStateAPIModel(cluster *Cluster) error {
+func (d *resourceData) setStateAPIModel(cluster *Cluster) error {
 	locale, err := i18n.LoadTranslations()
 	if err != nil {
 		return fmt.Errorf("error loading translations: %+v", err)
@@ -427,7 +427,7 @@ func (d *ResourceData) setStateAPIModel(cluster *Cluster) error {
 	return nil
 }
 
-func (d *ResourceData) setStateProfiles(cluster *Cluster) error {
+func (d *resourceData) setStateProfiles(cluster *Cluster) error {
 	linuxProfile, err := flattenLinuxProfile(*cluster.Properties.LinuxProfile)
 	if err != nil {
 		return fmt.Errorf("Error flattening `linux_profile`: %+v", err)
@@ -465,7 +465,7 @@ func (d *ResourceData) setStateProfiles(cluster *Cluster) error {
 	return nil
 }
 
-func (d *ResourceData) setResourceStateProfiles(cluster *Cluster) error {
+func (d *resourceData) setResourceStateProfiles(cluster *Cluster) error {
 	if err := d.setStateProfiles(cluster); err != nil {
 		return err
 	}
@@ -481,7 +481,7 @@ func (d *ResourceData) setResourceStateProfiles(cluster *Cluster) error {
 	return nil
 }
 
-func (d *ResourceData) setDataSourceStateProfiles(cluster *Cluster) error {
+func (d *resourceData) setDataSourceStateProfiles(cluster *Cluster) error {
 	if err := d.setStateProfiles(cluster); err != nil {
 		return err
 	}

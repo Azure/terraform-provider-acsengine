@@ -87,7 +87,7 @@ func (cluster *Cluster) getKubeConfig(c *ArmClient, keyVault bool) (string, erro
 	return kubeConfig, nil
 }
 
-func (d *ResourceData) setKubeConfig(c *ArmClient, cluster *Cluster, keyVault bool) error {
+func (d *resourceData) setKubeConfig(c *ArmClient, cluster *Cluster, keyVault bool) error {
 	kubeConfigFile, err := cluster.getKubeConfig(c, keyVault)
 	if err != nil {
 		return fmt.Errorf("Error getting kube config: %+v", err)

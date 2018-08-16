@@ -8,12 +8,15 @@ import (
 	"github.com/Azure/terraform-provider-acsengine/acsengine/utils"
 )
 
-// I ought to check if something like this exists in keyvault package already
+// // I ought to check if something like this exists in keyvault package already
 // type keyVault struct {
-// 	name    string
 // 	vaultID string
-// 	// secretName string
-// 	// artifacts []string
+// }
+
+// func newKeyVault(vaultID string) *keyVault {
+// 	return &keyVault{
+// 		vaultID: vaultID,
+// 	}
 // }
 
 // certificate profile need to be set

@@ -8,7 +8,7 @@ import (
 	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/operations"
 )
 
-func upgradeCluster(d *ResourceData, c *ArmClient, upgradeVersion string) error {
+func upgradeCluster(d *resourceData, c *ArmClient, upgradeVersion string) error {
 	cluster, err := d.loadContainerServiceFromApimodel(true, true)
 	if err != nil {
 		return fmt.Errorf("error parsing the api model: %+v", err)

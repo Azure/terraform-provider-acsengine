@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/Azure/acs-engine/pkg/acsengine"
 	"github.com/Azure/acs-engine/pkg/acsengine/transform"
 	"github.com/Azure/acs-engine/pkg/api"
 	"github.com/Azure/acs-engine/pkg/i18n"
@@ -12,7 +11,7 @@ import (
 	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/operations"
 )
 
-func scaleCluster(d *ResourceData, c *ArmClient, agentIndex, agentCount int) error {
+func scaleCluster(d *resourceData, c *ArmClient, agentIndex, agentCount int) error {
 	cluster, err := d.loadContainerServiceFromApimodel(true, true)
 	if err != nil {
 		return fmt.Errorf("error parsing the api model: %+v", err)
@@ -32,7 +31,7 @@ func scaleCluster(d *ResourceData, c *ArmClient, agentIndex, agentCount int) err
 	var currentNodeCount, highestUsedIndex, windowsIndex int
 	var vms []string
 	if sc.AgentPool.IsAvailabilitySets() {
-		if highestUsedIndex, currentNodeCount, windowsIndex, vms, err = sc.ScaleVMAS(); err != nil {
+		if highestUsedIndex, currentNodeCount, windowsIndex, vms, err = sc.ScaleVMAS(c.StopContext); err != nil {
 			return fmt.Errorf("failed to scale availability set: %+v", err)
 		}
 
@@ -47,7 +46,7 @@ func scaleCluster(d *ResourceData, c *ArmClient, agentIndex, agentCount int) err
 			return saveScaledApimodel(d, sc)
 		}
 	} else {
-		if highestUsedIndex, currentNodeCount, windowsIndex, err = sc.ScaleVMSS(); err != nil {
+		if highestUsedIndex, currentNodeCount, windowsIndex, err = sc.ScaleVMSS(c.StopContext); err != nil {
 			return fmt.Errorf("failed to scale scale set: %+v", err)
 		}
 	}
@@ -96,13 +95,8 @@ func scaleDownCluster(c *ArmClient, sc *operations.ScaleClient, currentNodeCount
 }
 
 func scaleUpCluster(c *ArmClient, sc *operations.ScaleClient, highestUsedIndex, currentNodeCount, windowsIndex int) error {
-	sc.Cluster.Properties.AgentPoolProfiles = []*api.AgentPoolProfile{sc.AgentPool} // how does this work when there's multiple agent pools?
+	sc.Cluster.Properties.AgentPoolProfiles = []*api.AgentPoolProfile{sc.AgentPool}
 
-	ctx := acsengine.Context{ // do I need this context?
-		Translator: &i18n.Translator{
-			Locale: sc.Locale,
-		},
-	}
 	// don't format parameters! It messes things up
 	cluster := Cluster{
 		ContainerService: sc.Cluster,
@@ -117,7 +111,11 @@ func scaleUpCluster(c *ArmClient, sc *operations.ScaleClient, highestUsedIndex, 
 		return fmt.Errorf("failed to expand template and parameters: %+v", err)
 	}
 
-	transformer := transform.Transformer{Translator: ctx.Translator}
+	transformer := transform.Transformer{
+		Translator: &i18n.Translator{
+			Locale: sc.Locale,
+		},
+	}
 
 	countForTemplate := setCountForTemplate(sc, highestUsedIndex, currentNodeCount)
 	addValue(parametersJSON, sc.AgentPoolToScale+"Count", countForTemplate)
@@ -145,7 +143,7 @@ func scaleUpCluster(c *ArmClient, sc *operations.ScaleClient, highestUsedIndex, 
 	return nil
 }
 
-func saveScaledApimodel(d *ResourceData, sc *operations.ScaleClient) error {
+func saveScaledApimodel(d *resourceData, sc *operations.ScaleClient) error {
 	sc.Cluster.Properties.AgentPoolProfiles[sc.AgentPoolIndex].Count = sc.DesiredAgentCount
 	cluster := Cluster{ContainerService: sc.Cluster}
 	return cluster.saveTemplates(d, sc.DeploymentDirectory)

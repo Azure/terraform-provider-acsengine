@@ -9,18 +9,7 @@ import (
 )
 
 func generateACSEngineTemplate(c *ArmClient, cluster Cluster, write bool) (string, string, error) {
-	// generate certs separately and set them before trying to formate template?
-
-	// possibly more efficient option
-	// 1. create secrets, which would then need a new function to set in keyvault
-	// 2. setCertificateProfileSecretsAPIModel
-	// 3. generate template
-
-	// probably easier way which I will try first
-	// 1. generate template to generate certs
-	// 2. setCertificateProfileSecrets
-	// 3. setCertificateProfileSecretsAPIModel
-	// 4. generate template again. Will this be inefficient?
+	// I wonder if there's a more efficient way to generate certs than generating the entire templaet
 
 	// certificates are generated here
 	template, parameters, _ /*certsGenerated*/, err := cluster.formatTemplates(true)
@@ -48,14 +37,10 @@ func generateACSEngineTemplate(c *ArmClient, cluster Cluster, write bool) (strin
 		}
 
 		deploymentDirectory := path.Join("_output", cluster.Properties.MasterProfile.DNSPrefix)
-		// I'm putting false instead of certsGenerated here so I can see all of the files
-		// This is writing key vault references, not actual certs and keys I think
 		if err = cluster.writeTemplatesAndCerts(template, parameters, deploymentDirectory, false); err != nil {
 			return "", "", fmt.Errorf("error writing templates and certificates: %+v", err)
 		}
 	}
-
-	// no kube config is being saved...
 
 	return template, parameters, nil
 }

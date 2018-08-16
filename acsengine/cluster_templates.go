@@ -105,7 +105,7 @@ func (cluster *Cluster) formatTemplates(buildParamsFile bool) (string, string, b
 	return template, parameters, certsGenerated, nil
 }
 
-func (cluster *Cluster) saveTemplates(d *ResourceData, deploymentDirectory string) error {
+func (cluster *Cluster) saveTemplates(d *resourceData, deploymentDirectory string) error {
 	template, parameters, certsGenerated, err := cluster.formatTemplates(true)
 	if err != nil {
 		return fmt.Errorf("failed to format templates: %+v", err)

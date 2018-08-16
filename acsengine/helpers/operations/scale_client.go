@@ -69,12 +69,11 @@ func (sc *ScaleClient) SetScaleClient(cluster *api.ContainerService, azureID str
 }
 
 // ScaleVMAS gets information for scaling Virtual Machine availability sets
-func (sc *ScaleClient) ScaleVMAS() (int, int, int, []string, error) {
+func (sc *ScaleClient) ScaleVMAS(ctx context.Context) (int, int, int, []string, error) {
 	var currentNodeCount, highestUsedIndex, vmNum int
 	windowsIndex := -1
 	highestUsedIndex = 0
 	indexToVM := make([]string, 0)
-	ctx := context.Background() // StopContext
 	vms, err := sc.Client.ListVirtualMachines(ctx, sc.ResourceGroupName)
 	if err != nil {
 		return highestUsedIndex, currentNodeCount, windowsIndex, indexToVM, fmt.Errorf("failed to get vms in the resource group. Error: %s", err.Error())
@@ -111,11 +110,10 @@ func (sc *ScaleClient) ScaleVMAS() (int, int, int, []string, error) {
 }
 
 // ScaleVMSS gets information for scaling Virtual Machine scale sets
-func (sc *ScaleClient) ScaleVMSS() (int, int, int, error) {
+func (sc *ScaleClient) ScaleVMSS(ctx context.Context) (int, int, int, error) {
 	var currentNodeCount, highestUsedIndex int
 	windowsIndex := -1
 	highestUsedIndex = 0
-	ctx := context.Background() // StopContext
 	vmssList, err := sc.Client.ListVirtualMachineScaleSets(ctx, sc.ResourceGroupName)
 	if err != nil {
 		return highestUsedIndex, currentNodeCount, windowsIndex, fmt.Errorf("failed to get vmss list in the resource group: %+v", err)
