@@ -3,6 +3,7 @@ package acsengine
 import (
 	"encoding/base64"
 	"fmt"
+	"log"
 	"testing"
 
 	"github.com/Azure/terraform-provider-acsengine/internal/resource"
@@ -149,17 +150,17 @@ func clusterIsRunning(is *terraform.InstanceState, name string) error {
 
 func checkNodes(api corev1.CoreV1Interface) error {
 	retryErr := utils.RetryOnFailure(retry.DefaultRetry, func() error {
-		fmt.Println("[INFO] trying to get nodes...") // log
+		log.Println("[INFO] trying to get nodes...") // log
 		nodes, err := api.Nodes().List(metav1.ListOptions{})
 		if err != nil {
-			fmt.Printf("Reason for error: %+v\n", errors.ReasonForError(err))
+			log.Printf("[INFO] Reason for error: %+v\n", errors.ReasonForError(err))
 			return fmt.Errorf("failed to get nodes: %+v", err)
 		}
 		if len(nodes.Items) < 2 {
 			return fmt.Errorf("not enough nodes found (there should be a at least one master and agent pool): only %d found", len(nodes.Items))
 		}
 		for _, node := range nodes.Items {
-			fmt.Printf("[INFO] Node: %s\n", node.Name) // log
+			log.Printf("[INFO] Node: %s\n", node.Name) // log
 		}
 		return nil
 	})

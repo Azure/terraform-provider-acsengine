@@ -2,6 +2,7 @@ package acsengine
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/Azure/terraform-provider-acsengine/internal/utils"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -241,7 +242,7 @@ func dataSourceACSEngineK8sClusterRead(data *schema.ResourceData, m interface{})
 		return fmt.Errorf("Error setting `api_model`: %+v", err)
 	}
 
-	fmt.Println("finished reading")
+	log.Println("finished reading")
 
 	return nil
 }

@@ -36,7 +36,7 @@ func scaleCluster(d *resourceData, c *ArmClient, agentIndex, agentCount int) err
 		}
 
 		if currentNodeCount == sc.DesiredAgentCount {
-			log.Printf("Cluster is currently at the desired agent count")
+			log.Printf("[INFO] Cluster is currently at the desired agent count")
 			return nil
 		}
 		if currentNodeCount > sc.DesiredAgentCount {

@@ -2,6 +2,7 @@ package acsengine
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/keyvault/mgmt/keyvault"
 	vaultsvc "github.com/Azure/azure-sdk-for-go/services/keyvault/2016-10-01/keyvault"
@@ -104,7 +105,7 @@ func getCertificateProfileSecretsKeyVault(c *ArmClient, cluster *Cluster) error 
 		return fmt.Errorf("vault uri not found")
 	}
 
-	fmt.Printf("key vault: %s\n", *vaultURI)
+	log.Printf("key vault: %s\n", *vaultURI)
 
 	if val, err = getSecret(c, *vaultURI, secretName("cacrt", dnsPrefix), ""); err != nil {
 		return fmt.Errorf("failed to get ca.crt")
@@ -166,7 +167,7 @@ func getSecretFromKeyVault(c *ArmClient, vaultID, secretName, version string) (s
 		return "", fmt.Errorf("vault uri not found")
 	}
 
-	fmt.Printf("key vault: %s\n", *vaultURI)
+	log.Printf("key vault: %s\n", *vaultURI)
 
 	return getSecret(c, *vaultURI, secretName, version)
 }

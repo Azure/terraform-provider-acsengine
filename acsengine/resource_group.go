@@ -89,7 +89,7 @@ func createClusterResourceGroup(d *resourceData, client *ArmClient) error {
 	if *resp.ID == "" {
 		return fmt.Errorf("resource group ID is not set")
 	}
-	fmt.Printf("[INFO] resource group %q ID: %q\n", name, *resp.ID)
+	log.Printf("[INFO] resource group %q ID: %q\n", name, *resp.ID)
 
 	return nil
 }

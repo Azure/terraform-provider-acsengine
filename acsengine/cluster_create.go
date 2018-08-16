@@ -78,7 +78,7 @@ func createDeployment(c *ArmClient, resourceGroup string, name string, deploymen
 	if err != nil {
 		return fmt.Errorf("error creating deployment: %+v", err)
 	}
-	fmt.Println("[INFO] Deployment created (1)") // log
+	log.Println("[INFO] Deployment created (1)") // log
 
 	if err = future.WaitForCompletion(c.StopContext, deployClient.Client); err != nil {
 		return fmt.Errorf("error creating deployment: %+v", err)
@@ -102,7 +102,7 @@ func getDeploymentID(c *ArmClient, resourceGroup string, name string) (string, e
 	if read.ID == nil {
 		return "", fmt.Errorf("Cannot read ACS Engine Kubernetes cluster deployment %s (resource group %s) ID", name, resourceGroup)
 	}
-	fmt.Printf("[INFO] cluster %q ID: %q\n", name, *read.ID)
+	log.Printf("[INFO] cluster %q ID: %q\n", name, *read.ID)
 
 	return *read.ID, nil
 }
