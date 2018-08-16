@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/Azure/acs-engine/pkg/api"
-	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/client"
+	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/operations"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -30,7 +30,7 @@ func TestSetCountForTemplate(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		sc := client.ScaleClient{
+		sc := operations.ScaleClient{
 			DesiredAgentCount: tc.DesiredAgentCount,
 		}
 		countForTemplate := setCountForTemplate(&sc, tc.HighestUsedIndex, tc.CurrentNodeCount)
@@ -58,7 +58,7 @@ func TestSetWindowsIndex(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		sc := client.ScaleClient{
+		sc := operations.ScaleClient{
 			AgentPool: &api.AgentPoolProfile{
 				Name: tc.AgentPoolName,
 			},

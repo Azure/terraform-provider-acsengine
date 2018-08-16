@@ -5,7 +5,7 @@ import (
 
 	"github.com/Azure/acs-engine/pkg/i18n"
 	"github.com/Azure/acs-engine/pkg/operations/kubernetesupgrade"
-	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/client"
+	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/operations"
 )
 
 func upgradeCluster(d *ResourceData, c *ArmClient, upgradeVersion string) error {
@@ -20,7 +20,7 @@ func upgradeCluster(d *ResourceData, c *ArmClient, upgradeVersion string) error 
 		return fmt.Errorf("error getting service principal key: %+v", err)
 	}
 
-	uc := client.NewUpgradeClient(clientSecret)
+	uc := operations.NewUpgradeClient(clientSecret)
 	if err := uc.SetUpgradeClient(cluster.ContainerService, d.Id(), upgradeVersion); err != nil {
 		return fmt.Errorf("error initializing upgrade client: %+v", err)
 	}

@@ -111,6 +111,7 @@ The following ENV variables must be set in your shell prior to running tests:
 * ARM_CLIENT_SECRET
 * ARM_SUBSCRIPTION_ID
 * ARM_TENANT_ID
+* ARM_TEST_VAULT_ID
 * ARM_TEST_LOCATION
 * SSH_KEY_PUB
 

@@ -145,7 +145,6 @@ func getSecret(c *ArmClient, vaultURI, name, version string) (string, error) {
 	if read.Value == nil {
 		return "", fmt.Errorf("key value is not set")
 	}
-	fmt.Println(read.Value)
 	return *read.Value, nil
 }
 

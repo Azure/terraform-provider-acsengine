@@ -8,8 +8,8 @@ import (
 	"github.com/Azure/acs-engine/pkg/acsengine/transform"
 	"github.com/Azure/acs-engine/pkg/api"
 	"github.com/Azure/acs-engine/pkg/i18n"
-	"github.com/Azure/acs-engine/pkg/operations"
-	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/client"
+	ops "github.com/Azure/acs-engine/pkg/operations"
+	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/operations"
 )
 
 func scaleCluster(d *ResourceData, c *ArmClient, agentIndex, agentCount int) error {
@@ -24,7 +24,7 @@ func scaleCluster(d *ResourceData, c *ArmClient, agentIndex, agentCount int) err
 		return fmt.Errorf("error getting service principal key: %+v", err)
 	}
 
-	sc := client.NewScaleClient(clientSecret)
+	sc := operations.NewScaleClient(clientSecret)
 	if err = sc.SetScaleClient(cluster.ContainerService, d.Id(), agentIndex, agentCount); err != nil {
 		return fmt.Errorf("failed to initialize scale client: %+v", err)
 	}
@@ -58,7 +58,7 @@ func scaleCluster(d *ResourceData, c *ArmClient, agentIndex, agentCount int) err
 	return saveScaledApimodel(d, sc)
 }
 
-func scaleDownCluster(sc *client.ScaleClient, currentNodeCount int, vms []string) error {
+func scaleDownCluster(sc *operations.ScaleClient, currentNodeCount int, vms []string) error {
 	if sc.MasterFQDN == "" {
 		return fmt.Errorf("Master FQDN is required to scale down a Kubernetes cluster's agent pool")
 	}
@@ -73,7 +73,7 @@ func scaleDownCluster(sc *client.ScaleClient, currentNodeCount int, vms []string
 		return fmt.Errorf("Got error while draining the nodes to be deleted: %+v", err)
 	}
 
-	errList := operations.ScaleDownVMs(
+	errList := ops.ScaleDownVMs(
 		sc.Client,
 		sc.Logger,
 		sc.SubscriptionID.String(),
@@ -82,7 +82,7 @@ func scaleDownCluster(sc *client.ScaleClient, currentNodeCount int, vms []string
 	if errList != nil {
 		errorMessage := ""
 		for element := errList.Front(); element != nil; element = element.Next() {
-			vmError, ok := element.Value.(*operations.VMScalingErrorDetails)
+			vmError, ok := element.Value.(*ops.VMScalingErrorDetails)
 			if ok {
 				error := fmt.Sprintf("Node '%s' failed to delete with error: '%s'", vmError.Name, vmError.Error.Error())
 				errorMessage = errorMessage + error
@@ -94,7 +94,7 @@ func scaleDownCluster(sc *client.ScaleClient, currentNodeCount int, vms []string
 	return nil
 }
 
-func scaleUpCluster(c *ArmClient, sc *client.ScaleClient, highestUsedIndex, currentNodeCount, windowsIndex int) error {
+func scaleUpCluster(c *ArmClient, sc *operations.ScaleClient, highestUsedIndex, currentNodeCount, windowsIndex int) error {
 	sc.Cluster.Properties.AgentPoolProfiles = []*api.AgentPoolProfile{sc.AgentPool} // how does this work when there's multiple agent pools?
 
 	ctx := acsengine.Context{ // do I need this context?
@@ -144,13 +144,13 @@ func scaleUpCluster(c *ArmClient, sc *client.ScaleClient, highestUsedIndex, curr
 	return nil
 }
 
-func saveScaledApimodel(d *ResourceData, sc *client.ScaleClient) error {
+func saveScaledApimodel(d *ResourceData, sc *operations.ScaleClient) error {
 	sc.Cluster.Properties.AgentPoolProfiles[sc.AgentPoolIndex].Count = sc.DesiredAgentCount
 	cluster := Cluster{ContainerService: sc.Cluster}
 	return cluster.saveTemplates(d, sc.DeploymentDirectory)
 }
 
-func setCountForTemplate(sc *client.ScaleClient, highestUsedIndex, currentNodeCount int) int {
+func setCountForTemplate(sc *operations.ScaleClient, highestUsedIndex, currentNodeCount int) int {
 	countForTemplate := sc.DesiredAgentCount
 	if highestUsedIndex != 0 { // if not scale set
 		countForTemplate += highestUsedIndex + 1 - currentNodeCount
@@ -158,7 +158,7 @@ func setCountForTemplate(sc *client.ScaleClient, highestUsedIndex, currentNodeCo
 	return countForTemplate
 }
 
-func setWindowsIndex(sc *client.ScaleClient, windowsIndex int, templateJSON map[string]interface{}) {
+func setWindowsIndex(sc *operations.ScaleClient, windowsIndex int, templateJSON map[string]interface{}) {
 	if windowsIndex != -1 {
 		templateJSON["variables"].(map[string]interface{})[sc.AgentPool.Name+"Index"] = windowsIndex
 	}

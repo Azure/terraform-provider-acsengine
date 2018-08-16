@@ -1,4 +1,4 @@
-package client
+package operations
 
 import (
 	"fmt"
@@ -9,35 +9,35 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSetScaleClient(t *testing.T) {
+func TestACSEngineK8sCluster_setUpgradeClient(t *testing.T) {
 	resourceGroup := "clusterResourceGroup"
 	masterDNSPrefix := "masterDNSPrefix"
 	cluster := utils.MockContainerService("clusterName", "southcentralus", masterDNSPrefix)
 	id := fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Resources/deployments/%s", os.Getenv("ARM_SUBSCRIPTION_ID"), resourceGroup, "clusterName")
+	upgradeVersion := "1.9.8"
 
-	agentIndex := 0
-	desiredAgentCount := 2
-	sc := NewScaleClient(os.Getenv("ARM_CLIENT_SECRET"))
-	if err := sc.SetScaleClient(cluster, id, agentIndex, desiredAgentCount); err != nil {
-		t.Fatalf("setScaleClient failed: %+v", err)
+	uc := NewUpgradeClient(os.Getenv("ARM_CLIENT_SECRET"))
+	err := uc.SetUpgradeClient(cluster, id, upgradeVersion)
+	if err != nil {
+		t.Fatalf("setUpgradeClient failed: %+v", err)
 	}
 
-	assert.Equal(t, sc.ResourceGroupName, resourceGroup, "Resource group is not named correctly")
-	assert.Equal(t, sc.DesiredAgentCount, desiredAgentCount, "Desired agent count is not set correctly")
-	assert.Equal(t, sc.AuthArgs.SubscriptionID.String(), os.Getenv("ARM_SUBSCRIPTION_ID"), "Subscription ID is not set correctly")
+	assert.Equal(t, uc.ResourceGroupName, resourceGroup, "Resource group is not named correctly")
+	assert.Equal(t, uc.UpgradeVersion, upgradeVersion, "Desired agent count is not named correctly")
+	assert.Equal(t, uc.AuthArgs.SubscriptionID.String(), os.Getenv("ARM_SUBSCRIPTION_ID"), "Subscription ID is not set correctly")
 }
 
-func TestScaleValidate(t *testing.T) {
+func TestUpgradeValidate(t *testing.T) {
 	cases := []struct {
-		Client      ScaleClient
+		Client      UpgradeClient
 		ExpectError bool
 	}{
 		{
-			Client:      ScaleClient{},
+			Client:      UpgradeClient{},
 			ExpectError: true,
 		},
 		{
-			Client: ScaleClient{
+			Client: UpgradeClient{
 				ACSEngineClient: ACSEngineClient{
 					ResourceGroupName:   "rg",
 					Location:            "westus",
@@ -47,14 +47,13 @@ func TestScaleValidate(t *testing.T) {
 			ExpectError: true,
 		},
 		{
-			Client: ScaleClient{
+			Client: UpgradeClient{
 				ACSEngineClient: ACSEngineClient{
 					ResourceGroupName:   "rg",
 					Location:            "westus",
 					DeploymentDirectory: "directory",
 				},
-				DesiredAgentCount: 1,
-				DeploymentName:    "testdeploy",
+				UpgradeVersion: "1.8.13",
 			},
 			ExpectError: false,
 		},

@@ -11,6 +11,9 @@ package acsengine
 // - make sure key vault is created before tests (especially in CircleCI tests)
 // - get rid of a secret from my git history (it's only in my old commits since I force pushed)
 // - make sure certificate output is correct, also that getKubeConfig side effects aren't messing with upgrade
+// - reorganize file structre: flatten out directories (utils and helpers), make internal directory, rename client (maybe operations),
+//   could move some of utils into acsengine directory
+// - small refactors mentioned like getting logging to work and make sure I'm printing good status code errors for deployments
 
 import (
 	"fmt"
