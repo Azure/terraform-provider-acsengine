@@ -52,6 +52,5 @@ func upgradeCluster(d *ResourceData, c *ArmClient, upgradeVersion string) error 
 		return fmt.Errorf("failed to deploy upgraded cluster: %+v", err)
 	}
 
-	cluster.ContainerService = uc.Cluster
 	return cluster.saveTemplates(d, uc.DeploymentDirectory)
 }

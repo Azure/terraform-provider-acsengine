@@ -41,7 +41,7 @@ func scaleCluster(d *ResourceData, c *ArmClient, agentIndex, agentCount int) err
 			return nil
 		}
 		if currentNodeCount > sc.DesiredAgentCount {
-			if err = scaleDownCluster(sc, currentNodeCount, vms); err != nil {
+			if err = scaleDownCluster(c, sc, currentNodeCount, vms); err != nil {
 				return fmt.Errorf("scaling down cluster failed: %+v", err)
 			}
 			return saveScaledApimodel(d, sc)
@@ -58,17 +58,15 @@ func scaleCluster(d *ResourceData, c *ArmClient, agentIndex, agentCount int) err
 	return saveScaledApimodel(d, sc)
 }
 
-func scaleDownCluster(sc *operations.ScaleClient, currentNodeCount int, vms []string) error {
+func scaleDownCluster(c *ArmClient, sc *operations.ScaleClient, currentNodeCount int, vms []string) error {
 	if sc.MasterFQDN == "" {
 		return fmt.Errorf("Master FQDN is required to scale down a Kubernetes cluster's agent pool")
 	}
 
 	vmsToDelete := vmsToDeleteList(vms, currentNodeCount, sc.DesiredAgentCount)
 
-	kubeconfig, err := acsengine.GenerateKubeConfig(sc.Cluster.Properties, sc.Location)
-	if err != nil {
-		return fmt.Errorf("failed to generate kube config: %+v", err)
-	}
+	cluster := newCluster(sc.Cluster)
+	kubeconfig, err := cluster.getKubeConfig(c, true)
 	if err = sc.DrainNodes(kubeconfig, vmsToDelete); err != nil {
 		return fmt.Errorf("Got error while draining the nodes to be deleted: %+v", err)
 	}

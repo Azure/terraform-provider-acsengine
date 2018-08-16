@@ -77,6 +77,28 @@ func TestBase64Encode(t *testing.T) {
 	}
 }
 
+func TestBase64Decode(t *testing.T) {
+	cases := []struct {
+		Input  string
+		Output string
+	}{
+		{
+			Input:  "MTIzNAo=",
+			Output: "1234\n",
+		},
+		{
+			Input:  "hello",
+			Output: "hello",
+		},
+	}
+
+	for _, tc := range cases {
+		output := base64Decode(tc.Input)
+
+		assert.Equal(t, tc.Output, output)
+	}
+}
+
 func TestIgnoreCaseDiffSuppressFunc(t *testing.T) {
 	cases := []struct {
 		New      string

@@ -222,7 +222,6 @@ func registerAzureResourceProvidersWithSubscription(ctx context.Context, provide
 	return err
 }
 
-// Deprecated - use `azschema.IgnoreCaseDiffSuppressFunc` instead
 func ignoreCaseDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	return azschema.IgnoreCaseDiffSuppressFunc(k, old, new, d)
 }

@@ -10,4 +10,4 @@ Storing the contents of `apimodel.json` in the Terraform state means that no new
 
 ## Note on certificates and key storage
 
-To use this Terraform resource, you are expected to have an Azure key vault created (in a separate resource group) which you can use with your ACS-Engine Kubernetes cluster to store your service principal secret and certificates and keys for cluster authentication.
+To use this Terraform resource, you are expected to have an Azure key vault created (in a separate resource group) which you can use with your ACS-Engine Kubernetes cluster to store your service principal secret and certificates and keys for cluster authentication. You will need to set your service principal secret in this key vault before creating the ACS-Engine Kubernetes cluster Terraform resource. If you would like to do this using Terraform, you can use the [AzureRM provider](https://www.terraform.io/docs/providers/azurerm/). You can look at an [example](examples/acsengine-kubernetes-cluster-with-keyvault/) to get started. Make sure you have the correct access polices and that your key vault is enabled for template deployment.

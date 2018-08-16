@@ -118,8 +118,6 @@ The following arguments are supported:
 * `vault_id` - (Required) The Azure resource ID for the key vault containing the service principal secret.
 * `secret_name` - (Required) The name of the key vault secret containing the value of your service principal secret.
 
-<!-- * `client_secret` - (Required) The secret password associated with the service principal. -->
-
 ## Attributes Reference
 
 The following attributes are exported:
@@ -138,12 +136,4 @@ The following attributes are exported:
 
 ## Import
 
-ACS Engine clusters can be imported using the deployment resource ID and the directory containing their apimodel.json file delimited by a space.
-
-For example, if the resource ID of your cluster deployment is "/subscriptions/1234/resourceGroups/testrg/providers/Microsoft.Resources/deployments/deploymentName" and the directory containing `apimodel.json` is "_output/dnsPrefix", then the import command will be:
-
-```terraform import acsengine_kubernetes_cluster.example "/subscriptions/1234/resourceGroups/testrg/providers/Microsoft.Resources/deployments/deploymentName _output/dnsPrefix"```
-
-Remember to surround the ID string by quotes since there is a space. Also, do not forget to add properties to `apimodel.json` that you specified on the command line when deploying acs-engine templates. For instance, add `location` and `name` (i.e. deployment name). You can add these to `apimodel.json`. Do not run `acs-engine generate` on your cluster definition again because that will generate new certificates and keys (I think). If you are unsure what the apimodel should look like, you can take a look at an 'apimodel.json' file created with this Terraform provider (or output the `api_model` field from an existing resource, decoded from base64).
-
-<!-- You will also need to add key vault secret references to this file so that new certificates are not created. -->
+ACS Engine clusters can be imported using the deployment resource ID and the directory containing their apimodel.json file delimited by a space. The file will need to be edited to work with the format expected by this provider. For details look at the `import documentation`.

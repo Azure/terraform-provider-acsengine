@@ -4,8 +4,6 @@
 
 The Azure Container Service Engine Kubernetes Terraform Provider allows you to create and manage [ACS Engine](https://github.com/Azure/acs-engine) Kubernetes clusters with a simple Terraform configuration. Other container orchestrators are not supported.
 
-Note: This is very much still a work in progress (by an intern) :)
-
 This started out as a fork of [terraform-providers/terraform-provider-azurerm](https://github.com/terraform-providers/terraform-provider-azurerm/tree/master/azurerm) so a lot of code is inspired-by-slash-taken-from that repo.
 
 ## User Guides

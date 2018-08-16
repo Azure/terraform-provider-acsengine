@@ -81,6 +81,11 @@ func (cluster *Cluster) getKubeConfig(c *ArmClient, keyVault bool) (string, erro
 	if err != nil {
 		return "", fmt.Errorf("failed to generate kube config: %+v", err)
 	}
+	if keyVault {
+		if err := cluster.setCertificateProfileSecretsAPIModel(); err != nil {
+			return "", fmt.Errorf("failed to set certificates back to key vault reference: %+v", err)
+		}
+	}
 	return kubeConfig, nil
 }
 

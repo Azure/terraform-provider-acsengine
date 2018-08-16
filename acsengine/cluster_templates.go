@@ -48,6 +48,12 @@ func expandBody(body string) (map[string]interface{}, error) {
 	return bodyMap, nil
 }
 
+func newCluster(cluster *api.ContainerService) *Cluster {
+	return &Cluster{
+		ContainerService: cluster,
+	}
+}
+
 func (cluster *Cluster) writeTemplatesAndCerts(template string, parameters string, deploymentDirectory string, certsGenerated bool) error {
 	locale, err := i18n.LoadTranslations()
 	if err != nil {
