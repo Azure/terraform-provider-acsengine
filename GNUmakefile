@@ -79,11 +79,6 @@ lint:
 fmtcheck:
 	@sh "$(CURDIR)/scripts/gofmtcheck.sh"
 
-# do I want all of these?
-
-debugacc: fmtcheck
-	TF_ACC=1 dlv test $(TEST) --headless --listen=:2345 --api-version=2 -- -test.v $(TESTARGS)
-
 errcheck:
 	@sh "$(CURDIR)/scripts/errcheck.sh"
 
@@ -136,3 +131,15 @@ cluster-windows:
 	TF_ACC=1 go test ./acsengine -v -run windowsCreate -timeout 5h
 
 .PHONY: cluster-create cluster-scale cluster-upgrade cluster-update-scale cluster-update-upgrade cluster-update-tags cluster-data cluster-import
+
+###############################################################################
+# key vault for CI tests
+###############################################################################
+
+keyvault-apply:
+	@scripts/keyvault.sh --tfapply
+
+keyvault-destroy:
+	@scripts/keyvault.sh --tfdestroy
+
+.PHONY: keyvault-apply keyvault-destroy

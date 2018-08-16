@@ -8,7 +8,8 @@ package acsengine
 // - make code more unit test-able and write more unit tests (plus clean up ones I have to use mock objects more?)
 // - refactor: better organization of functions, get rid of code duplication, inheritance where it makes sense, better function/variable naming
 // - ask about additions to acs-engine: doesn't seem to allow tagging deployment, weird index problem
-// - make sure key vault is created before tests (especially in CircleCI tests)
+// - make sure key vault is created before tests (especially in CircleCI tests) - I will write a script to do this and set vault_id env variable
+//   accordingly
 // - get rid of a secret from my git history (it's only in my old commits since I force pushed)
 // - make sure certificate output is correct, also that getKubeConfig side effects aren't messing with upgrade
 // - reorganize file structre: flatten out directories (utils and helpers), make internal directory, rename client (maybe operations),

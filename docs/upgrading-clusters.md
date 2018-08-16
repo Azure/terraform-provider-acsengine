@@ -8,7 +8,7 @@ Basically, if you have acs-engine installed, you can run
 acs-engine orchestrators --orchestrator Kubernetes --version 1.8.13
 ```
 
-where 1.8.13 can be replaced by the version you are currently on. The listed versions are allowed for upgrading. This Terraform provider will also quickly give you an error if you give an invalid version and run `terraform plan` or `terraform apply` (I think).
+where 1.8.13 can be replaced by the version you are currently on. The listed versions are allowed for upgrading. This Terraform provider will also quickly give you an error if you give an invalid version and run `terraform plan` or `terraform apply`.
 
 To change the Kubernetes version, you just need to change the value of `kubernetes_version` to an allowed value.
 

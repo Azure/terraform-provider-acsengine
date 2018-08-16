@@ -1,3 +1,7 @@
+output "master_fqdn" {
+  value = "${acsengine_kubernetes_cluster.cluster.master_profile.0.fqdn}"
+}
+
 output "ca_certificate" {
   value = "${base64decode(acsengine_kubernetes_cluster.cluster.ca_certificate)}"
 }

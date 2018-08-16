@@ -58,8 +58,8 @@ resource "acsengine_kubernetes_cluster" "test" {
 
     service_principal {
         client_id     = ""
-        vault_id      = ""
-        secret_name   = ""
+        vault_id      = "${data.azurerm_key_vault.testkv.id}"
+        secret_name   = "${data.azurerm_key_vault_secret.spsecret.name}"
     }
 
     tags {
@@ -81,7 +81,7 @@ The following arguments are supported:
 * `windows_profile` - (Optional) A Windows profile block as documented below. This is required if any agent pools have `os_type` set to 'Windows'.
 * `service_principal` - (Required) A service principal block as documented below.
 * `kubernetes_version` - (Optional) The Kubernetes version running on the cluster.
-* `tags` - (Optional) A mapping of tags to assign to the resource.
+* `tags` - (Optional) A mapping of tags to assign to the resource group created for the cluster.
 
 `master_profile` supports the following:
 
@@ -136,4 +136,4 @@ The following attributes are exported:
 
 ## Import
 
-ACS Engine clusters can be imported using the deployment resource ID and the directory containing their apimodel.json file delimited by a space. The file will need to be edited to work with the format expected by this provider. For details look at the `import documentation`.
+ACS Engine clusters can be imported using the deployment resource ID and the directory containing their apimodel.json file delimited by a space. The file will need to be edited to work with the format expected by this provider. For details look at the [import documentation](import.md).
