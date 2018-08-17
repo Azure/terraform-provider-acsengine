@@ -21,18 +21,15 @@ import (
 // }
 
 // certificate profile need to be set
-func setCertificateProfileSecretsKeyVault(c *ArmClient, cluster *Cluster) error {
-	var err error
-	// set them in key vault
-	keyVaultID := cluster.Properties.ServicePrincipalProfile.KeyvaultSecretRef.VaultID // I need URI not ID
+func setCertificateProfileSecretsKeyVault(c *ArmClient, cluster *containerService) error {
+	keyVaultID := cluster.Properties.ServicePrincipalProfile.KeyvaultSecretRef.VaultID
 	certificateProfile := cluster.Properties.CertificateProfile
 	dnsPrefix := cluster.Properties.MasterProfile.DNSPrefix
 
-	resp, err := getKeyVault(c, keyVaultID)
+	keyVaultURI, err := getKeyVaultURI(c, keyVaultID)
 	if err != nil {
-		return fmt.Errorf("failed to get key vault: %+v", err)
+		return fmt.Errorf("error getting key vault URI: %+v", err)
 	}
-	keyVaultURI := *resp.Properties.VaultURI
 
 	if err = setSecret(c, keyVaultURI, secretName("cacrt", dnsPrefix), base64Encode(certificateProfile.CaCertificate)); err != nil {
 		return fmt.Errorf("error setting ca certificate: %+v", err)
@@ -85,37 +82,28 @@ func setCertificateProfileSecretsKeyVault(c *ArmClient, cluster *Cluster) error 
 }
 
 // for setting kube config correctly
-func getCertificateProfileSecretsKeyVault(c *ArmClient, cluster *Cluster) error {
+func getCertificateProfileSecretsKeyVault(c *ArmClient, cluster *containerService) error {
 	vaultID := cluster.Properties.ServicePrincipalProfile.KeyvaultSecretRef.VaultID
 	dnsPrefix := cluster.Properties.MasterProfile.DNSPrefix
 
 	var val string
 
-	resp, err := getKeyVault(c, vaultID)
+	vaultURI, err := getKeyVaultURI(c, vaultID)
 	if err != nil {
-		return fmt.Errorf("failed to get key vault: %+v", err)
+		return fmt.Errorf("failed to get vault URI: %+v", err)
 	}
 
-	props := resp.Properties
-	if props == nil {
-		return fmt.Errorf("properties not found")
-	}
-	vaultURI := props.VaultURI
-	if vaultURI == nil {
-		return fmt.Errorf("vault uri not found")
-	}
+	log.Printf("key vault: %s\n", vaultURI)
 
-	log.Printf("key vault: %s\n", *vaultURI)
-
-	if val, err = getSecret(c, *vaultURI, secretName("cacrt", dnsPrefix), ""); err != nil {
+	if val, err = getSecret(c, vaultURI, secretName("cacrt", dnsPrefix), ""); err != nil {
 		return fmt.Errorf("failed to get ca.crt")
 	}
 	cluster.Properties.CertificateProfile.CaCertificate = base64Decode(val)
-	if val, err = getSecret(c, *vaultURI, secretName("kubeconfigcrt", dnsPrefix), ""); err != nil {
+	if val, err = getSecret(c, vaultURI, secretName("kubeconfigcrt", dnsPrefix), ""); err != nil {
 		return fmt.Errorf("failed to get kubectlClient.crt")
 	}
 	cluster.Properties.CertificateProfile.KubeConfigCertificate = base64Decode(val)
-	if val, err = getSecret(c, *vaultURI, secretName("kubeconfigkey", dnsPrefix), ""); err != nil {
+	if val, err = getSecret(c, vaultURI, secretName("kubeconfigkey", dnsPrefix), ""); err != nil {
 		return fmt.Errorf("failed to get kubectlClient.key")
 	}
 	cluster.Properties.CertificateProfile.KubeConfigPrivateKey = base64Decode(val)
@@ -124,7 +112,7 @@ func getCertificateProfileSecretsKeyVault(c *ArmClient, cluster *Cluster) error 
 }
 
 func setSecret(c *ArmClient, vaultURI, name, value string) error {
-	contentType := "base64" // is this valid?
+	contentType := "base64"
 	parameters := vaultsvc.SecretSetParameters{
 		Value:       &value,
 		ContentType: &contentType,
@@ -153,23 +141,14 @@ func getSecret(c *ArmClient, vaultURI, name, version string) (string, error) {
 }
 
 func getSecretFromKeyVault(c *ArmClient, vaultID, secretName, version string) (string, error) {
-	resp, err := getKeyVault(c, vaultID)
+	vaultURI, err := getKeyVaultURI(c, vaultID)
 	if err != nil {
-		return "", fmt.Errorf("failed to get key vault: %+v", err)
+		return "", fmt.Errorf("failed to get vault URI: %+v", err)
 	}
 
-	props := resp.Properties
-	if props == nil {
-		return "", fmt.Errorf("properties not found")
-	}
-	vaultURI := props.VaultURI
-	if vaultURI == nil {
-		return "", fmt.Errorf("vault uri not found")
-	}
+	log.Printf("key vault: %s\n", vaultURI)
 
-	log.Printf("key vault: %s\n", *vaultURI)
-
-	return getSecret(c, *vaultURI, secretName, version)
+	return getSecret(c, vaultURI, secretName, version)
 }
 
 func getKeyVault(c *ArmClient, vaultID string) (*keyvault.Vault, error) {
@@ -190,7 +169,27 @@ func getKeyVault(c *ArmClient, vaultID string) (*keyvault.Vault, error) {
 	return &resp, nil
 }
 
-func (cluster *Cluster) setCertificateProfileSecretsAPIModel() error {
+func getKeyVaultURI(c *ArmClient, vaultID string) (string, error) {
+	resp, err := getKeyVault(c, vaultID)
+	if err != nil {
+		return "", fmt.Errorf("failed to get key vault: %+v", err)
+	}
+
+	props := resp.Properties
+	if props == nil {
+		return "", fmt.Errorf("properties not found")
+	}
+	vaultURI := props.VaultURI
+	if vaultURI == nil {
+		return "", fmt.Errorf("vault uri not found")
+	}
+
+	log.Printf("key vault: %s\n", *vaultURI)
+
+	return *vaultURI, nil
+}
+
+func (cluster *containerService) setCertificateProfileSecretsAPIModel() error {
 	certificateProfile := cluster.Properties.CertificateProfile
 	vaultID := cluster.Properties.ServicePrincipalProfile.KeyvaultSecretRef.VaultID
 	dnsPrefix := cluster.Properties.MasterProfile.DNSPrefix

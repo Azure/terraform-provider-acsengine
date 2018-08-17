@@ -64,7 +64,7 @@ func scaleDownCluster(c *ArmClient, sc *operations.ScaleClient, currentNodeCount
 
 	vmsToDelete := vmsToDeleteList(vms, currentNodeCount, sc.DesiredAgentCount)
 
-	cluster := newCluster(sc.Cluster)
+	cluster := newContainerService(sc.Cluster)
 	kubeconfig, err := cluster.getKubeConfig(c, true)
 	if err != nil {
 		return fmt.Errorf("error getting kube config: %+v", err)
@@ -98,9 +98,7 @@ func scaleUpCluster(c *ArmClient, sc *operations.ScaleClient, highestUsedIndex, 
 	sc.Cluster.Properties.AgentPoolProfiles = []*api.AgentPoolProfile{sc.AgentPool}
 
 	// don't format parameters! It messes things up
-	cluster := Cluster{
-		ContainerService: sc.Cluster,
-	}
+	cluster := newContainerService(sc.Cluster)
 	template, parameters, _, err := cluster.formatTemplates(false)
 	if err != nil {
 		return fmt.Errorf("failed to format templates: %+v", err)
@@ -145,7 +143,7 @@ func scaleUpCluster(c *ArmClient, sc *operations.ScaleClient, highestUsedIndex, 
 
 func saveScaledApimodel(d *resourceData, sc *operations.ScaleClient) error {
 	sc.Cluster.Properties.AgentPoolProfiles[sc.AgentPoolIndex].Count = sc.DesiredAgentCount
-	cluster := Cluster{ContainerService: sc.Cluster}
+	cluster := newContainerService(sc.Cluster)
 	return cluster.saveTemplates(d, sc.DeploymentDirectory)
 }
 

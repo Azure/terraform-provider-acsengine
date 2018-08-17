@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/Azure/terraform-provider-acsengine/internal/tester"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -71,4 +72,26 @@ func TestExpandBody(t *testing.T) {
 	v, ok = groceries["bananas"]
 	assert.True(t, ok, "could not find `bananas`")
 	assert.Equal(t, v.(string), "5")
+}
+
+func TestExpandBodyBad(t *testing.T) {
+	body := `{
+		"groceries": {
+			"bananas": "5",
+			"pasta": "2",
+		},
+	}`
+
+	if _, err := expandBody(body); err == nil {
+		t.Fatalf("expandBody should have failed")
+	}
+}
+
+func TestNewCluster(t *testing.T) {
+	cluster := tester.MockContainerService("name", "westus", "dnsprefix")
+	wrappedCluster := newContainerService(cluster)
+
+	assert.Equal(t, cluster.Name, wrappedCluster.Name, "cluster names should be equal")
+	assert.Equal(t, cluster.Location, wrappedCluster.Location, "cluster locations should be equal")
+	assert.Equal(t, cluster.Properties.MasterProfile.DNSPrefix, wrappedCluster.Properties.MasterProfile.DNSPrefix, "cluster locations should be equal")
 }

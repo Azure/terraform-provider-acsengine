@@ -126,18 +126,10 @@ func getAuthorizationToken(c *authentication.Config, oauthConfig *adal.OAuthConf
 	return auth, nil
 }
 
-// getArmClient is a helper method which returns a fully instantiated
-// *ArmClient based on the Config's current settings.
 func getArmClient(c *authentication.Config) (*ArmClient, error) {
-	// detect cloud from environment
-	env, envErr := azure.EnvironmentFromName(c.Environment)
+	env, envErr := azureEnvironmentFromName(c.Environment)
 	if envErr != nil {
-		// try again with wrapped value to support readable values like german instead of AZUREGERMANCLOUD
-		wrapped := fmt.Sprintf("AZURE%sCLOUD", c.Environment)
-		var innerErr error
-		if env, innerErr = azure.EnvironmentFromName(wrapped); innerErr != nil {
-			return nil, envErr
-		}
+		return nil, fmt.Errorf("did not detect cloud: %+v", envErr)
 	}
 
 	client := ArmClient{
@@ -178,6 +170,20 @@ func getArmClient(c *authentication.Config) (*ArmClient, error) {
 	client.registerKeyVaultClients(endpoint, c.SubscriptionID, auth, keyVaultAuth, sender)
 
 	return &client, nil
+}
+
+func azureEnvironmentFromName(environment string) (azure.Environment, error) {
+	// detect cloud from environment
+	env, envErr := azure.EnvironmentFromName(environment)
+	if envErr != nil {
+		// try again with wrapped value to support readable values like german instead of AZUREGERMANCLOUD
+		wrapped := fmt.Sprintf("AZURE%sCLOUD", environment)
+		var innerErr error
+		if env, innerErr = azure.EnvironmentFromName(wrapped); innerErr != nil {
+			return azure.Environment{}, envErr
+		}
+	}
+	return env, nil
 }
 
 func (c *ArmClient) registerResourcesClients(endpoint, subscriptionID string, auth autorest.Authorizer) {

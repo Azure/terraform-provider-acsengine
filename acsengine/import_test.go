@@ -48,3 +48,27 @@ func TestParseInvalidImportID(t *testing.T) {
 		}
 	}
 }
+
+func TestDeploymentNameAndResourceGroup(t *testing.T) {
+	cases := []struct {
+		azureID       string
+		name          string
+		resourceGroup string
+	}{
+		{
+			azureID:       "/subscriptions/1234/resourceGroups/testrg/providers/Microsoft.Resources/deployments/deploymentName",
+			name:          "deploymentName",
+			resourceGroup: "testrg",
+		},
+	}
+
+	for _, tc := range cases {
+		name, resourceGroup, err := deploymentNameAndResourceGroup(tc.azureID)
+		if err != nil {
+			t.Fatalf("failed to get name and resource group from Azure ID: %+v", err)
+		}
+
+		assert.Equal(t, tc.name, name)
+		assert.Equal(t, tc.resourceGroup, resourceGroup)
+	}
+}

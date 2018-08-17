@@ -34,8 +34,8 @@ func upgradeCluster(d *resourceData, c *ArmClient, upgradeVersion string) error 
 		StepTimeout: uc.Timeout,
 	}
 
-	cluster.ContainerService = uc.Cluster
-	kubeconfig, err := cluster.getKubeConfig(c, true) // do I need to set those certificates again?
+	// cluster.ContainerService = uc.Cluster // I think it's okay to delete this
+	kubeconfig, err := cluster.getKubeConfig(c, true)
 	if err != nil {
 		return fmt.Errorf("failed to generate kube config: %+v", err)
 	}

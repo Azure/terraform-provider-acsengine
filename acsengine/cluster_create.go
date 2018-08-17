@@ -8,7 +8,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
 )
 
-func generateACSEngineTemplate(c *ArmClient, cluster Cluster, write bool) (string, string, error) {
+func generateACSEngineTemplate(c *ArmClient, cluster containerService, write bool) (string, string, error) {
 	// I wonder if there's a more efficient way to generate certs than generating the entire templaet
 
 	// certificates are generated here
@@ -78,7 +78,7 @@ func createDeployment(c *ArmClient, resourceGroup string, name string, deploymen
 	if err != nil {
 		return fmt.Errorf("error creating deployment: %+v", err)
 	}
-	log.Println("[INFO] Deployment created (1)") // log
+	log.Println("[INFO] Deployment created (1)")
 
 	if err = future.WaitForCompletion(c.StopContext, deployClient.Client); err != nil {
 		return fmt.Errorf("error creating deployment: %+v", err)

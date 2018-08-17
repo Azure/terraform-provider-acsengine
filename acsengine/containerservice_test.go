@@ -306,7 +306,7 @@ func TestExpandLinuxProfile(t *testing.T) {
 	linuxProfiles := tester.MockFlattenLinuxProfile(adminUsername)
 	d.Set("linux_profile", &linuxProfiles)
 
-	linuxProfile, err := expandLinuxProfile(d)
+	linuxProfile, err := d.expandLinuxProfile()
 	if err != nil {
 		t.Fatalf("expand linux profile failed: %v", err)
 	}
@@ -322,7 +322,7 @@ func TestExpandWindowsProfile(t *testing.T) {
 	windowsProfiles := tester.MockFlattenWindowsProfile(adminUsername, adminPassword)
 	d.Set("windows_profile", &windowsProfiles)
 
-	windowsProfile, err := expandWindowsProfile(d)
+	windowsProfile, err := d.expandWindowsProfile()
 	if err != nil {
 		t.Fatalf("expand Windows profile failed: %v", err)
 	}
@@ -338,7 +338,7 @@ func TestExpandServicePrincipal(t *testing.T) {
 	servicePrincipals := tester.MockFlattenServicePrincipal()
 	d.Set("service_principal", servicePrincipals)
 
-	servicePrincipal, err := expandServicePrincipal(d)
+	servicePrincipal, err := d.expandServicePrincipal()
 	if err != nil {
 		t.Fatalf("expand service principal failed: %v", err)
 	}
@@ -354,7 +354,7 @@ func TestExpandMasterProfile(t *testing.T) {
 	masterProfiles := tester.MockFlattenMasterProfile(1, dnsPrefix, vmSize)
 	d.Set("master_profile", &masterProfiles)
 
-	masterProfile, err := expandMasterProfile(d)
+	masterProfile, err := d.expandMasterProfile()
 	if err != nil {
 		t.Fatalf("expand master profile failed: %v", err)
 	}
@@ -379,7 +379,7 @@ func TestExpandAgentPoolProfiles(t *testing.T) {
 	agentPoolProfiles = append(agentPoolProfiles, agentPoolProfile1)
 	d.Set("agent_pool_profiles", &agentPoolProfiles)
 
-	profiles, err := expandAgentPoolProfiles(d)
+	profiles, err := d.expandAgentPoolProfiles()
 	if err != nil {
 		t.Fatalf("expand agent pool profiles failed: %v", err)
 	}
@@ -419,7 +419,7 @@ func TestLoadContainerServiceFromApimodel(t *testing.T) {
 	name := "testcluster"
 	location := "southcentralus"
 
-	d := mockClusterResourceData(name, location, "testrg", "creativeMasterDNSPrefix") // I need to add a test apimodel in here
+	d := mockClusterResourceData(name, location, "testrg", "creativeMasterDNSPrefix")
 
 	apimodel, err := d.loadContainerServiceFromApimodel(true, false)
 	if err != nil {
@@ -428,6 +428,19 @@ func TestLoadContainerServiceFromApimodel(t *testing.T) {
 
 	assert.Equal(t, name, apimodel.Name, "cluster name '%s' not found", name)
 	assert.Equal(t, location, apimodel.Location, "cluster location '%s' not found", location)
+}
+
+func TestSetStateAPIModel(t *testing.T) {
+	cluster := mockCluster("cluster", "southcentralus", "dnsprefix")
+	d := mockClusterResourceData("cluster", "southcentralus", "rg", "dnsprefix")
+
+	if err := d.setStateAPIModel(cluster); err != nil {
+		t.Fatalf("setting resource data apimodel from container service failed: %+v", err)
+	}
+
+	if _, ok := d.GetOk("api_model"); !ok {
+		t.Fatalf("failed to get api model from resource data")
+	}
 }
 
 func TestSetProfiles(t *testing.T) {
@@ -452,9 +465,14 @@ func TestSetResourceProfiles(t *testing.T) {
 	if err := d.setResourceStateProfiles(cluster); err != nil {
 		t.Fatalf("setProfiles failed: %+v", err)
 	}
+
 	v, ok := d.GetOk("master_profile.0.dns_name_prefix")
 	assert.True(t, ok, "failed to get 'master_profile.0.dns_name_prefix'")
 	assert.Equal(t, dnsPrefix, v.(string), "'master_profile.0.dns_name_prefix' is not set correctly")
+
+	v, ok = d.GetOk("linux_profile.0.admin_username")
+	assert.True(t, ok, "failed to get `linux_profile.0.admin_username`")
+	assert.Equal(t, "azureuser", v.(string))
 }
 
 func TestSetDataSourceProfiles(t *testing.T) {
@@ -465,13 +483,8 @@ func TestSetDataSourceProfiles(t *testing.T) {
 	if err := d.setDataSourceStateProfiles(cluster); err != nil {
 		t.Fatalf("setProfiles failed: %+v", err)
 	}
+
 	v, ok := d.GetOk("master_profile.0.dns_name_prefix")
 	assert.True(t, ok, "failed to get 'master_profile.0.dns_name_prefix'")
 	assert.Equal(t, dnsPrefix, v.(string), "'master_profile.0.dns_name_prefix' is not set correctly")
-}
-
-func testCertificateProfile() *api.CertificateProfile {
-	profile := &api.CertificateProfile{}
-
-	return profile
 }

@@ -69,7 +69,7 @@ func flattenKubeConfig(kubeConfigFile string) (string, []interface{}, error) {
 	return rawKubeConfig, kubeConfig, nil
 }
 
-func (cluster *Cluster) getKubeConfig(c *ArmClient, keyVault bool) (string, error) {
+func (cluster *containerService) getKubeConfig(c *ArmClient, keyVault bool) (string, error) {
 	if keyVault {
 		if err := getCertificateProfileSecretsKeyVault(c, cluster); err != nil {
 			return "", fmt.Errorf("failed to get secrets from key vault for kube config: %+v", err)
@@ -87,7 +87,7 @@ func (cluster *Cluster) getKubeConfig(c *ArmClient, keyVault bool) (string, erro
 	return kubeConfig, nil
 }
 
-func (d *resourceData) setKubeConfig(c *ArmClient, cluster *Cluster, keyVault bool) error {
+func (d *resourceData) setKubeConfig(c *ArmClient, cluster *containerService, keyVault bool) error {
 	kubeConfigFile, err := cluster.getKubeConfig(c, keyVault)
 	if err != nil {
 		return fmt.Errorf("Error getting kube config: %+v", err)

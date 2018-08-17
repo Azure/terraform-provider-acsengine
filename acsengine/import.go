@@ -19,15 +19,7 @@ func resourceACSEngineK8sClusterImport(d *schema.ResourceData, m interface{}) ([
 		return nil, err
 	}
 
-	id, err := resource.ParseAzureResourceID(azureID)
-	if err != nil {
-		return nil, err
-	}
-	name := id.Path["deployments"]
-	if name == "" {
-		name = id.Path["Deployments"]
-	}
-	resourceGroup := id.ResourceGroup
+	name, resourceGroup, err := deploymentNameAndResourceGroup(azureID)
 
 	read, err := deployClient.Get(client.StopContext, resourceGroup, name)
 	if err != nil {
@@ -61,4 +53,16 @@ func parseImportID(dID string) (string, string, error) {
 	deploymentDirectory := input[1]
 
 	return azureID, deploymentDirectory, nil
+}
+
+func deploymentNameAndResourceGroup(azureID string) (string, string, error) {
+	id, err := resource.ParseAzureResourceID(azureID)
+	if err != nil {
+		return "", "", err
+	}
+	name := id.Path["deployments"]
+	if name == "" {
+		name = id.Path["Deployments"]
+	}
+	return name, id.ResourceGroup, nil
 }

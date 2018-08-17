@@ -51,5 +51,13 @@ func TestVaultSecretRefName(t *testing.T) {
 }
 
 func TestSetCertificateProfileSecretsAPIModel(t *testing.T) {
-	// certificateProfile := api.CertificateProfile
+	cluster := mockCluster("cluster", "southcentralus", "dnsprefix")
+
+	if err := cluster.setCertificateProfileSecretsAPIModel(); err != nil {
+		t.Fatalf("failed to set certificate profile: %+v", err)
+	}
+
+	assert.Equal(t, "vaultID/secrets/dnsprefix-cacrt", cluster.Properties.CertificateProfile.CaCertificate)
+	assert.Equal(t, "vaultID/secrets/dnsprefix-cakey", cluster.Properties.CertificateProfile.CaPrivateKey)
+	assert.Equal(t, "vaultID/secrets/dnsprefix-etcdpeer0crt", cluster.Properties.CertificateProfile.EtcdPeerCertificates[0])
 }

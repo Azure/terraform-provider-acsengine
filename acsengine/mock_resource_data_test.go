@@ -47,9 +47,7 @@ func mockClusterResourceData(name, location, resourceGroup, dnsPrefix string) *r
 	return d
 }
 
-func mockCluster(name, location, dnsPrefix string) *Cluster {
+func mockCluster(name, location, dnsPrefix string) *containerService {
 	cluster := tester.MockContainerService(name, location, dnsPrefix)
-	return &Cluster{
-		ContainerService: cluster,
-	}
+	return newContainerService(cluster)
 }

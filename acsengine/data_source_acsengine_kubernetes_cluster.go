@@ -203,7 +203,7 @@ func dataSourceACSEngineK8sClusterRead(data *schema.ResourceData, m interface{})
 	}
 	d.SetId(*resp.ID)
 
-	if err = d.Set("name", name); err != nil {
+	if err = d.Set("name", resp.Name); err != nil {
 		return fmt.Errorf("Error setting name: %+v", err)
 	}
 

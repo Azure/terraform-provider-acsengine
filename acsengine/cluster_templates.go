@@ -14,8 +14,7 @@ import (
 	"github.com/Azure/acs-engine/pkg/i18n"
 )
 
-// Cluster ...
-type Cluster struct {
+type containerService struct {
 	*api.ContainerService
 
 	ResourceGroup    string
@@ -48,13 +47,13 @@ func expandBody(body string) (map[string]interface{}, error) {
 	return bodyMap, nil
 }
 
-func newCluster(cluster *api.ContainerService) *Cluster {
-	return &Cluster{
+func newContainerService(cluster *api.ContainerService) *containerService {
+	return &containerService{
 		ContainerService: cluster,
 	}
 }
 
-func (cluster *Cluster) writeTemplatesAndCerts(template string, parameters string, deploymentDirectory string, certsGenerated bool) error {
+func (cluster *containerService) writeTemplatesAndCerts(template string, parameters string, deploymentDirectory string, certsGenerated bool) error {
 	locale, err := i18n.LoadTranslations()
 	if err != nil {
 		return fmt.Errorf("error loading translations: %+v", err)
@@ -73,7 +72,7 @@ func (cluster *Cluster) writeTemplatesAndCerts(template string, parameters strin
 	return nil
 }
 
-func (cluster *Cluster) formatTemplates(buildParamsFile bool) (string, string, bool, error) {
+func (cluster *containerService) formatTemplates(buildParamsFile bool) (string, string, bool, error) {
 	locale, err := i18n.LoadTranslations()
 	if err != nil {
 		return "", "", false, fmt.Errorf("error loading translations: %+v", err)
@@ -105,7 +104,7 @@ func (cluster *Cluster) formatTemplates(buildParamsFile bool) (string, string, b
 	return template, parameters, certsGenerated, nil
 }
 
-func (cluster *Cluster) saveTemplates(d *resourceData, deploymentDirectory string) error {
+func (cluster *containerService) saveTemplates(d *resourceData, deploymentDirectory string) error {
 	template, parameters, certsGenerated, err := cluster.formatTemplates(true)
 	if err != nil {
 		return fmt.Errorf("failed to format templates: %+v", err)

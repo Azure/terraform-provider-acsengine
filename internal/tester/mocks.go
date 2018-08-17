@@ -176,7 +176,7 @@ func MockExpandCertificateProfile() api.CertificateProfile {
 
 func MockContainerService(name string, location string, dnsPrefix string) *api.ContainerService {
 	linuxProfile := MockExpandLinuxProfile("azureuser", "public key")
-	servicePrincipal := MockExpandServicePrincipal(os.Getenv("ARM_CLIENT_ID"), os.Getenv("ARM_CLIENT_SECRET"))
+	servicePrincipal := MockExpandServicePrincipal(os.Getenv("ARM_CLIENT_ID"), "vaultID")
 	masterProfile := MockExpandMasterProfile(1, dnsPrefix, "Standard_D2_v2", "fqdn", 0)
 
 	agentPoolProfile1 := MockExpandAgentPoolProfile("agentpool1", 1, "Standard_D2_v2", 0, false)
