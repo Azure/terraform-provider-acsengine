@@ -1,5 +1,7 @@
 # ACS Engine Kubernetes Terraform Provider
 
+[![CircleCI](https://circleci.com/gh/Azure/terraform-provider-acsengine.svg?style=svg&circle-token=a72ac07fe8ecb1a8eaaa16cc142c43a02f93d33d)](https://github.com/Azure/terraform-provider-acsengine/tree/master)
+
 ## Overview
 
 The Azure Container Service Engine Kubernetes Terraform Provider allows you to create and manage [ACS Engine](https://github.com/Azure/acs-engine) Kubernetes clusters with a simple Terraform configuration. Other container orchestrators are not supported.
