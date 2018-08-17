@@ -2,31 +2,22 @@ package acsengine
 
 import (
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"log"
-	"os"
-	"path"
 
-	"github.com/Azure/acs-engine/pkg/acsengine"
-	"github.com/Azure/acs-engine/pkg/acsengine/transform"
 	"github.com/Azure/acs-engine/pkg/api"
 	"github.com/Azure/acs-engine/pkg/api/common"
 	"github.com/Azure/acs-engine/pkg/i18n"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
-// Cluster ...
-type Cluster struct {
-	*api.ContainerService
-
-	ResourceGroup string
+type resourceData struct {
+	*schema.ResourceData
 }
 
-// ResourceData ...
-type ResourceData struct {
-	*schema.ResourceData
+func newResourceData(data *schema.ResourceData) *resourceData {
+	return &resourceData{
+		ResourceData: data,
+	}
 }
 
 func flattenLinuxProfile(profile api.LinuxProfile) ([]interface{}, error) {
@@ -77,8 +68,13 @@ func flattenWindowsProfile(profile *api.WindowsProfile) ([]interface{}, error) {
 
 func flattenServicePrincipal(profile api.ServicePrincipalProfile) ([]interface{}, error) {
 	clientID := profile.ClientID
-	clientSecret := profile.Secret
-	if clientID == "" || clientSecret == "" {
+	keyVaultSecretRef := profile.KeyvaultSecretRef
+	if keyVaultSecretRef == nil {
+		return nil, fmt.Errorf("Key vault secret ref should be set")
+	}
+	vaultID := keyVaultSecretRef.VaultID
+	secretName := keyVaultSecretRef.SecretName
+	if clientID == "" || vaultID == "" || secretName == "" {
 		return nil, fmt.Errorf("Service principal not set correctly")
 	}
 
@@ -86,7 +82,8 @@ func flattenServicePrincipal(profile api.ServicePrincipalProfile) ([]interface{}
 
 	values := map[string]interface{}{}
 	values["client_id"] = clientID
-	values["client_secret"] = clientSecret
+	values["vault_id"] = vaultID
+	values["secret_name"] = secretName
 
 	profiles = append(profiles, values)
 
@@ -161,7 +158,7 @@ func flattenDataSourceServicePrincipal(profile api.ServicePrincipalProfile) ([]i
 	return profiles, nil
 }
 
-func expandLinuxProfile(d *ResourceData) (api.LinuxProfile, error) {
+func (d *resourceData) expandLinuxProfile() (api.LinuxProfile, error) {
 	var profiles []interface{}
 	v, ok := d.GetOk("linux_profile")
 	if !ok {
@@ -196,10 +193,10 @@ func expandLinuxProfile(d *ResourceData) (api.LinuxProfile, error) {
 	return profile, nil
 }
 
-func expandWindowsProfile(d *ResourceData) (*api.WindowsProfile, error) {
+func (d *resourceData) expandWindowsProfile() (*api.WindowsProfile, error) {
 	var profiles []interface{}
 	v, ok := d.GetOk("windows_profile")
-	if !ok { // maybe don't return error here?
+	if !ok { // don't return error because this shows there's no Windows profile
 		return nil, nil
 	}
 	profiles = v.([]interface{})
@@ -216,7 +213,7 @@ func expandWindowsProfile(d *ResourceData) (*api.WindowsProfile, error) {
 	return profile, nil
 }
 
-func expandServicePrincipal(d *ResourceData) (api.ServicePrincipalProfile, error) {
+func (d *resourceData) expandServicePrincipal() (api.ServicePrincipalProfile, error) {
 	var configs []interface{}
 	v, ok := d.GetOk("service_principal")
 	if !ok {
@@ -226,17 +223,23 @@ func expandServicePrincipal(d *ResourceData) (api.ServicePrincipalProfile, error
 	config := configs[0].(map[string]interface{})
 
 	clientID := config["client_id"].(string)
-	clientSecret := config["client_secret"].(string)
+	vaultID := config["vault_id"].(string)
+	secretName := config["secret_name"].(string)
+	// secretVersion := config["version"].(string)
 
 	principal := api.ServicePrincipalProfile{
 		ClientID: clientID,
-		Secret:   clientSecret,
+		KeyvaultSecretRef: &api.KeyvaultSecretRef{
+			VaultID:    vaultID,
+			SecretName: secretName,
+			// SecretVersion: version,
+		},
 	}
 
 	return principal, nil
 }
 
-func expandMasterProfile(d *ResourceData) (api.MasterProfile, error) {
+func (d *resourceData) expandMasterProfile() (api.MasterProfile, error) {
 	var configs []interface{}
 	v, ok := d.GetOk("master_profile")
 	if !ok {
@@ -263,7 +266,7 @@ func expandMasterProfile(d *ResourceData) (api.MasterProfile, error) {
 	return profile, nil
 }
 
-func expandAgentPoolProfiles(d *ResourceData) ([]*api.AgentPoolProfile, error) {
+func (d *resourceData) expandAgentPoolProfiles() ([]*api.AgentPoolProfile, error) {
 	var configs []interface{}
 	v, ok := d.GetOk("agent_pool_profiles")
 	if !ok {
@@ -297,57 +300,23 @@ func expandAgentPoolProfiles(d *ResourceData) ([]*api.AgentPoolProfile, error) {
 	return profiles, nil
 }
 
-func addValue(params map[string]interface{}, k string, v interface{}) {
-	params[k] = map[string]interface{}{
-		"value": v,
-	}
-}
-
-func expandTemplates(template string, parameters string) (map[string]interface{}, map[string]interface{}, error) {
-	templateBody, err := expandBody(template)
-	if err != nil {
-		return nil, nil, fmt.Errorf("error expanding the template_body for Azure RM Template Deployment: %+v", err)
-	}
-	parametersBody, err := expandBody(parameters)
-	if err != nil {
-		return nil, nil, fmt.Errorf("error expanding the parameters_body for Azure RM Template Deployment: %+v", err)
-	}
-	return templateBody, parametersBody, nil
-}
-
-func expandBody(body string) (map[string]interface{}, error) {
-	var bodyMap map[string]interface{}
-	if err := json.Unmarshal([]byte(body), &bodyMap); err != nil {
-		return nil, err
-	}
-	return bodyMap, nil
-}
-
-// I feel kind of funny about having these functions here
-
-func newResourceData(data *schema.ResourceData) *ResourceData {
-	return &ResourceData{
-		ResourceData: data,
-	}
-}
-
-func (d *ResourceData) setContainerService() (Cluster, error) {
+func (d *resourceData) setContainerService() (containerService, error) {
 	var name, location, resourceGroup, kubernetesVersion string
 	var v interface{}
 	var ok bool
 
 	if v, ok = d.GetOk("name"); !ok {
-		return Cluster{}, fmt.Errorf("cluster 'name' not found")
+		return containerService{}, fmt.Errorf("cluster 'name' not found")
 	}
 	name = v.(string)
 
 	if v, ok = d.GetOk("location"); !ok {
-		return Cluster{}, fmt.Errorf("cluster 'location' not found")
+		return containerService{}, fmt.Errorf("cluster 'location' not found")
 	}
 	location = azureRMNormalizeLocation(v.(string)) // from location.go
 
 	if v, ok = d.GetOk("resource_group"); !ok {
-		return Cluster{}, fmt.Errorf("cluster 'resource_group' not found")
+		return containerService{}, fmt.Errorf("cluster 'resource_group' not found")
 	}
 	resourceGroup = v.(string)
 
@@ -357,30 +326,30 @@ func (d *ResourceData) setContainerService() (Cluster, error) {
 		kubernetesVersion = common.GetDefaultKubernetesVersion() // will this case ever be needed?
 	}
 
-	linuxProfile, err := expandLinuxProfile(d)
+	linuxProfile, err := d.expandLinuxProfile()
 	if err != nil {
-		return Cluster{}, fmt.Errorf("error expanding `linux_profile: %+v`", err)
+		return containerService{}, fmt.Errorf("error expanding `linux_profile: %+v`", err)
 	}
-	windowsProfile, err := expandWindowsProfile(d)
+	windowsProfile, err := d.expandWindowsProfile()
 	if err != nil {
-		return Cluster{}, fmt.Errorf("error expanding `windows_profile: %+v`", err)
+		return containerService{}, fmt.Errorf("error expanding `windows_profile: %+v`", err)
 	}
-	servicePrincipal, err := expandServicePrincipal(d)
+	servicePrincipal, err := d.expandServicePrincipal()
 	if err != nil {
-		return Cluster{}, fmt.Errorf("error expanding `service_principal: %+v`", err)
+		return containerService{}, fmt.Errorf("error expanding `service_principal: %+v`", err)
 	}
-	masterProfile, err := expandMasterProfile(d)
+	masterProfile, err := d.expandMasterProfile()
 	if err != nil {
-		return Cluster{}, fmt.Errorf("error expanding `master_profile: %+v`", err)
+		return containerService{}, fmt.Errorf("error expanding `master_profile: %+v`", err)
 	}
-	agentProfiles, err := expandAgentPoolProfiles(d)
+	agentProfiles, err := d.expandAgentPoolProfiles()
 	if err != nil {
-		return Cluster{}, fmt.Errorf("error expanding `agent_pool_profiles: %+v`", err)
+		return containerService{}, fmt.Errorf("error expanding `agent_pool_profiles: %+v`", err)
 	}
 
 	tags := d.getTags()
 
-	cluster := Cluster{
+	cluster := containerService{
 		ContainerService: &api.ContainerService{
 			Name:     name,
 			Location: location,
@@ -406,10 +375,10 @@ func (d *ResourceData) setContainerService() (Cluster, error) {
 	return cluster, nil
 }
 
-func (d *ResourceData) loadContainerServiceFromApimodel(validate, isUpdate bool) (Cluster, error) {
+func (d *resourceData) loadContainerServiceFromApimodel(validate, isUpdate bool) (containerService, error) {
 	locale, err := i18n.LoadTranslations()
 	if err != nil {
-		return Cluster{}, fmt.Errorf("error loading translations: %+v", err)
+		return containerService{}, fmt.Errorf("error loading translations: %+v", err)
 	}
 	apiloader := &api.Apiloader{
 		Translator: &i18n.Translator{
@@ -420,14 +389,14 @@ func (d *ResourceData) loadContainerServiceFromApimodel(validate, isUpdate bool)
 	if v, ok := d.GetOk("api_model"); ok {
 		apimodel, err = base64.StdEncoding.DecodeString(v.(string))
 		if err != nil {
-			return Cluster{}, fmt.Errorf("error decoding `api_model`: %+v", err)
+			return containerService{}, fmt.Errorf("error decoding `api_model`: %+v", err)
 		}
 	}
 
-	cluster := Cluster{}
+	cluster := containerService{}
 	cluster.ContainerService, err = apiloader.LoadContainerService(apimodel, apiVersion, validate, isUpdate, nil)
 	if err != nil {
-		return Cluster{}, fmt.Errorf("error loading container service from apimodel bytes: %+v", err)
+		return containerService{}, fmt.Errorf("error loading container service from apimodel bytes: %+v", err)
 	}
 
 	// make sure the location is normalized
@@ -435,7 +404,7 @@ func (d *ResourceData) loadContainerServiceFromApimodel(validate, isUpdate bool)
 	return cluster, nil
 }
 
-func (d *ResourceData) setStateAPIModel(cluster *Cluster) error {
+func (d *resourceData) setStateAPIModel(cluster *containerService) error {
 	locale, err := i18n.LoadTranslations()
 	if err != nil {
 		return fmt.Errorf("error loading translations: %+v", err)
@@ -457,7 +426,7 @@ func (d *ResourceData) setStateAPIModel(cluster *Cluster) error {
 	return nil
 }
 
-func (d *ResourceData) setStateProfiles(cluster *Cluster) error {
+func (d *resourceData) setStateProfiles(cluster *containerService) error {
 	linuxProfile, err := flattenLinuxProfile(*cluster.Properties.LinuxProfile)
 	if err != nil {
 		return fmt.Errorf("Error flattening `linux_profile`: %+v", err)
@@ -495,7 +464,7 @@ func (d *ResourceData) setStateProfiles(cluster *Cluster) error {
 	return nil
 }
 
-func (d *ResourceData) setResourceStateProfiles(cluster *Cluster) error {
+func (d *resourceData) setResourceStateProfiles(cluster *containerService) error {
 	if err := d.setStateProfiles(cluster); err != nil {
 		return err
 	}
@@ -511,7 +480,7 @@ func (d *ResourceData) setResourceStateProfiles(cluster *Cluster) error {
 	return nil
 }
 
-func (d *ResourceData) setDataSourceStateProfiles(cluster *Cluster) error {
+func (d *resourceData) setDataSourceStateProfiles(cluster *containerService) error {
 	if err := d.setStateProfiles(cluster); err != nil {
 		return err
 	}
@@ -525,96 +494,4 @@ func (d *ResourceData) setDataSourceStateProfiles(cluster *Cluster) error {
 	}
 
 	return nil
-}
-
-func (cluster *Cluster) writeTemplatesAndCerts(template string, parameters string, deploymentDirectory string, certsGenerated bool) error {
-	locale, err := i18n.LoadTranslations()
-	if err != nil {
-		return fmt.Errorf("error loading translations: %+v", err)
-	}
-
-	// save templates and certificates
-	writer := &acsengine.ArtifactWriter{
-		Translator: &i18n.Translator{
-			Locale: locale,
-		},
-	}
-	if err = writer.WriteTLSArtifacts(cluster.ContainerService, apiVersion, template, parameters, deploymentDirectory, certsGenerated, false); err != nil {
-		return fmt.Errorf("error writing artifacts: %+v", err)
-	}
-
-	return nil
-}
-
-func (cluster *Cluster) formatTemplates(buildParamsFile bool) (string, string, bool, error) {
-	locale, err := i18n.LoadTranslations()
-	if err != nil {
-		return "", "", false, fmt.Errorf("error loading translations: %+v", err)
-	}
-	ctx := acsengine.Context{
-		Translator: &i18n.Translator{
-			Locale: locale,
-		},
-	}
-
-	templateGenerator, err := acsengine.InitializeTemplateGenerator(ctx, false)
-	if err != nil {
-		return "", "", false, fmt.Errorf("failed to initialize template generator: %+v", err)
-	}
-	template, parameters, certsGenerated, err := templateGenerator.GenerateTemplate(cluster.ContainerService, acsengine.DefaultGeneratorCode, false, false, acsEngineVersion)
-	if err != nil {
-		return "", "", false, fmt.Errorf("error generating templates: %+v", err)
-	}
-
-	if template, err = transform.PrettyPrintArmTemplate(template); err != nil {
-		return "", "", false, fmt.Errorf("error pretty printing template: %+v", err)
-	}
-	if buildParamsFile {
-		if parameters, err = transform.BuildAzureParametersFile(parameters); err != nil {
-			return "", "", false, fmt.Errorf("error pretty printing template parameters: %+v", err)
-		}
-	}
-
-	return template, parameters, certsGenerated, nil
-}
-
-func (cluster *Cluster) saveTemplates(d *ResourceData, deploymentDirectory string) error {
-	template, parameters, certsGenerated, err := cluster.formatTemplates(true)
-	if err != nil {
-		return fmt.Errorf("failed to format templates: %+v", err)
-	}
-
-	if err = cluster.writeTemplatesAndCerts(template, parameters, deploymentDirectory, certsGenerated); err != nil {
-		return fmt.Errorf("error writing templates and certificates: %+v", err)
-	}
-	if err = d.setStateAPIModel(cluster); err != nil {
-		return fmt.Errorf("error setting API model: %+v", err)
-	}
-
-	return nil
-}
-
-func getAPIModelFromFile(deploymentDirectory string) (string, error) {
-	APIModelPath := path.Join(deploymentDirectory, "apimodel.json")
-	if _, err := os.Stat(APIModelPath); os.IsNotExist(err) {
-		return "", fmt.Errorf("specified api model does not exist (%s)", APIModelPath)
-	}
-	f, err := os.Open(APIModelPath)
-	if err != nil {
-		return "", fmt.Errorf("failed to open file: %+v", err)
-	}
-	defer func() { // weirdness is because I need to check return value for linter
-		err := f.Close()
-		if err != nil {
-			log.Fatalf("error closing file: %+v", err)
-		}
-	}()
-
-	b, err := ioutil.ReadAll(f)
-	if err != nil {
-		return "", fmt.Errorf("failed to read file: %+v", err)
-	}
-	apimodel := base64Encode(string(b))
-
-	return apimodel, nil
 }

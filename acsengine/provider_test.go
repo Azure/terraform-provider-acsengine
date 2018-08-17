@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
-	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/authentication"
+	"github.com/Azure/terraform-provider-acsengine/internal/authentication"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
@@ -77,6 +77,28 @@ func TestBase64Encode(t *testing.T) {
 	}
 }
 
+func TestBase64Decode(t *testing.T) {
+	cases := []struct {
+		Input  string
+		Output string
+	}{
+		{
+			Input:  "MTIzNAo=",
+			Output: "1234\n",
+		},
+		{
+			Input:  "hello",
+			Output: "hello",
+		},
+	}
+
+	for _, tc := range cases {
+		output := base64Decode(tc.Input)
+
+		assert.Equal(t, tc.Output, output)
+	}
+}
+
 func TestIgnoreCaseDiffSuppressFunc(t *testing.T) {
 	cases := []struct {
 		New      string
@@ -132,6 +154,7 @@ func testAccPreCheck(t *testing.T) {
 		"ARM_SUBSCRIPTION_ID",
 		"ARM_TENANT_ID",
 		"ARM_TEST_LOCATION",
+		"ARM_TEST_VAULT_ID",
 		"SSH_KEY_PUB",
 	}
 
@@ -141,6 +164,7 @@ func testAccPreCheck(t *testing.T) {
 			t.Fatalf("`%s` must be set for acceptance tests!", variable)
 		}
 	}
+	// ideally check that key vault actually exists
 }
 
 func testClientID() string {
@@ -157,6 +181,14 @@ func testLocation() string {
 
 func testSSHPublicKey() string {
 	return os.Getenv("SSH_KEY_PUB")
+}
+
+func testTenantID() string {
+	return os.Getenv("ARM_TENANT_ID")
+}
+
+func testKeyVaultID() string {
+	return os.Getenv("ARM_TEST_VAULT_ID")
 }
 
 func testArmEnvironmentName() string {

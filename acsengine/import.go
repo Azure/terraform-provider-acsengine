@@ -5,7 +5,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/Azure/terraform-provider-acsengine/acsengine/utils"
+	"github.com/Azure/terraform-provider-acsengine/internal/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -19,15 +19,10 @@ func resourceACSEngineK8sClusterImport(d *schema.ResourceData, m interface{}) ([
 		return nil, err
 	}
 
-	id, err := utils.ParseAzureResourceID(azureID)
+	name, resourceGroup, err := deploymentNameAndResourceGroup(azureID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get deployment name and resource group: %+v", err)
 	}
-	name := id.Path["deployments"]
-	if name == "" {
-		name = id.Path["Deployments"]
-	}
-	resourceGroup := id.ResourceGroup
 
 	read, err := deployClient.Get(client.StopContext, resourceGroup, name)
 	if err != nil {
@@ -61,4 +56,16 @@ func parseImportID(dID string) (string, string, error) {
 	deploymentDirectory := input[1]
 
 	return azureID, deploymentDirectory, nil
+}
+
+func deploymentNameAndResourceGroup(azureID string) (string, string, error) {
+	id, err := resource.ParseAzureResourceID(azureID)
+	if err != nil {
+		return "", "", err
+	}
+	name := id.Path["deployments"]
+	if name == "" {
+		name = id.Path["Deployments"]
+	}
+	return name, id.ResourceGroup, nil
 }

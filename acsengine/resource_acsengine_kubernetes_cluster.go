@@ -3,23 +3,26 @@ package acsengine
 // TO DO
 // - consider renaming client package
 // - use log instead of fmt, figure out why it's not printing
-// - Keep improving documentation
-// - add code coverage
+// - add code coverage (needs to be >50%) - this really needs to be brought back up again! 43% right now
 // - make code more unit test-able and write more unit tests (plus clean up ones I have to use mock objects more?)
-// - do I need more translations?
 // - refactor: better organization of functions, get rid of code duplication, inheritance where it makes sense, better function/variable naming
-// - ask about additions to acs-engine: doesn't seem to allow tagging deployment, weird index problem
-// - create a new struct for api.ContainerService so I can write methods for it?
-// - use assert functions where I can so that tests are uniform, I've accidentally been writing expected and actual in wrong order too
+// - ask about additions to acs-engine: ask about weird index problem
+// - make sure key vault is created before tests (especially in CircleCI tests) - I will write a script to do this and set vault_id env variable
+//   accordingly
+// - get rid of a secret from my git history (it's only in my old commits since I force pushed)
+// - reorganize file structre: flatten out directories (utils and helpers), make internal directory, rename client (maybe operations),
+//   could move some of utils into acsengine directory
+// - make sure I'm printing good status code errors for deployments
+// - figure out which Azure subscription tests will run on when I'm gone
 
 import (
 	"fmt"
 	"strconv"
 
 	"github.com/Azure/acs-engine/pkg/api"
-	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/kubernetes"
-	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/response"
-	"github.com/Azure/terraform-provider-acsengine/acsengine/utils"
+	"github.com/Azure/terraform-provider-acsengine/internal/kubernetes"
+	"github.com/Azure/terraform-provider-acsengine/internal/resource"
+	"github.com/Azure/terraform-provider-acsengine/internal/response"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/helper/validation"
 )
@@ -108,12 +111,22 @@ func resourceArmACSEngineKubernetesCluster() *schema.Resource {
 							Required: true,
 							ForceNew: true,
 						},
-						"client_secret": {
+						"vault_id": { // not the same as URI
 							Type:      schema.TypeString,
 							Required:  true,
 							ForceNew:  true,
 							Sensitive: true,
 						},
+						"secret_name": {
+							Type:     schema.TypeString,
+							Required: true,
+							ForceNew: true,
+						},
+						// "secret_version": {
+						// 	Type:     schema.TypeString,
+						// 	Required: true,
+						// 	ForceNew: true,
+						// },
 					},
 				},
 			},
@@ -266,7 +279,7 @@ func resourceACSEngineK8sClusterCreate(data *schema.ResourceData, m interface{})
 		return fmt.Errorf("failed to create resource group: %+v", err)
 	}
 
-	template, parameters, err := generateACSEngineTemplate(cluster, true)
+	template, parameters, err := generateACSEngineTemplate(client, cluster, true)
 	if err != nil {
 		return fmt.Errorf("failed to generate ACS Engine template: %+v", err)
 	}
@@ -286,11 +299,12 @@ func resourceACSEngineK8sClusterCreate(data *schema.ResourceData, m interface{})
 
 func resourceACSEngineK8sClusterRead(data *schema.ResourceData, m interface{}) error {
 	d := newResourceData(data)
-	id, err := utils.ParseAzureResourceID(d.Id())
+	id, err := resource.ParseAzureResourceID(d.Id())
 	if err != nil {
 		d.SetId("")
 		return err
 	}
+	client := m.(*ArmClient)
 
 	if err = d.Set("resource_group", id.ResourceGroup); err != nil {
 		return fmt.Errorf("error setting `resource_group`: %+v", err)
@@ -319,7 +333,7 @@ func resourceACSEngineK8sClusterRead(data *schema.ResourceData, m interface{}) e
 		return err
 	}
 
-	if err = d.setKubeConfig(&cluster); err != nil {
+	if err = d.setKubeConfig(client, &cluster, true); err != nil {
 		return err
 	}
 
@@ -330,7 +344,7 @@ func resourceACSEngineK8sClusterDelete(d *schema.ResourceData, m interface{}) er
 	client := m.(*ArmClient)
 	rgClient := client.resourceGroupsClient
 
-	id, err := utils.ParseAzureResourceID(d.Id())
+	id, err := resource.ParseAzureResourceID(d.Id())
 	if err != nil {
 		return fmt.Errorf("error parsing Azure resource ID %q: %+v", d.Id(), err)
 	}
@@ -374,7 +388,7 @@ func resourceACSEngineK8sClusterUpdate(data *schema.ResourceData, m interface{})
 		if err = kubernetes.ValidateKubernetesVersionUpgrade(new.(string), old.(string)); err != nil {
 			return fmt.Errorf("error upgrading Kubernetes version: %+v", err)
 		}
-		if err = upgradeCluster(d, new.(string)); err != nil {
+		if err = upgradeCluster(d, c, new.(string)); err != nil {
 			return fmt.Errorf("error upgrading Kubernetes version: %+v", err)
 		}
 

@@ -5,16 +5,22 @@ import (
 
 	"github.com/Azure/acs-engine/pkg/i18n"
 	"github.com/Azure/acs-engine/pkg/operations/kubernetesupgrade"
-	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/client"
+	"github.com/Azure/terraform-provider-acsengine/internal/operations"
 )
 
-func upgradeCluster(d *ResourceData, upgradeVersion string) error {
+func upgradeCluster(d *resourceData, c *ArmClient, upgradeVersion string) error {
 	cluster, err := d.loadContainerServiceFromApimodel(true, true)
 	if err != nil {
 		return fmt.Errorf("error parsing the api model: %+v", err)
 	}
 
-	uc := client.NewUpgradeClient()
+	keyvaultSecretRef := cluster.Properties.ServicePrincipalProfile.KeyvaultSecretRef
+	clientSecret, err := getSecretFromKeyVault(c, keyvaultSecretRef.VaultID, keyvaultSecretRef.SecretName, "")
+	if err != nil {
+		return fmt.Errorf("error getting service principal key: %+v", err)
+	}
+
+	uc := operations.NewUpgradeClient(clientSecret)
 	if err := uc.SetUpgradeClient(cluster.ContainerService, d.Id(), upgradeVersion); err != nil {
 		return fmt.Errorf("error initializing upgrade client: %+v", err)
 	}
@@ -28,8 +34,8 @@ func upgradeCluster(d *ResourceData, upgradeVersion string) error {
 		StepTimeout: uc.Timeout,
 	}
 
-	cluster.ContainerService = uc.Cluster
-	kubeconfig, err := cluster.getKubeConfig()
+	// cluster.ContainerService = uc.Cluster // I think it's okay to delete this
+	kubeconfig, err := cluster.getKubeConfig(c, true)
 	if err != nil {
 		return fmt.Errorf("failed to generate kube config: %+v", err)
 	}
@@ -46,6 +52,5 @@ func upgradeCluster(d *ResourceData, upgradeVersion string) error {
 		return fmt.Errorf("failed to deploy upgraded cluster: %+v", err)
 	}
 
-	cluster.ContainerService = uc.Cluster
 	return cluster.saveTemplates(d, uc.DeploymentDirectory)
 }

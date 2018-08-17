@@ -2,8 +2,9 @@ package acsengine
 
 import (
 	"fmt"
+	"log"
 
-	"github.com/Azure/terraform-provider-acsengine/acsengine/utils"
+	"github.com/Azure/terraform-provider-acsengine/internal/utils"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -194,7 +195,6 @@ func dataSourceACSEngineK8sClusterRead(data *schema.ResourceData, m interface{})
 		resourceGroup = v.(string)
 	}
 
-	// this could be a problem because the deployment name changes
 	resp, err := deployClient.Get(client.StopContext, resourceGroup, name)
 	if err != nil {
 		if utils.ResponseWasNotFound(resp.Response) {
@@ -203,7 +203,7 @@ func dataSourceACSEngineK8sClusterRead(data *schema.ResourceData, m interface{})
 	}
 	d.SetId(*resp.ID)
 
-	if err = d.Set("name", name); err != nil {
+	if err = d.Set("name", resp.Name); err != nil {
 		return fmt.Errorf("Error setting name: %+v", err)
 	}
 
@@ -232,7 +232,7 @@ func dataSourceACSEngineK8sClusterRead(data *schema.ResourceData, m interface{})
 		return err
 	}
 
-	if err := d.setKubeConfig(&cluster); err != nil {
+	if err := d.setKubeConfig(client, &cluster, true); err != nil {
 		return err
 	}
 
@@ -242,7 +242,7 @@ func dataSourceACSEngineK8sClusterRead(data *schema.ResourceData, m interface{})
 		return fmt.Errorf("Error setting `api_model`: %+v", err)
 	}
 
-	fmt.Println("finished reading")
+	log.Println("finished reading")
 
 	return nil
 }

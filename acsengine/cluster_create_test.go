@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/Azure/terraform-provider-acsengine/acsengine/utils"
+	"github.com/Azure/terraform-provider-acsengine/internal/tester"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -36,22 +36,22 @@ func TestGenerateTemplateBasic(t *testing.T) {
 		d.Set("location", tc.Location)
 		d.Set("resource_group", tc.ResourceGroup)
 
-		linuxProfiles := utils.FlattenLinuxProfile(tc.AdminUsername)
+		linuxProfiles := tester.MockFlattenLinuxProfile(tc.AdminUsername)
 		d.Set("linux_profile", &linuxProfiles)
 
-		servicePrincipals := utils.FlattenServicePrincipal()
+		servicePrincipals := tester.MockFlattenServicePrincipal()
 		d.Set("service_principal", servicePrincipals)
 
 		vmSize := "Standard_D2_v2"
-		masterProfiles := utils.FlattenMasterProfile(tc.MasterCount, tc.DNSPrefix, vmSize)
+		masterProfiles := tester.MockFlattenMasterProfile(tc.MasterCount, tc.DNSPrefix, vmSize)
 		d.Set("master_profile", &masterProfiles)
 
 		agentPoolProfiles := []interface{}{}
 		agentPoolName := "agentpool0"
-		agentPoolProfile0 := utils.FlattenAgentPoolProfiles(agentPoolName, tc.AgentPoolCount, vmSize, 0, false)
+		agentPoolProfile0 := tester.MockFlattenAgentPoolProfiles(agentPoolName, tc.AgentPoolCount, vmSize, 0, false)
 		agentPoolProfiles = append(agentPoolProfiles, agentPoolProfile0)
 		agentPoolName = "agentpool1"
-		agentPoolProfile1 := utils.FlattenAgentPoolProfiles(agentPoolName, tc.AgentPoolCount+1, vmSize, 0, false)
+		agentPoolProfile1 := tester.MockFlattenAgentPoolProfiles(agentPoolName, tc.AgentPoolCount+1, vmSize, 0, false)
 		agentPoolProfiles = append(agentPoolProfiles, agentPoolProfile1)
 		d.Set("agent_pool_profiles", &agentPoolProfiles)
 
@@ -60,12 +60,11 @@ func TestGenerateTemplateBasic(t *testing.T) {
 			t.Fatalf("failed to set cluster")
 		}
 
-		template, parameters, err := generateACSEngineTemplate(cluster, false) // don't write files
+		template, parameters, err := generateACSEngineTemplate(nil, cluster, false) // don't write files
 		if err != nil {
 			t.Fatalf("Template generation failed: %v", err)
 		}
 
-		// now I can test that the template and parameters look okay I guess...
 		assert.Contains(t, parameters, tc.AdminUsername, "cluster admin username set incorrectly in parameters")
 		assert.Contains(t, parameters, testClientID(), "cluster client ID set incorrectly in parameters")
 		assert.Contains(t, parameters, vmSize, "cluster VM size set incorrectly in parameters")
@@ -109,21 +108,21 @@ func TestGenerateTemplateCustomized(t *testing.T) {
 		d.Set("resource_group", tc.ResourceGroup)
 		d.Set("kubernetes_version", tc.Version)
 
-		linuxProfiles := utils.FlattenLinuxProfile(tc.AdminUsername)
+		linuxProfiles := tester.MockFlattenLinuxProfile(tc.AdminUsername)
 		d.Set("linux_profile", &linuxProfiles)
 
-		servicePrincipals := utils.FlattenServicePrincipal()
+		servicePrincipals := tester.MockFlattenServicePrincipal()
 		d.Set("service_principal", servicePrincipals)
 
-		masterProfiles := utils.FlattenMasterProfile(tc.MasterCount, tc.DNSPrefix, tc.MasterVMSize)
+		masterProfiles := tester.MockFlattenMasterProfile(tc.MasterCount, tc.DNSPrefix, tc.MasterVMSize)
 		d.Set("master_profile", &masterProfiles)
 
 		agentPoolProfiles := []interface{}{}
 		agentPoolName := "agentpool0"
-		agentPoolProfile0 := utils.FlattenAgentPoolProfiles(agentPoolName, tc.AgentPoolCount, tc.AgentVMSize, 0, false)
+		agentPoolProfile0 := tester.MockFlattenAgentPoolProfiles(agentPoolName, tc.AgentPoolCount, tc.AgentVMSize, 0, false)
 		agentPoolProfiles = append(agentPoolProfiles, agentPoolProfile0)
 		agentPoolName = "agentpool1"
-		agentPoolProfile1 := utils.FlattenAgentPoolProfiles(agentPoolName, tc.AgentPoolCount+1, tc.AgentVMSize, 0, false)
+		agentPoolProfile1 := tester.MockFlattenAgentPoolProfiles(agentPoolName, tc.AgentPoolCount+1, tc.AgentVMSize, 0, false)
 		agentPoolProfiles = append(agentPoolProfiles, agentPoolProfile1)
 		d.Set("agent_pool_profiles", &agentPoolProfiles)
 
@@ -132,7 +131,7 @@ func TestGenerateTemplateCustomized(t *testing.T) {
 			t.Fatalf("failed to set cluster")
 		}
 
-		template, parameters, err := generateACSEngineTemplate(cluster, false) // don't write files
+		template, parameters, err := generateACSEngineTemplate(nil, cluster, false) // don't write files
 		if err != nil {
 			t.Fatalf("Template generation failed: %v", err)
 		}

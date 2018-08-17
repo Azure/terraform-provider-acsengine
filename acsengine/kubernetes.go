@@ -5,7 +5,7 @@ import (
 
 	"github.com/Azure/acs-engine/pkg/acsengine"
 	"github.com/Azure/acs-engine/pkg/api/common"
-	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/kubernetes"
+	"github.com/Azure/terraform-provider-acsengine/internal/kubernetes"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -69,16 +69,26 @@ func flattenKubeConfig(kubeConfigFile string) (string, []interface{}, error) {
 	return rawKubeConfig, kubeConfig, nil
 }
 
-func (cluster *Cluster) getKubeConfig() (string, error) {
+func (cluster *containerService) getKubeConfig(c *ArmClient, keyVault bool) (string, error) {
+	if keyVault {
+		if err := getCertificateProfileSecretsKeyVault(c, cluster); err != nil {
+			return "", fmt.Errorf("failed to get secrets from key vault for kube config: %+v", err)
+		}
+	}
 	kubeConfig, err := acsengine.GenerateKubeConfig(cluster.Properties, cluster.Location)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate kube config: %+v", err)
 	}
+	if keyVault {
+		if err := cluster.setCertificateProfileSecretsAPIModel(); err != nil {
+			return "", fmt.Errorf("failed to set certificates back to key vault reference: %+v", err)
+		}
+	}
 	return kubeConfig, nil
 }
 
-func (d *ResourceData) setKubeConfig(cluster *Cluster) error {
-	kubeConfigFile, err := cluster.getKubeConfig()
+func (d *resourceData) setKubeConfig(c *ArmClient, cluster *containerService, keyVault bool) error {
+	kubeConfigFile, err := cluster.getKubeConfig(c, keyVault)
 	if err != nil {
 		return fmt.Errorf("Error getting kube config: %+v", err)
 	}

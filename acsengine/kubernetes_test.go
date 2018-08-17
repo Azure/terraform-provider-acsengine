@@ -3,9 +3,11 @@ package acsengine
 import (
 	"encoding/base64"
 	"fmt"
+	"log"
 	"testing"
 
-	"github.com/Azure/terraform-provider-acsengine/acsengine/utils"
+	"github.com/Azure/terraform-provider-acsengine/internal/resource"
+	"github.com/Azure/terraform-provider-acsengine/internal/utils"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -46,7 +48,7 @@ func TestGetKubeConfig(t *testing.T) {
 	prefix := "masterDNSPrefix"
 	cluster := mockCluster(name, location, prefix)
 
-	kubeconfig, err := cluster.getKubeConfig()
+	kubeconfig, err := cluster.getKubeConfig(nil, false)
 	if err != nil {
 		t.Fatalf("failed to get kube config: %+v", err)
 	}
@@ -61,7 +63,7 @@ func TestFlattenKubeConfig(t *testing.T) {
 		}
 	}()
 
-	kubeConfigFile := utils.ACSEngineK8sClusterKubeConfig("masterfqdn", "southcentralus")
+	kubeConfigFile := resource.ACSEngineK8sClusterKubeConfig("masterfqdn", "southcentralus")
 
 	_, kubeConfigs, err := flattenKubeConfig(kubeConfigFile)
 	if err != nil {
@@ -108,7 +110,7 @@ func TestSetKubeConfig(t *testing.T) {
 		t.Fatalf("failed to load cluster: %+v", err)
 	}
 
-	if err = d.setKubeConfig(&cluster); err != nil {
+	if err = d.setKubeConfig(nil, &cluster, false); err != nil {
 		t.Fatalf("failed to set kube config: %+v", err)
 	}
 }
@@ -148,17 +150,17 @@ func clusterIsRunning(is *terraform.InstanceState, name string) error {
 
 func checkNodes(api corev1.CoreV1Interface) error {
 	retryErr := utils.RetryOnFailure(retry.DefaultRetry, func() error {
-		fmt.Println("[INFO] trying to get nodes...") // log
+		log.Println("[INFO] trying to get nodes...") // log
 		nodes, err := api.Nodes().List(metav1.ListOptions{})
 		if err != nil {
-			fmt.Printf("Reason for error: %+v\n", errors.ReasonForError(err))
+			log.Printf("[INFO] Reason for error: %+v\n", errors.ReasonForError(err))
 			return fmt.Errorf("failed to get nodes: %+v", err)
 		}
 		if len(nodes.Items) < 2 {
 			return fmt.Errorf("not enough nodes found (there should be a at least one master and agent pool): only %d found", len(nodes.Items))
 		}
 		for _, node := range nodes.Items {
-			fmt.Printf("[INFO] Node: %s\n", node.Name) // log
+			log.Printf("[INFO] Node: %s\n", node.Name) // log
 		}
 		return nil
 	})

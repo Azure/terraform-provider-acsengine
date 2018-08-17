@@ -7,6 +7,19 @@
 * An Azure account (to deploy VMs and Azure infrastructure)
 * Git
 
+## Building the Provider
+
+If you wish to work on the provider, you'll first need [Go](http://www.golang.org) installed on your machine (version 1.10+ is *required*). You'll also need to correctly setup a [GOPATH](http://golang.org/doc/code.html#GOPATH), as well as adding `$GOPATH/bin` to your `$PATH`.
+
+To compile the provider, run `make build`. This will build the provider and put the provider binary in the `$GOPATH/bin` directory.
+
+```sh
+$ make build
+...
+$ $GOPATH/bin/terraform-provider-acsengine
+...
+```
+
 ## Structure of Code
 
 The code for this project is organized as follows:
@@ -47,6 +60,8 @@ You will need to have the following environment variables set:
 * `ARM_CLIENT_SECRET`: Azure client secret
 * `ARM_SUBSCRIPTION_ID`: Azure subscription UUID
 * `ARM_TENANT_ID`: Azure tenant UUID
+* `ARM_TEST_VAULT_ID`: Azure vault ID used for storing test certificates and keys
+* `ARM_TEST_LOCATION`: Azure region used for creating test resources
 * `SSH_KEY_PUB`: Public SSH key
 
 <!-- ## Debugging

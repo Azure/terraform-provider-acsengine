@@ -1,10 +1,10 @@
 # ACS Engine Kubernetes Terraform Provider
 
+[![CircleCI](https://circleci.com/gh/Azure/terraform-provider-acsengine.svg?style=svg&circle-token=a72ac07fe8ecb1a8eaaa16cc142c43a02f93d33d)](https://github.com/Azure/terraform-provider-acsengine/tree/master)
+
 ## Overview
 
 The Azure Container Service Engine Kubernetes Terraform Provider allows you to create and manage [ACS Engine](https://github.com/Azure/acs-engine) Kubernetes clusters with a simple Terraform configuration. Other container orchestrators are not supported.
-
-Note: This is very much still a work in progress (by an intern) :)
 
 This started out as a fork of [terraform-providers/terraform-provider-azurerm](https://github.com/terraform-providers/terraform-provider-azurerm/tree/master/azurerm) so a lot of code is inspired-by-slash-taken-from that repo.
 
@@ -80,7 +80,8 @@ resource "acsengine_kubernetes_cluster" "test" {
 
   service_principal {
     client_id     = ""
-    client_secret = ""
+    vault_id      = ""
+    secret_name   = "spsecret"
   }
 
   tags {
@@ -110,6 +111,7 @@ The following ENV variables must be set in your shell prior to running tests:
 * ARM_CLIENT_SECRET
 * ARM_SUBSCRIPTION_ID
 * ARM_TENANT_ID
+* ARM_TEST_VAULT_ID
 * ARM_TEST_LOCATION
 * SSH_KEY_PUB
 

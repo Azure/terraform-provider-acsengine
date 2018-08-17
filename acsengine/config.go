@@ -9,11 +9,13 @@ import (
 	"os"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/profiles/latest/keyvault/mgmt/keyvault"
+	vaultsvc "github.com/Azure/azure-sdk-for-go/services/keyvault/2016-10-01/keyvault"
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/adal"
 	"github.com/Azure/go-autorest/autorest/azure"
-	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/authentication"
+	"github.com/Azure/terraform-provider-acsengine/internal/authentication"
 	"github.com/hashicorp/terraform/terraform"
 )
 
@@ -32,6 +34,9 @@ type ArmClient struct {
 	deploymentsClient    resources.DeploymentsClient
 	providersClient      resources.ProvidersClient
 	resourceGroupsClient resources.GroupsClient
+
+	keyVaultClient           keyvault.VaultsClient
+	keyVaultManagementClient vaultsvc.BaseClient
 }
 
 func (c *ArmClient) configureClient(client *autorest.Client, auth autorest.Authorizer) {
@@ -121,18 +126,10 @@ func getAuthorizationToken(c *authentication.Config, oauthConfig *adal.OAuthConf
 	return auth, nil
 }
 
-// getArmClient is a helper method which returns a fully instantiated
-// *ArmClient based on the Config's current settings.
 func getArmClient(c *authentication.Config) (*ArmClient, error) {
-	// detect cloud from environment
-	env, envErr := azure.EnvironmentFromName(c.Environment)
+	env, envErr := azureEnvironmentFromName(c.Environment)
 	if envErr != nil {
-		// try again with wrapped value to support readable values like german instead of AZUREGERMANCLOUD
-		wrapped := fmt.Sprintf("AZURE%sCLOUD", c.Environment)
-		var innerErr error
-		if env, innerErr = azure.EnvironmentFromName(wrapped); innerErr != nil {
-			return nil, envErr
-		}
+		return nil, fmt.Errorf("did not detect cloud: %+v", envErr)
 	}
 
 	client := ArmClient{
@@ -153,15 +150,40 @@ func getArmClient(c *authentication.Config) (*ArmClient, error) {
 		return nil, fmt.Errorf("Unable to configure OAuthConfig for tenant %s", c.TenantID)
 	}
 
+	sender := autorest.CreateSender(withRequestLogging())
+
 	endpoint := env.ResourceManagerEndpoint
 	auth, err := getAuthorizationToken(c, oauthConfig, endpoint)
 	if err != nil {
 		return nil, err
 	}
 
+	keyVaultAuth := autorest.NewBearerAuthorizerCallback(sender, func(tenantID, resource string) (*autorest.BearerAuthorizer, error) {
+		keyVaultSpt, err := getAuthorizationToken(c, oauthConfig, resource)
+		if err != nil {
+			return nil, err
+		}
+		return keyVaultSpt, nil
+	})
+
 	client.registerResourcesClients(endpoint, c.SubscriptionID, auth)
+	client.registerKeyVaultClients(endpoint, c.SubscriptionID, auth, keyVaultAuth, sender)
 
 	return &client, nil
+}
+
+func azureEnvironmentFromName(environment string) (azure.Environment, error) {
+	// detect cloud from environment
+	env, envErr := azure.EnvironmentFromName(environment)
+	if envErr != nil {
+		// try again with wrapped value to support readable values like german instead of AZUREGERMANCLOUD
+		wrapped := fmt.Sprintf("AZURE%sCLOUD", environment)
+		var innerErr error
+		if env, innerErr = azure.EnvironmentFromName(wrapped); innerErr != nil {
+			return azure.Environment{}, envErr
+		}
+	}
+	return env, nil
 }
 
 func (c *ArmClient) registerResourcesClients(endpoint, subscriptionID string, auth autorest.Authorizer) {
@@ -176,4 +198,20 @@ func (c *ArmClient) registerResourcesClients(endpoint, subscriptionID string, au
 	providersClient := resources.NewProvidersClientWithBaseURI(endpoint, subscriptionID)
 	c.configureClient(&providersClient.Client, auth)
 	c.providersClient = providersClient
+}
+
+func (c *ArmClient) registerKeyVaultClients(endpoint, subscriptionID string, auth autorest.Authorizer, keyVaultAuth autorest.Authorizer, sender autorest.Sender) {
+	keyVaultClient := keyvault.NewVaultsClientWithBaseURI(endpoint, subscriptionID)
+	setUserAgent(&keyVaultClient.Client)
+	keyVaultClient.Authorizer = auth
+	keyVaultClient.Sender = sender
+	keyVaultClient.SkipResourceProviderRegistration = c.skipProviderRegistration
+	c.keyVaultClient = keyVaultClient
+
+	keyVaultManagementClient := vaultsvc.New()
+	setUserAgent(&keyVaultManagementClient.Client)
+	keyVaultManagementClient.Authorizer = keyVaultAuth
+	keyVaultManagementClient.Sender = sender
+	keyVaultManagementClient.SkipResourceProviderRegistration = c.skipProviderRegistration
+	c.keyVaultManagementClient = keyVaultManagementClient
 }

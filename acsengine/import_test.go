@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/Azure/terraform-provider-acsengine/acsengine/utils"
+	"github.com/Azure/terraform-provider-acsengine/internal/resource"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -24,7 +24,7 @@ func TestParseImportID(t *testing.T) {
 	}
 	assert.Equal(t, deploymentDirectory, deploymentDirectoryInput, "parseImportID failed")
 
-	if _, err = utils.ParseAzureResourceID(azureID); err != nil {
+	if _, err = resource.ParseAzureResourceID(azureID); err != nil {
 		t.Fatalf("failed to parse azureID: %+v", err)
 	}
 }
@@ -46,5 +46,29 @@ func TestParseInvalidImportID(t *testing.T) {
 		if err == nil {
 			t.Fatalf("parseImportID should have failed with ID %s", tc.ImportID)
 		}
+	}
+}
+
+func TestDeploymentNameAndResourceGroup(t *testing.T) {
+	cases := []struct {
+		azureID       string
+		name          string
+		resourceGroup string
+	}{
+		{
+			azureID:       "/subscriptions/1234/resourceGroups/testrg/providers/Microsoft.Resources/deployments/deploymentName",
+			name:          "deploymentName",
+			resourceGroup: "testrg",
+		},
+	}
+
+	for _, tc := range cases {
+		name, resourceGroup, err := deploymentNameAndResourceGroup(tc.azureID)
+		if err != nil {
+			t.Fatalf("failed to get name and resource group from Azure ID: %+v", err)
+		}
+
+		assert.Equal(t, tc.name, name)
+		assert.Equal(t, tc.resourceGroup, resourceGroup)
 	}
 }

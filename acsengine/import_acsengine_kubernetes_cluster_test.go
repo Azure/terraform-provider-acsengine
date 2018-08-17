@@ -13,10 +13,10 @@ import (
 func TestAccImportACSEngineK8sCluster_importBasic(t *testing.T) {
 	ri := acctest.RandInt()
 	clientID := testClientID()
-	clientSecret := testClientSecret()
 	location := testLocation()
 	keyData := testSSHPublicKey()
-	config := testAccACSEngineK8sClusterBasic(ri, clientID, clientSecret, location, keyData)
+	vaultID := testKeyVaultID()
+	config := testAccACSEngineK8sClusterBasic(ri, clientID, location, keyData, vaultID)
 	resourceName := fmt.Sprintf("acsengine_kubernetes_cluster.test%d", ri)
 
 	resource.Test(t, resource.TestCase{

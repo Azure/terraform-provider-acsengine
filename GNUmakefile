@@ -2,6 +2,7 @@ TEST?=$$(go list ./... |grep -v 'vendor')
 GOFMT_FILES?=$$(find . -name '*.go' |grep -v vendor)
 PKG_NAME=acsengine
 undefine TF_ACC
+# TF_LOG=INFO
 
 ###############################################################################
 # build
@@ -79,11 +80,6 @@ lint:
 fmtcheck:
 	@sh "$(CURDIR)/scripts/gofmtcheck.sh"
 
-# do I want all of these?
-
-debugacc: fmtcheck
-	TF_ACC=1 dlv test $(TEST) --headless --listen=:2345 --api-version=2 -- -test.v $(TESTARGS)
-
 errcheck:
 	@sh "$(CURDIR)/scripts/errcheck.sh"
 
@@ -105,22 +101,18 @@ coverage:
 ###############################################################################
 
 cluster-create:
-	# TF_ACC=1 go test ./acsengine -v -run create -timeout 3h
 	TF_ACC=1 go test ./acsengine -v -run createBasic -timeout 3h
 	TF_ACC=1 go test ./acsengine -v -run createVersion10AndAbove -timeout 3h
 
 cluster-scale:
-	# TF_ACC=1 go test ./acsengine -v -run scale -timeout 5h
 	TF_ACC=1 go test ./acsengine -v -run scaleUpDown -timeout 5h
 	TF_ACC=1 go test ./acsengine -v -run scaleDownUp -timeout 5h
 
 cluster-upgrade:
-	# TF_ACC=1 go test ./acsengine -v -run upgrade -timeout 8h
 	TF_ACC=1 go test ./acsengine -v -run upgradeMultiple -timeout 5h
 	TF_ACC=1 go test ./acsengine -v -run upgradeVersion10AndAbove -timeout 5h
 
 cluster-update-scale:
-	# TF_ACC=1 go test ./acsengine -v -run updateScale -timeout 5h
 	TF_ACC=1 go test ./acsengine -v -run updateScaleUpUpgrade -timeout 5h
 	TF_ACC=1 go test ./acsengine -v -run updateScaleDownUpgrade -timeout 5h
 
@@ -140,3 +132,15 @@ cluster-windows:
 	TF_ACC=1 go test ./acsengine -v -run windowsCreate -timeout 5h
 
 .PHONY: cluster-create cluster-scale cluster-upgrade cluster-update-scale cluster-update-upgrade cluster-update-tags cluster-data cluster-import
+
+###############################################################################
+# key vault for CI tests
+###############################################################################
+
+keyvault-apply:
+	@scripts/keyvault.sh --tfapply
+
+keyvault-destroy:
+	@scripts/keyvault.sh --tfdestroy
+
+.PHONY: keyvault-apply keyvault-destroy

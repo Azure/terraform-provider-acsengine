@@ -28,3 +28,28 @@ func TestSetEmptyUserAgent(t *testing.T) {
 	tfVersion := fmt.Sprintf("HashiCorp-Terraform-v%s", terraform.VersionString())
 	assert.Equal(t, tfVersion, client.UserAgent, "client.UserAgent value is incorrect")
 }
+
+func TestAzureEnvironmentFromName(t *testing.T) {
+	cases := []struct {
+		input  string
+		output string
+	}{
+		{
+			input:  "AZUREGERMANCLOUD",
+			output: "AzureGermanCloud",
+		},
+		{
+			input:  "azurechinacloud",
+			output: "AzureChinaCloud",
+		},
+	}
+
+	for _, tc := range cases {
+		env, err := azureEnvironmentFromName(tc.input)
+		if err != nil {
+			t.Fatalf("error setting environment from name: %+v", err)
+		}
+
+		assert.Equal(t, tc.output, env.Name)
+	}
+}

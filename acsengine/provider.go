@@ -10,8 +10,8 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
 	"github.com/Azure/go-autorest/autorest/adal"
-	"github.com/Azure/terraform-provider-acsengine/acsengine/helpers/authentication"
-	azschema "github.com/Azure/terraform-provider-acsengine/acsengine/helpers/schema"
+	"github.com/Azure/terraform-provider-acsengine/internal/authentication"
+	azschema "github.com/Azure/terraform-provider-acsengine/internal/schema"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
 )
@@ -222,7 +222,6 @@ func registerAzureResourceProvidersWithSubscription(ctx context.Context, provide
 	return err
 }
 
-// Deprecated - use `azschema.IgnoreCaseDiffSuppressFunc` instead
 func ignoreCaseDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	return azschema.IgnoreCaseDiffSuppressFunc(k, old, new, d)
 }
@@ -234,6 +233,14 @@ func base64Encode(data string) string {
 	}
 	// data has not been encoded encode and return
 	return base64.StdEncoding.EncodeToString([]byte(data))
+}
+
+func base64Decode(data string) string {
+	if !isBase64Encoded(data) {
+		return data
+	}
+	result, _ := base64.StdEncoding.DecodeString(data)
+	return string(result)
 }
 
 func isBase64Encoded(data string) bool {
