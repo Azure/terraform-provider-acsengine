@@ -20,6 +20,9 @@ func resourceACSEngineK8sClusterImport(d *schema.ResourceData, m interface{}) ([
 	}
 
 	name, resourceGroup, err := deploymentNameAndResourceGroup(azureID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get deployment name and resource group: %+v", err)
+	}
 
 	read, err := deployClient.Get(client.StopContext, resourceGroup, name)
 	if err != nil {
