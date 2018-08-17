@@ -1,6 +1,6 @@
 # ACS Engine Kubernetes Terraform Provider
 
-[![CircleCI](https://circleci.com/gh/Azure/terraform-provider-acsengine.svg?style=svg&circle-token=a72ac07fe8ecb1a8eaaa16cc142c43a02f93d33d)](https://github.com/Azure/terraform-provider-acsengine/tree/master)
+[comment]: [![CircleCI](https://circleci.com/gh/Azure/terraform-provider-acsengine.svg?style=svg&circle-token=a72ac07fe8ecb1a8eaaa16cc142c43a02f93d33d)](https://github.com/Azure/terraform-provider-acsengine/tree/master)
 
 ## Overview
 
