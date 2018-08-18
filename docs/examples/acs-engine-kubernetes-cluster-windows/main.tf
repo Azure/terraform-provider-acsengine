@@ -44,12 +44,12 @@ resource "acsengine_kubernetes_cluster" "cluster" {
 
   windows_profile {
       admin_username = "azureuser"
-      admin_password = ""
+      admin_password = "${var.admin_password}"
   }
 
   service_principal {
-    client_id     = ""
-    vault_id      = "${data.azurerm_key_vault.kv.id}"
+    client_id     = "${var.client_id}"
+    vault_id      = "${data.azurerm_key_vault.testkv.id}"
     secret_name   = "${data.azurerm_key_vault_secret.spsecret.name}"
   }
 

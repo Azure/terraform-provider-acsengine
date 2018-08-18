@@ -71,7 +71,7 @@ func flattenKubeConfig(kubeConfigFile string) (string, []interface{}, error) {
 
 func (cluster *containerService) getKubeConfig(c *ArmClient, keyVault bool) (string, error) {
 	if keyVault {
-		if err := getCertificateProfileSecretsKeyVault(c, cluster); err != nil {
+		if err := getCertificateProfileSecretsFromKeyVault(c, cluster); err != nil {
 			return "", fmt.Errorf("failed to get secrets from key vault for kube config: %+v", err)
 		}
 	}

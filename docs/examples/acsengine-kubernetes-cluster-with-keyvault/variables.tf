@@ -2,7 +2,11 @@ variable "tenant_id" {
     type = "string"
 }
 
-variable "object_id" {
+variable "sp_object_id" {
+    type = "string"
+}
+
+variable "user_object_id" {
     type = "string"
 }
 

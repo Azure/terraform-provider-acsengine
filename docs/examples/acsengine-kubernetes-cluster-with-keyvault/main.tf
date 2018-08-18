@@ -19,6 +19,38 @@ resource "azurerm_key_vault" "testkv" {
 
   access_policy {
       tenant_id = "${var.tenant_id}"
+      object_id = "${var.sp_object_id}"
+
+      key_permissions = [
+          "get",
+          "create",
+      ]
+
+      secret_permissions = [
+          "get",
+          "delete",
+          "set",
+      ]
+  }
+
+  access_policy {
+      tenant_id = "${var.tenant_id}"
+      object_id = "${var.user_object_id}"
+
+      key_permissions = [
+          "get",
+          "create",
+      ]
+
+      secret_permissions = [
+          "get",
+          "delete",
+          "set",
+      ]
+  }
+
+  access_policy {
+      tenant_id = "${var.tenant_id}"
       object_id = "${var.object_id}"
 
       key_permissions = [
@@ -71,7 +103,7 @@ resource "acsengine_kubernetes_cluster" "cluster" {
 
   service_principal {
     client_id     = "${var.sp_id}"
-    vault_id      = "${azurerm_key_vault.kv.id}"
+    vault_id      = "${azurerm_key_vault.testkv.id}"
     secret_name   = "${azurerm_key_vault_secret.spsecret.name}"
   }
 

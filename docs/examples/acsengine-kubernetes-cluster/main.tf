@@ -52,7 +52,7 @@ resource "acsengine_kubernetes_cluster" "cluster" {
 
   service_principal {
     client_id     = "${var.sp_id}"
-    vault_id      = "${data.azurerm_key_vault.kv.id}"
+    vault_id      = "${data.azurerm_key_vault.testkv.id}"
     secret_name   = "${data.azurerm_key_vault_secret.spsecret.name}"
   }
 

@@ -6,12 +6,12 @@ TFDIR=scripts/keyvault
 
 terraform_apply() {
     terraform init $TFDIR
-    TF_VAR_tenant_id=$ARM_TENANT_ID TF_VAR_object_id=$ARM_OBJECT_ID TF_VAR_client_secret=$ARM_CLIENT_SECRET \
+    TF_VAR_tenant_id=$ARM_TENANT_ID TF_VAR_sp_object_id=$ARM_SP_OBJECT_ID TF_VAR_user_object_id=$ARM_USER_OBJECT_ID TF_VAR_client_secret=$ARM_CLIENT_SECRET \
         terraform apply -input=false --auto-approve $TFDIR
 }
 
 terraform_destroy() {
-    TF_VAR_tenant_id=$ARM_TENANT_ID TF_VAR_object_id=$ARM_OBJECT_ID TF_VAR_client_secret=$ARM_CLIENT_SECRET \
+    TF_VAR_tenant_id=$ARM_TENANT_ID TF_VAR_sp_object_id=$ARM_SP_OBJECT_ID TF_VAR_user_object_id=$ARM_USER_OBJECT_ID TF_VAR_client_secret=$ARM_CLIENT_SECRET \
         terraform destroy -input=false --auto-approve $TFDIR
 }
 

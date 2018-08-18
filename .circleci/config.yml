@@ -32,6 +32,9 @@ jobs:
       - run: |
             echo `TF_ACC=1` >> $BASH_ENV
       - run:
+          name: Create key vault for cluster secrets
+          command: make keyvault-apply
+      - run:
           name: Cluster creation acceptance tests
           command: make cluster-create
           no_output_timeout: 30m
@@ -43,14 +46,6 @@ jobs:
           name: Cluster upgrade acceptance tests
           command: make cluster-upgrade
           no_output_timeout: 30m
-    #   - run:
-    #       name: Cluster acceptance tests with combined update operations, starting with scale
-    #       command: make cluster-update-scale
-    #       no_output_timeout: 30m
-    #   - run:
-    #       name: Cluster acceptance tests with combined update operations, starting with upgrade
-    #       command: make cluster-update-upgrade
-    #       no_output_timeout: 30m
       - run:
           name: Cluster update tags acceptance test
           command: make cluster-update-tags
@@ -67,6 +62,9 @@ jobs:
           name: Windows cluster test
           command: make cluster-windows
           no_output_timeout: 30m
+      - run:
+          name: Destroy key vault
+          command: make keyvault-destroy
       - run:
           name: Get unit test coverage
           command: make coverage

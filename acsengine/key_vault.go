@@ -9,18 +9,6 @@ import (
 	"github.com/Azure/terraform-provider-acsengine/internal/resource"
 )
 
-// // I ought to check if something like this exists in keyvault package already
-// type keyVault struct {
-// 	vaultID string
-// }
-
-// func newKeyVault(vaultID string) *keyVault {
-// 	return &keyVault{
-// 		vaultID: vaultID,
-// 	}
-// }
-
-// certificate profile need to be set
 func setCertificateProfileSecretsKeyVault(c *ArmClient, cluster *containerService) error {
 	keyVaultID := cluster.Properties.ServicePrincipalProfile.KeyvaultSecretRef.VaultID
 	certificateProfile := cluster.Properties.CertificateProfile
@@ -82,7 +70,7 @@ func setCertificateProfileSecretsKeyVault(c *ArmClient, cluster *containerServic
 }
 
 // for setting kube config correctly
-func getCertificateProfileSecretsKeyVault(c *ArmClient, cluster *containerService) error {
+func getCertificateProfileSecretsFromKeyVault(c *ArmClient, cluster *containerService) error {
 	vaultID := cluster.Properties.ServicePrincipalProfile.KeyvaultSecretRef.VaultID
 	dnsPrefix := cluster.Properties.MasterProfile.DNSPrefix
 
